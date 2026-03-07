@@ -73,6 +73,13 @@ export interface TransactionResult {
 
 export type ResponseFormat = "json" | "markdown";
 
+export interface VersionInfo {
+  apex: string | null;       // e.g. "20.2", "21.2", "22.2", "23.2", "24.1", "24.2"
+  apexFull: string | null;   // e.g. "20.2.0.00.20"
+  db: string | null;         // e.g. "12.1", "12.2", "18.0", "19.0", "21.0", "23.0"
+  dbFull: string | null;     // e.g. "Oracle Database 12c Release 12.1.0.2.0"
+}
+
 export interface HealthStatus {
   oracle: {
     connected: boolean;
@@ -87,4 +94,5 @@ export interface HealthStatus {
     version: string | null;
     workspace: string | null;
   };
+  versionInfo?: VersionInfo;
 }

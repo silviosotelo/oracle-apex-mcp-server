@@ -19,16 +19,49 @@ export function registerDbTools(server: McpServer, oracle: OracleService): void 
       const h = await oracle.healthCheck();
       const elapsed = formatDuration(Date.now() - t0);
 
+      const vi = h.versionInfo;
+
       let text = `## Oracle Connection Status\n\n`;
       text += `**Connected:** ${h.oracle.connected ? "Yes" : "No"}\n`;
       text += `**Version:** ${h.oracle.version ?? "N/A"}\n`;
+      if (vi?.db) text += `**DB Version:** ${vi.db}\n`;
       text += `**User:** ${h.oracle.user ?? "N/A"} | **Schema:** ${h.oracle.schema ?? "N/A"}\n`;
       text += `**Pool:** ${h.oracle.poolOpen} open / ${h.oracle.poolInUse} in use\n\n`;
       text += `## APEX Status\n\n`;
       text += `**Available:** ${h.apex.available ? "Yes" : "No"}\n`;
-      text += `**APEX Version:** ${h.apex.version ?? "N/A"}\n`;
+      text += `**APEX Version:** ${h.apex.version ?? "N/A"}`;
+      if (vi?.apex) text += ` (${vi.apex})`;
+      text += `\n`;
       text += `**Workspace:** ${h.apex.workspace ?? "N/A"}\n\n`;
-      text += `_Checked in ${elapsed}_`;
+
+      if (vi?.apex) {
+        text += `## Version Capabilities\n\n`;
+        const av = parseFloat(vi.apex);
+        text += `**PL/SQL APIs available:**\n`;
+        text += `- Core: APEX_COLLECTION, APEX_JSON, APEX_UTIL, APEX_ESCAPE, APEX_MAIL, APEX_DEBUG, APEX_STRING\n`;
+        if (av >= 20.1) text += `- APEX_EXEC, APEX_DATA_PARSER, APEX_DATA_EXPORT, APEX_JWT, APEX_SESSION\n`;
+        if (av >= 21.1) text += `- APEX_MARKDOWN, APEX_DATA_LOADING\n`;
+        if (av >= 22.1) text += `- APEX_APPROVAL, APEX_DG_DATA_GEN, APEX_SESSION_STATE\n`;
+        if (av >= 22.2) text += `- APEX_SEARCH (22.2+)\n`;
+        if (av >= 23.1) text += `- APEX_BACKGROUND_PROCESS, APEX_BARCODE, APEX_HUMAN_TASK, APEX_PWA\n`;
+        if (av >= 24.1) text += `- APEX_AI, APEX_HTTP, APEX_EXTENSION, APEX_APPLICATION_ADMIN\n`;
+        if (av >= 24.2) text += `- APEX_SHARED_COMPONENT\n`;
+        text += `\n**JS APIs available:**\n`;
+        text += `- Core: apex.item, apex.region, apex.server, apex.message, apex.page, apex.theme, apex.util\n`;
+        if (av >= 21.1) text += `- apex.date\n`;
+        if (av >= 23.1) text += `- apex.pwa\n`;
+        text += `\n**Region types:**\n`;
+        text += `- Core: Static Content, Classic Report, Interactive Report, Interactive Grid, Form\n`;
+        if (av >= 19.2) text += `- Faceted Search\n`;
+        if (av >= 20.2) text += `- Cards\n`;
+        if (av >= 21.1) text += `- Map\n`;
+        if (av >= 21.2) text += `- Smart Filters\n`;
+        if (av >= 22.2) text += `- Dynamic Content\n`;
+        if (av >= 23.1) text += `- Template Components, Workflow, Approvals\n`;
+        if (av >= 24.1) text += `- AI Assistant\n`;
+      }
+
+      text += `\n_Checked in ${elapsed}_`;
 
       return { content: [{ type: "text" as const, text }] };
     }

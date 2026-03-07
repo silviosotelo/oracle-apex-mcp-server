@@ -105,6 +105,11 @@ After connecting, runs a health check to verify.`,
 
         // Verify with health check
         const h = await oracle.healthCheck();
+
+        // Save connection for next startup if successful
+        if (h.oracle.connected) {
+          oracle.saveLastConnection(connParams);
+        }
         const elapsed = formatDuration(Date.now() - t0);
 
         if (!h.oracle.connected) {
@@ -114,15 +119,18 @@ After connecting, runs a health check to verify.`,
           };
         }
 
+        const vi = h.versionInfo;
+
         let text = `## Connected Successfully | ${elapsed}\n\n`;
         text += `**Target:** ${oracle.getActiveConnection()}\n`;
         text += `**Version:** ${h.oracle.version}\n`;
+        if (vi?.db) text += `**DB Version:** ${vi.db}\n`;
         text += `**User:** ${h.oracle.user} | **Schema:** ${h.oracle.schema}\n`;
         text += `**Pool:** ${h.oracle.poolOpen} open / ${h.oracle.poolInUse} in use\n`;
         if (h.apex.available) {
           text += `\n**APEX:** v${h.apex.version} | Workspace: ${h.apex.workspace ?? "N/A"}\n`;
         }
-        text += `\n_All 25 tools are now operating against this database._`;
+        text += `\n_All tools are now operating against this database. Queries will adapt to detected versions._`;
 
         return { content: [{ type: "text" as const, text }] };
       } catch (e) {

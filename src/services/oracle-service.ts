@@ -1,7 +1,10 @@
 import oracledb from "oracledb";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { homedir } from "os";
+import { join } from "path";
 import type {
   OracleConfig, QueryResult, ExecuteResult, TransactionResult,
-  TransactionStepResult, ColumnMeta, HealthStatus, ConnectionParams
+  TransactionStepResult, ColumnMeta, HealthStatus, ConnectionParams, VersionInfo
 } from "../types.js";
 import {
   DEFAULT_POOL_MIN, DEFAULT_POOL_MAX, DEFAULT_POOL_TIMEOUT,
@@ -10,6 +13,9 @@ import {
 import { friendlyOracleError, classifySql } from "../utils/helpers.js";
 import { loadTnsEntries } from "../utils/tns-parser.js";
 
+const LAST_CONN_DIR = join(homedir(), ".oracle-apex-mcp");
+const LAST_CONN_FILE = join(LAST_CONN_DIR, "last-connection.json");
+
 let poolCounter = 0;
 
 export class OracleService {
@@ -17,9 +23,12 @@ export class OracleService {
   private pool: oracledb.Pool | null = null;
   private driverInitialized = false;
   private activeAlias: string | null = null;
+  private detectedVersion: VersionInfo = { apex: null, apexFull: null, db: null, dbFull: null };
+  private versionDetected = false;
 
   constructor() {
     this.config = this.loadConfig();
+    this.applyLastConnection();
     this.initDriver();
   }
 
@@ -40,6 +49,48 @@ export class OracleService {
       useThickMode: process.env.ORACLE_OLD_CRYPTO === "true" || true,
       clientLibDir: process.env.ORACLE_CLIENT_LIB_DIR || "C:/instantclient_23_5",
     };
+  }
+
+  /** Load last saved connection and apply it to config */
+  private applyLastConnection(): void {
+    try {
+      if (!existsSync(LAST_CONN_FILE)) return;
+      const data = JSON.parse(readFileSync(LAST_CONN_FILE, "utf-8")) as ConnectionParams;
+      if (!data.mode || !data.username || !data.password) return;
+
+      if (data.mode === "tns" && data.tnsAlias) {
+        this.config.tnsAlias = data.tnsAlias;
+        this.config.connectionString = undefined;
+        this.activeAlias = data.tnsAlias.toUpperCase();
+      } else if (data.mode === "connection_string" && data.connectionString) {
+        this.config.tnsAlias = undefined;
+        this.config.connectionString = data.connectionString;
+      } else if (data.mode === "manual") {
+        this.config.tnsAlias = undefined;
+        this.config.connectionString = undefined;
+        this.config.host = data.host ?? "localhost";
+        this.config.port = data.port ?? 1521;
+        this.config.serviceName = data.serviceName ?? "XE";
+      }
+      this.config.username = data.username;
+      this.config.password = data.password;
+      console.error(`[oracle] Restored last connection: ${this.getActiveConnection()} (user: ${data.username})`);
+    } catch (e) {
+      console.error("[oracle] Could not load last connection:", e instanceof Error ? e.message : e);
+    }
+  }
+
+  /** Save connection params for next startup */
+  saveLastConnection(params: ConnectionParams): void {
+    try {
+      if (!existsSync(LAST_CONN_DIR)) {
+        mkdirSync(LAST_CONN_DIR, { recursive: true });
+      }
+      writeFileSync(LAST_CONN_FILE, JSON.stringify(params, null, 2), "utf-8");
+      console.error("[oracle] Saved connection for next startup");
+    } catch (e) {
+      console.error("[oracle] Could not save last connection:", e instanceof Error ? e.message : e);
+    }
   }
 
   private initDriver(): void {
@@ -119,6 +170,8 @@ export class OracleService {
    */
   async reconfigure(params: ConnectionParams): Promise<void> {
     await this.close();
+    this.versionDetected = false;
+    this.detectedVersion = { apex: null, apexFull: null, db: null, dbFull: null };
 
     if (params.mode === "tns") {
       this.config.tnsAlias = params.tnsAlias;
@@ -152,6 +205,72 @@ export class OracleService {
     return this.pool !== null;
   }
 
+  /** Parse major.minor from version strings like "20.2.0.00.20" -> "20.2" */
+  private parseShortVersion(full: string): string {
+    const m = full.match(/(\d+\.\d+)/);
+    return m ? m[1] : full;
+  }
+
+  /** Parse DB version from banner like "Oracle Database 12c Release 12.1.0.2.0" -> "12.1" */
+  private parseDbVersion(banner: string): string {
+    // Try to find version pattern like 12.1.0.2.0, 19.0.0.0.0, 23.7.0.25.04
+    const m = banner.match(/(\d+\.\d+)\.\d+/);
+    return m ? m[1] : "unknown";
+  }
+
+  /** Detect APEX and DB versions on first connection */
+  private async detectVersions(conn: { execute(sql: string, binds?: Record<string, unknown>, options?: Record<string, unknown>): Promise<{ rows?: Record<string, unknown>[] }> }): Promise<void> {
+    if (this.versionDetected) return;
+
+    try {
+      // Detect DB version
+      const verRes = await conn.execute("SELECT BANNER FROM V$VERSION WHERE ROWNUM = 1");
+      const verRows = (verRes.rows ?? []) as Record<string, string>[];
+      if (verRows[0]?.BANNER) {
+        this.detectedVersion.dbFull = verRows[0].BANNER;
+        this.detectedVersion.db = this.parseDbVersion(verRows[0].BANNER);
+      }
+    } catch { /* V$VERSION may not be accessible */ }
+
+    try {
+      // Detect APEX version
+      const apexRes = await conn.execute("SELECT VERSION_NO FROM APEX_RELEASE WHERE ROWNUM = 1");
+      const apexRows = (apexRes.rows ?? []) as Record<string, string>[];
+      if (apexRows[0]?.VERSION_NO) {
+        this.detectedVersion.apexFull = apexRows[0].VERSION_NO;
+        this.detectedVersion.apex = this.parseShortVersion(apexRows[0].VERSION_NO);
+      }
+    } catch { /* APEX may not be installed */ }
+
+    this.versionDetected = true;
+    console.error(`[oracle] Detected versions — DB: ${this.detectedVersion.db} (${this.detectedVersion.dbFull}), APEX: ${this.detectedVersion.apex} (${this.detectedVersion.apexFull})`);
+  }
+
+  /** Get detected version info */
+  getVersionInfo(): VersionInfo {
+    return { ...this.detectedVersion };
+  }
+
+  /** Get APEX major.minor version as number for comparisons (e.g., 20.2 -> 20.2, 24.2 -> 24.2) */
+  getApexVersionNum(): number {
+    return this.detectedVersion.apex ? parseFloat(this.detectedVersion.apex) : 0;
+  }
+
+  /** Get DB major.minor version as number */
+  getDbVersionNum(): number {
+    return this.detectedVersion.db ? parseFloat(this.detectedVersion.db) : 0;
+  }
+
+  /** Check if APEX version is at least the given version */
+  isApexAtLeast(version: number): boolean {
+    return this.getApexVersionNum() >= version;
+  }
+
+  /** Check if DB version is at least the given version */
+  isDbAtLeast(version: number): boolean {
+    return this.getDbVersionNum() >= version;
+  }
+
   async healthCheck(): Promise<HealthStatus> {
     const status: HealthStatus = {
       oracle: { connected: false, version: null, user: null, schema: null, poolOpen: 0, poolInUse: 0 },
@@ -162,6 +281,9 @@ export class OracleService {
       const pool = await this.ensurePool();
       const conn = await pool.getConnection();
       try {
+        // Detect versions on first connection
+        await this.detectVersions(conn);
+
         const verRes = await conn.execute("SELECT BANNER FROM V$VERSION WHERE ROWNUM = 1");
         const sesRes = await conn.execute(
           "SELECT SYS_CONTEXT('USERENV','SESSION_USER') AS U, SYS_CONTEXT('USERENV','CURRENT_SCHEMA') AS S FROM DUAL"
@@ -177,19 +299,26 @@ export class OracleService {
         status.oracle.poolOpen = ps.connectionsOpen ?? 0;
         status.oracle.poolInUse = ps.connectionsInUse ?? 0;
 
+        if (this.detectedVersion.apex) {
+          status.apex.available = true;
+          status.apex.version = this.detectedVersion.apexFull;
+        }
+
         try {
-          const apexRes = await conn.execute("SELECT VERSION_NO AS V FROM APEX_RELEASE WHERE ROWNUM = 1");
-          const apexRows = (apexRes.rows ?? []) as Record<string, string>[];
-          if (apexRows[0]) {
-            status.apex.available = true;
-            status.apex.version = apexRows[0].V;
-          }
-          const wsRes = await conn.execute("SELECT WORKSPACE AS W FROM APEX_WORKSPACES WHERE ROWNUM = 1");
+          const wsRes = await conn.execute(
+            "SELECT WORKSPACE_DISPLAY_NAME AS W FROM APEX_WORKSPACE_SCHEMAS WHERE SCHEMA = SYS_CONTEXT('USERENV','CURRENT_SCHEMA') AND ROWNUM = 1"
+          );
           const wsRows = (wsRes.rows ?? []) as Record<string, string>[];
           status.apex.workspace = wsRows[0]?.W ?? null;
-        } catch (_apexErr) {
-          // APEX views not available
-        }
+          if (!status.apex.workspace) {
+            // Fallback: try first workspace (schema might not be mapped)
+            const wsFallback = await conn.execute("SELECT WORKSPACE AS W FROM APEX_WORKSPACES WHERE WORKSPACE != 'INTERNAL' AND ROWNUM = 1");
+            const wsFallbackRows = (wsFallback.rows ?? []) as Record<string, string>[];
+            status.apex.workspace = wsFallbackRows[0]?.W ?? null;
+          }
+        } catch (_wsErr) { /* workspace view may not be accessible */ }
+
+        status.versionInfo = { ...this.detectedVersion };
       } finally {
         await conn.close();
       }
@@ -204,6 +333,7 @@ export class OracleService {
     const pool = await this.ensurePool();
     const conn = await pool.getConnection();
     try {
+      if (!this.versionDetected) await this.detectVersions(conn);
       const result = await conn.execute(sql, binds, {
         outFormat: oracledb.OUT_FORMAT_OBJECT,
         maxRows: maxRows + 1,
@@ -295,6 +425,7 @@ export class OracleService {
     const pool = await this.ensurePool();
     const conn = await pool.getConnection();
     try {
+      if (!this.versionDetected) await this.detectVersions(conn);
       const result = await conn.execute(sql, binds, {
         outFormat: oracledb.OUT_FORMAT_OBJECT,
         maxRows: 10_000,

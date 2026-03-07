@@ -6,15 +6,27 @@ import {
 } from "../utils/helpers.js";
 
 /**
- * All APEX tools are READ-ONLY. They query APEX dictionary views
- * (APEX_APPLICATIONS, APEX_APPLICATION_PAGES, etc.)
+ * All APEX tools are READ-ONLY. They query APEX dictionary views.
+ * Queries adapt automatically based on the detected APEX version.
+ *
+ * Key version differences in APEX dictionary views:
+ * - APEX_APPLICATIONS: PAGES column (all versions), CREATED_ON (21.1+)
+ * - APEX_APPLICATION_PAGES: INLINE_CSS (20.2+, was CSS_INLINE in some earlier)
+ * - APEX_APPLICATION_PAGE_REGIONS: TEMPLATE (20.2+, was REGION_TEMPLATE in some earlier), STATIC_ID (all)
  */
 export function registerApexTools(server: McpServer, oracle: OracleService): void {
+
+  /** Build version-aware hint for tool output */
+  function versionTag(): string {
+    const v = oracle.getVersionInfo();
+    if (v.apex) return `APEX ${v.apex}`;
+    return "APEX (version unknown)";
+  }
 
   server.tool(
     "apex_list_applications",
     `[READ-ONLY] List Oracle APEX applications with ID, name, alias, owner, page count.
-Queries APEX_APPLICATIONS view. Requires APEX installed in the database.`,
+Queries APEX_APPLICATIONS view. Adapts to detected APEX version automatically.`,
     {
       workspace: z.string().optional().describe("Filter by workspace name"),
       limit: z.number().int().min(1).max(500).default(100),
@@ -27,8 +39,13 @@ Queries APEX_APPLICATIONS view. Requires APEX installed in the database.`,
         const binds: Record<string, unknown> = {};
         if (params.workspace) binds.ws = params.workspace.toUpperCase();
 
+        // CREATED_ON exists in APEX 21.1+; use LAST_UPDATED_ON for all versions
+        const createdCol = oracle.isApexAtLeast(21.1)
+          ? "TO_CHAR(a.CREATED_ON, 'YYYY-MM-DD') AS CREATED_ON," : "";
+
         const rows = await oracle.queryRows(
           `SELECT a.APPLICATION_ID, a.APPLICATION_NAME, a.ALIAS, a.OWNER, a.WORKSPACE,
+                  ${createdCol}
                   TO_CHAR(a.LAST_UPDATED_ON, 'YYYY-MM-DD') AS LAST_UPDATED_ON,
                   a.PAGES AS PAGE_COUNT,
                   a.AUTHENTICATION_SCHEME
@@ -41,10 +58,10 @@ Queries APEX_APPLICATIONS view. Requires APEX installed in the database.`,
 
         const elapsed = formatDuration(Date.now() - t0);
         if (params.format === "json") {
-          return { content: [{ type: "text" as const, text: JSON.stringify({ applications: rows, count: rows.length }, null, 2) }] };
+          return { content: [{ type: "text" as const, text: JSON.stringify({ applications: rows, count: rows.length, apexVersion: versionTag() }, null, 2) }] };
         }
 
-        let text = `## APEX Applications (${rows.length}) | ${elapsed}\n\n`;
+        let text = `## APEX Applications (${rows.length}) | ${versionTag()} | ${elapsed}\n\n`;
         text += formatRowsAsMarkdownTable(rows);
         return { content: [{ type: "text" as const, text: truncateIfNeeded(text) }] };
       } catch (e) {
@@ -69,9 +86,13 @@ Queries APEX_APPLICATIONS view. Requires APEX installed in the database.`,
     async (params) => {
       const t0 = Date.now();
       try {
+        const createdCol = oracle.isApexAtLeast(21.1)
+          ? "TO_CHAR(CREATED_ON, 'YYYY-MM-DD HH24:MI') AS CREATED_ON," : "";
+
         const appRows = await oracle.queryRows(
           `SELECT APPLICATION_ID, APPLICATION_NAME, ALIAS, OWNER, WORKSPACE,
                   AUTHENTICATION_SCHEME, AUTHORIZATION_SCHEME,
+                  ${createdCol}
                   TO_CHAR(LAST_UPDATED_ON, 'YYYY-MM-DD HH24:MI') AS LAST_UPDATED_ON,
                   PAGES AS PAGE_COUNT, COMPATIBILITY_MODE, THEME_NUMBER
            FROM APEX_APPLICATIONS WHERE APPLICATION_ID = :aid`,
@@ -163,9 +184,12 @@ Queries APEX_APPLICATIONS view. Requires APEX installed in the database.`,
       const binds = { aid: params.app_id, pid: params.page_id };
 
       try {
+        // PAGE_CSS_CLASSES available in 21.1+
+        const extraPageCols = oracle.isApexAtLeast(21.1) ? "PAGE_CSS_CLASSES," : "";
+
         const pageRows = await oracle.queryRows(
           `SELECT PAGE_ID, PAGE_NAME, PAGE_MODE, PAGE_GROUP, PAGE_FUNCTION,
-                  PAGE_TEMPLATE,
+                  PAGE_TEMPLATE, ${extraPageCols}
                   DBMS_LOB.GETLENGTH(JAVASCRIPT_CODE) AS JS_LENGTH,
                   DBMS_LOB.GETLENGTH(INLINE_CSS) AS CSS_LENGTH,
                   TO_CHAR(LAST_UPDATED_ON, 'YYYY-MM-DD HH24:MI') AS LAST_UPDATED
@@ -246,7 +270,7 @@ Queries APEX_APPLICATIONS view. Requires APEX installed in the database.`,
           return { content: [{ type: "text" as const, text: JSON.stringify({ page: pageRows[0], regions, items, processes, dynamicActions: das, validations }, null, 2) }] };
         }
 
-        let text = `## Page ${params.page_id} | ${elapsed}\n\n`;
+        let text = `## Page ${params.page_id} | ${versionTag()} | ${elapsed}\n\n`;
         text += formatRowsAsMarkdownTable(pageRows) + "\n\n";
         if (regions.length) text += `### Regions (${regions.length})\n\n` + formatRowsAsMarkdownTable(regions) + "\n\n";
         if (items.length) text += `### Items (${items.length})\n\n` + formatRowsAsMarkdownTable(items) + "\n\n";
