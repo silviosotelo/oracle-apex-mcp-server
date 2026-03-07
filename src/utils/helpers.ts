@@ -1,16 +1,9 @@
 import { CHARACTER_LIMIT, READ_ONLY_COMMANDS, DML_COMMANDS, DDL_COMMANDS, PLSQL_COMMANDS } from "../constants.js";
 
-// ─── SQL Classification ──────────────────────────────────────────────────────
-
 export function classifySql(sql: string): "SELECT" | "DML" | "DDL" | "PLSQL" | "UNKNOWN" {
-  const clean = sql.replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/--[^\n\r]*/g, "")
-    .trim()
-    .toUpperCase();
-
+  const clean = sql.replace(/\/\*[\s\S]*?\*\//g, "").replace(/--[^\n\r]*/g, "").trim().toUpperCase();
   const firstWord = clean.split(/\s+/)[0];
   if (!firstWord) return "UNKNOWN";
-
   if (READ_ONLY_COMMANDS.has(firstWord)) return "SELECT";
   if (DML_COMMANDS.has(firstWord)) return "DML";
   if (DDL_COMMANDS.has(firstWord)) return "DDL";
@@ -21,8 +14,6 @@ export function classifySql(sql: string): "SELECT" | "DML" | "DDL" | "PLSQL" | "
 export function isReadOnly(sql: string): boolean {
   return classifySql(sql) === "SELECT";
 }
-
-// ─── Formatting ──────────────────────────────────────────────────────────────
 
 export function formatDuration(ms: number): string {
   if (ms < 1000) return `${ms}ms`;
@@ -39,16 +30,11 @@ export function truncateIfNeeded(text: string): string {
 
 export function formatRowsAsMarkdownTable(rows: Record<string, unknown>[], maxCols = 20): string {
   if (rows.length === 0) return "_No rows returned._";
-
   const allCols = Object.keys(rows[0]);
   const cols = allCols.slice(0, maxCols);
   const truncatedCols = allCols.length > maxCols;
-
-  // Header
   let table = "| " + cols.join(" | ") + " |\n";
   table += "|" + cols.map(() => "---").join("|") + "|\n";
-
-  // Rows
   for (const row of rows) {
     const values = cols.map(c => {
       const v = row[c];
@@ -58,15 +44,9 @@ export function formatRowsAsMarkdownTable(rows: Record<string, unknown>[], maxCo
     });
     table += "| " + values.join(" | ") + " |\n";
   }
-
-  if (truncatedCols) {
-    table += `\n_Showing ${cols.length} of ${allCols.length} columns._`;
-  }
-
+  if (truncatedCols) table += `\n_Showing ${cols.length} of ${allCols.length} columns._`;
   return table;
 }
-
-// ─── Oracle Error Messages ───────────────────────────────────────────────────
 
 const ORA_MESSAGES: Record<string, string> = {
   "ORA-00942": "Table or view does not exist",
@@ -92,8 +72,6 @@ export function friendlyOracleError(err: unknown): string {
   }
   return msg;
 }
-
-// ─── SQL identifier validation ───────────────────────────────────────────────
 
 export function isValidIdentifier(name: string): boolean {
   return /^[a-zA-Z_][a-zA-Z0-9_$#]*$/.test(name) && name.length <= 128;

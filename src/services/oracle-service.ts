@@ -1,24 +1,27 @@
 import oracledb from "oracledb";
 import type {
   OracleConfig, QueryResult, ExecuteResult, TransactionResult,
-  TransactionStepResult, ColumnMeta, HealthStatus
+  TransactionStepResult, ColumnMeta, HealthStatus, ConnectionParams
 } from "../types.js";
 import {
   DEFAULT_POOL_MIN, DEFAULT_POOL_MAX, DEFAULT_POOL_TIMEOUT,
   DEFAULT_FETCH_SIZE, DEFAULT_MAX_ROWS
 } from "../constants.js";
 import { friendlyOracleError, classifySql } from "../utils/helpers.js";
+import { loadTnsEntries } from "../utils/tns-parser.js";
+
+let poolCounter = 0;
 
 export class OracleService {
   private config: OracleConfig;
   private pool: oracledb.Pool | null = null;
+  private driverInitialized = false;
+  private activeAlias: string | null = null;
 
   constructor() {
     this.config = this.loadConfig();
     this.initDriver();
   }
-
-  // ─── Config ──────────────────────────────────────────────────────────────────
 
   private loadConfig(): OracleConfig {
     return {
@@ -28,41 +31,67 @@ export class OracleService {
       username: process.env.ORACLE_USERNAME ?? process.env.ORACLE_USER ?? "hr",
       password: process.env.ORACLE_PASSWORD ?? "",
       connectionString: process.env.ORACLE_CONNECTION_STRING,
+      tnsAlias: process.env.ORACLE_TNS_ALIAS,
       poolMin: parseInt(process.env.ORACLE_POOL_MIN ?? String(DEFAULT_POOL_MIN), 10),
       poolMax: parseInt(process.env.ORACLE_POOL_MAX ?? String(DEFAULT_POOL_MAX), 10),
       poolTimeout: parseInt(process.env.ORACLE_POOL_TIMEOUT ?? String(DEFAULT_POOL_TIMEOUT), 10),
       stmtCacheSize: parseInt(process.env.ORACLE_STMT_CACHE_SIZE ?? "30", 10),
       fetchSize: parseInt(process.env.ORACLE_FETCH_SIZE ?? String(DEFAULT_FETCH_SIZE), 10),
-      useThickMode: process.env.ORACLE_OLD_CRYPTO === "true",
-      clientLibDir: process.env.ORACLE_CLIENT_LIB_DIR,
+      useThickMode: process.env.ORACLE_OLD_CRYPTO === "true" || true,
+      clientLibDir: process.env.ORACLE_CLIENT_LIB_DIR || "C:/instantclient_23_5",
     };
   }
 
   private initDriver(): void {
+    if (this.driverInitialized) return;
     oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
     oracledb.autoCommit = false;
     oracledb.fetchArraySize = this.config.fetchSize;
+    // Auto-materialize CLOBs as strings (avoids Lob objects in query results)
+    oracledb.fetchAsString = [oracledb.CLOB];
+
+    console.error(`[oracle] useThickMode=${this.config.useThickMode}, clientLibDir=${this.config.clientLibDir}, ORACLE_OLD_CRYPTO=${process.env.ORACLE_OLD_CRYPTO}`);
 
     if (this.config.useThickMode) {
+      // Normalize path separators — on Windows, backslashes can cause DLL loading failures
+      const libDir = this.config.clientLibDir?.replace(/\\/g, "/");
+      const opts = libDir ? { libDir } : undefined;
+      console.error("[oracle] Calling initOracleClient with opts:", JSON.stringify(opts));
       try {
-        const opts = this.config.clientLibDir ? { libDir: this.config.clientLibDir } : undefined;
         oracledb.initOracleClient(opts);
-        console.error("[oracle] Thick mode initialized");
+        console.error("[oracle] Thick mode initialized successfully");
       } catch (e: unknown) {
-        console.error("[oracle] Thick mode init failed, falling back to Thin:", e instanceof Error ? e.message : e);
+        const msg = e instanceof Error ? e.message : String(e);
+        // "already initialized" is fine — means a previous call succeeded
+        if (msg.includes("already") || msg.includes("NJS-077")) {
+          console.error("[oracle] Thick mode was already initialized (OK)");
+        } else {
+          console.error("[oracle] Thick mode init FAILED:", msg);
+          throw new Error(`Thick mode initialization failed: ${msg}`);
+        }
       }
     }
+    this.driverInitialized = true;
   }
 
   private getConnectString(): string {
+    // 1. TNS alias
+    if (this.config.tnsAlias) {
+      const { entries } = loadTnsEntries(process.env.TNS_NAMES_FILE);
+      const entry = entries.find(e => e.alias === this.config.tnsAlias!.toUpperCase());
+      if (entry) return entry.raw;
+      // If not found in file, return alias directly (oracledb will resolve from TNS_ADMIN)
+      return this.config.tnsAlias;
+    }
+    // 2. Explicit connection string
     if (this.config.connectionString) return this.config.connectionString;
+    // 3. Build from host/port/service
     return `(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=${this.config.host})(PORT=${this.config.port}))(CONNECT_DATA=(SERVICE_NAME=${this.config.serviceName})))`;
   }
 
-  // ─── Pool Management ─────────────────────────────────────────────────────────
-
   private async ensurePool(): Promise<oracledb.Pool> {
     if (this.pool) return this.pool;
+    poolCounter++;
     this.pool = await oracledb.createPool({
       user: this.config.username,
       password: this.config.password,
@@ -72,19 +101,56 @@ export class OracleService {
       poolIncrement: 1,
       poolTimeout: this.config.poolTimeout,
       stmtCacheSize: this.config.stmtCacheSize,
-      poolAlias: "apex_mcp_pool",
+      poolAlias: `apex_mcp_pool_${poolCounter}`,
     });
     return this.pool;
   }
 
   async close(): Promise<void> {
     if (this.pool) {
-      await this.pool.close(10);
+      try { await this.pool.close(5); } catch { /* ignore */ }
       this.pool = null;
     }
   }
 
-  // ─── Health Check ────────────────────────────────────────────────────────────
+  /**
+   * Reconfigure the service to connect to a different database.
+   * Closes any existing pool first.
+   */
+  async reconfigure(params: ConnectionParams): Promise<void> {
+    await this.close();
+
+    if (params.mode === "tns") {
+      this.config.tnsAlias = params.tnsAlias;
+      this.config.connectionString = undefined;
+      this.activeAlias = params.tnsAlias?.toUpperCase() ?? null;
+    } else if (params.mode === "connection_string") {
+      this.config.tnsAlias = undefined;
+      this.config.connectionString = params.connectionString;
+      this.activeAlias = null;
+    } else {
+      this.config.tnsAlias = undefined;
+      this.config.connectionString = undefined;
+      this.config.host = params.host ?? "localhost";
+      this.config.port = params.port ?? 1521;
+      this.config.serviceName = params.serviceName ?? "XE";
+      this.activeAlias = null;
+    }
+
+    this.config.username = params.username;
+    this.config.password = params.password;
+  }
+
+  getActiveConnection(): string {
+    if (this.activeAlias) return `TNS: ${this.activeAlias}`;
+    if (this.config.tnsAlias) return `TNS: ${this.config.tnsAlias}`;
+    if (this.config.connectionString) return `String: ${this.config.connectionString.substring(0, 80)}...`;
+    return `${this.config.host}:${this.config.port}/${this.config.serviceName}`;
+  }
+
+  isConnected(): boolean {
+    return this.pool !== null;
+  }
 
   async healthCheck(): Promise<HealthStatus> {
     const status: HealthStatus = {
@@ -96,37 +162,33 @@ export class OracleService {
       const pool = await this.ensurePool();
       const conn = await pool.getConnection();
       try {
-        // Oracle info
-        const verRes = await conn.execute<{ BANNER: string }>("SELECT BANNER FROM V$VERSION WHERE ROWNUM = 1");
-        const sesRes = await conn.execute<{ U: string; S: string }>(
+        const verRes = await conn.execute("SELECT BANNER FROM V$VERSION WHERE ROWNUM = 1");
+        const sesRes = await conn.execute(
           "SELECT SYS_CONTEXT('USERENV','SESSION_USER') AS U, SYS_CONTEXT('USERENV','CURRENT_SCHEMA') AS S FROM DUAL"
         );
         status.oracle.connected = true;
-        status.oracle.version = (verRes.rows as { BANNER: string }[])?.[0]?.BANNER ?? null;
-        const ses = (sesRes.rows as { U: string; S: string }[])?.[0];
-        status.oracle.user = ses?.U ?? null;
-        status.oracle.schema = ses?.S ?? null;
+        const verRows = (verRes.rows ?? []) as Record<string, string>[];
+        status.oracle.version = verRows[0]?.BANNER ?? null;
+        const sesRows = (sesRes.rows ?? []) as Record<string, string>[];
+        status.oracle.user = sesRows[0]?.U ?? null;
+        status.oracle.schema = sesRows[0]?.S ?? null;
 
         const ps = pool as unknown as { connectionsOpen?: number; connectionsInUse?: number };
         status.oracle.poolOpen = ps.connectionsOpen ?? 0;
         status.oracle.poolInUse = ps.connectionsInUse ?? 0;
 
-        // APEX check
         try {
-          const apexRes = await conn.execute<{ V: string }>(
-            "SELECT VERSION_NO AS V FROM APEX_RELEASE WHERE ROWNUM = 1"
-          );
-          const apexRow = (apexRes.rows as { V: string }[])?.[0];
-          if (apexRow) {
+          const apexRes = await conn.execute("SELECT VERSION_NO AS V FROM APEX_RELEASE WHERE ROWNUM = 1");
+          const apexRows = (apexRes.rows ?? []) as Record<string, string>[];
+          if (apexRows[0]) {
             status.apex.available = true;
-            status.apex.version = apexRow.V;
+            status.apex.version = apexRows[0].V;
           }
-          const wsRes = await conn.execute<{ W: string }>(
-            "SELECT WORKSPACE AS W FROM APEX_WORKSPACES WHERE ROWNUM = 1"
-          );
-          status.apex.workspace = (wsRes.rows as { W: string }[])?.[0]?.W ?? null;
-        } catch {
-          // APEX views not available — that's OK
+          const wsRes = await conn.execute("SELECT WORKSPACE AS W FROM APEX_WORKSPACES WHERE ROWNUM = 1");
+          const wsRows = (wsRes.rows ?? []) as Record<string, string>[];
+          status.apex.workspace = wsRows[0]?.W ?? null;
+        } catch (_apexErr) {
+          // APEX views not available
         }
       } finally {
         await conn.close();
@@ -138,30 +200,27 @@ export class OracleService {
     return status;
   }
 
-  // ─── Query (read-only) ───────────────────────────────────────────────────────
-
   async query(sql: string, binds: Record<string, unknown> = {}, maxRows = DEFAULT_MAX_ROWS): Promise<QueryResult> {
     const pool = await this.ensurePool();
     const conn = await pool.getConnection();
     try {
       const result = await conn.execute(sql, binds, {
         outFormat: oracledb.OUT_FORMAT_OBJECT,
-        maxRows: maxRows + 1, // fetch one extra to know if there's more
+        maxRows: maxRows + 1,
         fetchArraySize: this.config.fetchSize,
-        extendedMetaData: true,
       });
 
       const allRows = (result.rows ?? []) as Record<string, unknown>[];
       const hasMore = allRows.length > maxRows;
       const rows = hasMore ? allRows.slice(0, maxRows) : allRows;
 
-      const columns: ColumnMeta[] = (result.metaData ?? []).map((m: oracledb.Metadata) => ({
+      const columns: ColumnMeta[] = (result.metaData ?? []).map((m: any) => ({
         name: m.name,
-        dbTypeName: (m as unknown as Record<string, string>).dbTypeName ?? "UNKNOWN",
-        nullable: (m as unknown as Record<string, boolean>).nullable ?? true,
-        precision: (m as unknown as Record<string, number>).precision,
-        scale: (m as unknown as Record<string, number>).scale,
-        maxSize: (m as unknown as Record<string, number>).byteSize,
+        dbTypeName: String((m as Record<string, unknown>).dbTypeName ?? "UNKNOWN"),
+        nullable: Boolean((m as Record<string, unknown>).nullable ?? true),
+        precision: (m as Record<string, unknown>).precision as number | undefined,
+        scale: (m as Record<string, unknown>).scale as number | undefined,
+        maxSize: (m as Record<string, unknown>).byteSize as number | undefined,
       }));
 
       return { columns, rows, rowCount: rows.length, hasMore };
@@ -171,8 +230,6 @@ export class OracleService {
       await conn.close();
     }
   }
-
-  // ─── Execute (DML / DDL / PL/SQL) ────────────────────────────────────────────
 
   async execute(sql: string, binds: Record<string, unknown> = {}, autoCommit = true): Promise<ExecuteResult> {
     const pool = await this.ensurePool();
@@ -194,8 +251,6 @@ export class OracleService {
     }
   }
 
-  // ─── Transaction (multi-statement) ────────────────────────────────────────────
-
   async transaction(statements: string[], rollbackOnError = true): Promise<TransactionResult> {
     const pool = await this.ensurePool();
     const conn = await pool.getConnection();
@@ -209,7 +264,6 @@ export class OracleService {
         try {
           const sqlType = classifySql(sql);
           if (sqlType === "SELECT") {
-            // Read within transaction — just execute, don't count rows
             await conn.execute(sql, {}, { outFormat: oracledb.OUT_FORMAT_OBJECT });
             steps.push({ index: i, sql, success: true, rowsAffected: 0 });
           } else {
@@ -230,14 +284,12 @@ export class OracleService {
       committed = true;
       return { committed, steps, totalRowsAffected: totalRows };
     } catch (e) {
-      try { await conn.execute("ROLLBACK"); } catch { /* ignore */ }
+      try { await conn.execute("ROLLBACK"); } catch (_rb) { /* ignore rollback error */ }
       throw new Error(friendlyOracleError(e));
     } finally {
       await conn.close();
     }
   }
-
-  // ─── Convenience: Run arbitrary SQL returning rows ───────────────────────────
 
   async queryRows<T = Record<string, unknown>>(sql: string, binds: Record<string, unknown> = {}): Promise<T[]> {
     const pool = await this.ensurePool();

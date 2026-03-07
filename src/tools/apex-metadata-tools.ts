@@ -7,12 +7,9 @@ import {
 
 /**
  * All APEX tools are READ-ONLY. They query APEX dictionary views
- * (APEX_APPLICATIONS, APEX_APPLICATION_PAGES, APEX_APPLICATION_PAGE_REGIONS, etc.)
- * which are available when APEX is installed in the database.
+ * (APEX_APPLICATIONS, APEX_APPLICATION_PAGES, etc.)
  */
 export function registerApexTools(server: McpServer, oracle: OracleService): void {
-
-  // ─── List APEX Applications ────────────────────────────────────────────────
 
   server.tool(
     "apex_list_applications",
@@ -32,9 +29,8 @@ Queries APEX_APPLICATIONS view. Requires APEX installed in the database.`,
 
         const rows = await oracle.queryRows(
           `SELECT a.APPLICATION_ID, a.APPLICATION_NAME, a.ALIAS, a.OWNER, a.WORKSPACE,
-                  TO_CHAR(a.CREATED_ON, 'YYYY-MM-DD') AS CREATED_ON,
                   TO_CHAR(a.LAST_UPDATED_ON, 'YYYY-MM-DD') AS LAST_UPDATED_ON,
-                  (SELECT COUNT(*) FROM APEX_APPLICATION_PAGES p WHERE p.APPLICATION_ID = a.APPLICATION_ID) AS PAGE_COUNT,
+                  a.PAGES AS PAGE_COUNT,
                   a.AUTHENTICATION_SCHEME
            FROM APEX_APPLICATIONS a
            WHERE 1=1 ${wsClause}
@@ -45,23 +41,21 @@ Queries APEX_APPLICATIONS view. Requires APEX installed in the database.`,
 
         const elapsed = formatDuration(Date.now() - t0);
         if (params.format === "json") {
-          return { content: [{ type: "text", text: JSON.stringify({ applications: rows, count: rows.length }, null, 2) }] };
+          return { content: [{ type: "text" as const, text: JSON.stringify({ applications: rows, count: rows.length }, null, 2) }] };
         }
 
         let text = `## APEX Applications (${rows.length}) | ${elapsed}\n\n`;
         text += formatRowsAsMarkdownTable(rows);
-        return { content: [{ type: "text", text: truncateIfNeeded(text) }] };
+        return { content: [{ type: "text" as const, text: truncateIfNeeded(text) }] };
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (msg.includes("ORA-00942") || msg.includes("does not exist")) {
-          return { content: [{ type: "text", text: "APEX views not available. Ensure Oracle APEX is installed and you have access to APEX dictionary views." }], isError: true };
+          return { content: [{ type: "text" as const, text: "APEX views not available. Ensure Oracle APEX is installed and you have access to APEX dictionary views." }], isError: true };
         }
-        return { content: [{ type: "text", text: `Error: ${msg}` }], isError: true };
+        return { content: [{ type: "text" as const, text: `Error: ${msg}` }], isError: true };
       }
     }
   );
-
-  // ─── Describe APEX Application ─────────────────────────────────────────────
 
   server.tool(
     "apex_describe_application",
@@ -75,18 +69,16 @@ Queries APEX_APPLICATIONS view. Requires APEX installed in the database.`,
     async (params) => {
       const t0 = Date.now();
       try {
-        // App info
         const appRows = await oracle.queryRows(
           `SELECT APPLICATION_ID, APPLICATION_NAME, ALIAS, OWNER, WORKSPACE,
                   AUTHENTICATION_SCHEME, AUTHORIZATION_SCHEME,
-                  TO_CHAR(CREATED_ON, 'YYYY-MM-DD HH24:MI') AS CREATED_ON,
                   TO_CHAR(LAST_UPDATED_ON, 'YYYY-MM-DD HH24:MI') AS LAST_UPDATED_ON,
-                  APPLICATION_GROUP, COMPATIBILITY_MODE, THEME_NUMBER
+                  PAGES AS PAGE_COUNT, COMPATIBILITY_MODE, THEME_NUMBER
            FROM APEX_APPLICATIONS WHERE APPLICATION_ID = :aid`,
           { aid: params.app_id }
         );
         if (!appRows.length) {
-          return { content: [{ type: "text", text: `Application ${params.app_id} not found.` }], isError: true };
+          return { content: [{ type: "text" as const, text: `Application ${params.app_id} not found.` }], isError: true };
         }
 
         let pages: Record<string, unknown>[] = [];
@@ -110,7 +102,7 @@ Queries APEX_APPLICATIONS view. Requires APEX installed in the database.`,
 
         if (params.include_shared_components) {
           lovs = await oracle.queryRows(
-            `SELECT LIST_OF_VALUES_NAME, LOV_TYPE, 
+            `SELECT LIST_OF_VALUES_NAME, LOV_TYPE,
                     CASE WHEN LOV_QUERY IS NOT NULL THEN SUBSTR(LOV_QUERY, 1, 200) END AS LOV_QUERY_PREVIEW
              FROM APEX_APPLICATION_LOVS
              WHERE APPLICATION_ID = :aid ORDER BY LIST_OF_VALUES_NAME`,
@@ -131,13 +123,13 @@ Queries APEX_APPLICATIONS view. Requires APEX installed in the database.`,
                WHERE APPLICATION_ID = :aid ORDER BY BUILD_OPTION_NAME`,
               { aid: params.app_id }
             );
-          } catch { /* view may not exist in all APEX versions */ }
+          } catch (_e) { /* view may not exist in all APEX versions */ }
         }
 
         const elapsed = formatDuration(Date.now() - t0);
 
         if (params.format === "json") {
-          return { content: [{ type: "text", text: JSON.stringify({ application: appRows[0], pages, lovs, authSchemes, buildOptions }, null, 2) }] };
+          return { content: [{ type: "text" as const, text: JSON.stringify({ application: appRows[0], pages, lovs, authSchemes, buildOptions }, null, 2) }] };
         }
 
         let text = `## Application ${params.app_id} | ${elapsed}\n\n`;
@@ -146,14 +138,12 @@ Queries APEX_APPLICATIONS view. Requires APEX installed in the database.`,
         if (lovs.length) text += `### Shared LOVs (${lovs.length})\n\n` + formatRowsAsMarkdownTable(lovs) + "\n\n";
         if (authSchemes.length) text += `### Authorization Schemes (${authSchemes.length})\n\n` + formatRowsAsMarkdownTable(authSchemes) + "\n\n";
         if (buildOptions.length) text += `### Build Options (${buildOptions.length})\n\n` + formatRowsAsMarkdownTable(buildOptions) + "\n\n";
-        return { content: [{ type: "text", text: truncateIfNeeded(text) }] };
+        return { content: [{ type: "text" as const, text: truncateIfNeeded(text) }] };
       } catch (e) {
-        return { content: [{ type: "text", text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
+        return { content: [{ type: "text" as const, text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
       }
     }
   );
-
-  // ─── Describe APEX Page ────────────────────────────────────────────────────
 
   server.tool(
     "apex_describe_page",
@@ -175,22 +165,24 @@ Queries APEX_APPLICATIONS view. Requires APEX installed in the database.`,
       try {
         const pageRows = await oracle.queryRows(
           `SELECT PAGE_ID, PAGE_NAME, PAGE_MODE, PAGE_GROUP, PAGE_FUNCTION,
-                  PAGE_TEMPLATE, JAVASCRIPT_CODE, CSS_INLINE,
+                  PAGE_TEMPLATE,
+                  DBMS_LOB.GETLENGTH(JAVASCRIPT_CODE) AS JS_LENGTH,
+                  DBMS_LOB.GETLENGTH(INLINE_CSS) AS CSS_LENGTH,
                   TO_CHAR(LAST_UPDATED_ON, 'YYYY-MM-DD HH24:MI') AS LAST_UPDATED
            FROM APEX_APPLICATION_PAGES
            WHERE APPLICATION_ID = :aid AND PAGE_ID = :pid`,
           binds
         );
         if (!pageRows.length) {
-          return { content: [{ type: "text", text: `Page ${params.page_id} not found in app ${params.app_id}.` }], isError: true };
+          return { content: [{ type: "text" as const, text: `Page ${params.page_id} not found in app ${params.app_id}.` }], isError: true };
         }
 
         let regions: Record<string, unknown>[] = [];
         if (params.include_regions) {
           regions = await oracle.queryRows(
-            `SELECT REGION_ID, REGION_NAME, SOURCE_TYPE, REGION_TEMPLATE, DISPLAY_SEQUENCE,
-                    DISPLAY_POSITION, CONDITION_TYPE,
-                    CASE WHEN REGION_SOURCE IS NOT NULL THEN SUBSTR(REGION_SOURCE, 1, 300) END AS SOURCE_PREVIEW
+            `SELECT REGION_ID, REGION_NAME, STATIC_ID, SOURCE_TYPE, TEMPLATE,
+                    DISPLAY_SEQUENCE, DISPLAY_POSITION, CONDITION_TYPE,
+                    DBMS_LOB.SUBSTR(REGION_SOURCE, 500, 1) AS SOURCE_PREVIEW
              FROM APEX_APPLICATION_PAGE_REGIONS
              WHERE APPLICATION_ID = :aid AND PAGE_ID = :pid
              ORDER BY DISPLAY_SEQUENCE`,
@@ -216,7 +208,7 @@ Queries APEX_APPLICATIONS view. Requires APEX installed in the database.`,
           processes = await oracle.queryRows(
             `SELECT PROCESS_NAME, PROCESS_TYPE, PROCESS_POINT, EXECUTION_SEQUENCE,
                     CONDITION_TYPE,
-                    CASE WHEN PROCESS_SOURCE IS NOT NULL THEN SUBSTR(PROCESS_SOURCE, 1, 300) END AS SOURCE_PREVIEW
+                    DBMS_LOB.SUBSTR(PROCESS_SOURCE, 500, 1) AS SOURCE_PREVIEW
              FROM APEX_APPLICATION_PAGE_PROC
              WHERE APPLICATION_ID = :aid AND PAGE_ID = :pid
              ORDER BY EXECUTION_SEQUENCE`,
@@ -251,7 +243,7 @@ Queries APEX_APPLICATIONS view. Requires APEX installed in the database.`,
         const elapsed = formatDuration(Date.now() - t0);
 
         if (params.format === "json") {
-          return { content: [{ type: "text", text: JSON.stringify({ page: pageRows[0], regions, items, processes, dynamicActions: das, validations }, null, 2) }] };
+          return { content: [{ type: "text" as const, text: JSON.stringify({ page: pageRows[0], regions, items, processes, dynamicActions: das, validations }, null, 2) }] };
         }
 
         let text = `## Page ${params.page_id} | ${elapsed}\n\n`;
@@ -261,14 +253,134 @@ Queries APEX_APPLICATIONS view. Requires APEX installed in the database.`,
         if (processes.length) text += `### Processes (${processes.length})\n\n` + formatRowsAsMarkdownTable(processes) + "\n\n";
         if (das.length) text += `### Dynamic Actions (${das.length})\n\n` + formatRowsAsMarkdownTable(das) + "\n\n";
         if (validations.length) text += `### Validations (${validations.length})\n\n` + formatRowsAsMarkdownTable(validations) + "\n\n";
-        return { content: [{ type: "text", text: truncateIfNeeded(text) }] };
+        return { content: [{ type: "text" as const, text: truncateIfNeeded(text) }] };
       } catch (e) {
-        return { content: [{ type: "text", text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
+        return { content: [{ type: "text" as const, text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
       }
     }
   );
 
-  // ─── APEX Workspace Users ──────────────────────────────────────────────────
+  // ─── Get Page Source ────────────────────────────────────────────────────────
+
+  server.tool(
+    "apex_get_page_source",
+    `[READ-ONLY] Get full source code for an APEX page: JavaScript (Function Declaration),
+CSS (Inline CSS), region HTML/SQL sources, and process PL/SQL code.
+Useful for reviewing or modifying page logic. Returns CLOB content as text.`,
+    {
+      app_id: z.number().int().positive(),
+      page_id: z.number().int().min(0),
+      include_js: z.boolean().default(true).describe("Include JavaScript code"),
+      include_css: z.boolean().default(true).describe("Include Inline CSS"),
+      include_region_source: z.boolean().default(false).describe("Include full region source (HTML/SQL)"),
+      include_process_source: z.boolean().default(false).describe("Include full process PL/SQL source"),
+      region_name: z.string().optional().describe("Filter regions by name (LIKE match)"),
+      process_name: z.string().optional().describe("Filter processes by name (LIKE match)"),
+      format: z.enum(["json", "markdown"]).default("markdown"),
+    },
+    async (params) => {
+      const t0 = Date.now();
+      const binds: Record<string, unknown> = { aid: params.app_id, pid: params.page_id };
+
+      try {
+        const parts: { title: string; content: string }[] = [];
+
+        // JavaScript code
+        if (params.include_js) {
+          const jsRows = await oracle.queryRows<{ JS_CODE: string | null; JS_LEN: number | null }>(
+            `SELECT JAVASCRIPT_CODE AS JS_CODE,
+                    DBMS_LOB.GETLENGTH(JAVASCRIPT_CODE) AS JS_LEN
+             FROM APEX_APPLICATION_PAGES
+             WHERE APPLICATION_ID = :aid AND PAGE_ID = :pid`,
+            binds
+          );
+          if (jsRows[0]?.JS_CODE) {
+            parts.push({ title: `JavaScript (${jsRows[0].JS_LEN} chars)`, content: jsRows[0].JS_CODE });
+          }
+        }
+
+        // CSS code
+        if (params.include_css) {
+          const cssRows = await oracle.queryRows<{ CSS_CODE: string | null; CSS_LEN: number | null }>(
+            `SELECT INLINE_CSS AS CSS_CODE,
+                    DBMS_LOB.GETLENGTH(INLINE_CSS) AS CSS_LEN
+             FROM APEX_APPLICATION_PAGES
+             WHERE APPLICATION_ID = :aid AND PAGE_ID = :pid`,
+            binds
+          );
+          if (cssRows[0]?.CSS_CODE) {
+            parts.push({ title: `Inline CSS (${cssRows[0].CSS_LEN} chars)`, content: cssRows[0].CSS_CODE });
+          }
+        }
+
+        // Region sources
+        if (params.include_region_source) {
+          const regFilter = params.region_name ? "AND UPPER(REGION_NAME) LIKE UPPER(:rname)" : "";
+          if (params.region_name) binds.rname = `%${params.region_name}%`;
+          const regRows = await oracle.queryRows<{ REGION_NAME: string; SOURCE_TYPE: string; REGION_SOURCE: string | null }>(
+            `SELECT REGION_NAME, SOURCE_TYPE, REGION_SOURCE
+             FROM APEX_APPLICATION_PAGE_REGIONS
+             WHERE APPLICATION_ID = :aid AND PAGE_ID = :pid ${regFilter}
+             ORDER BY DISPLAY_SEQUENCE`,
+            binds
+          );
+          for (const r of regRows) {
+            if (r.REGION_SOURCE) {
+              parts.push({
+                title: `Region: ${r.REGION_NAME} (${r.SOURCE_TYPE})`,
+                content: r.REGION_SOURCE,
+              });
+            }
+          }
+        }
+
+        // Process sources
+        if (params.include_process_source) {
+          const procFilter = params.process_name ? "AND UPPER(PROCESS_NAME) LIKE UPPER(:pname)" : "";
+          if (params.process_name) binds.pname = `%${params.process_name}%`;
+          const procRows = await oracle.queryRows<{ PROCESS_NAME: string; PROCESS_POINT: string; PROCESS_SOURCE: string | null }>(
+            `SELECT PROCESS_NAME, PROCESS_POINT, PROCESS_SOURCE
+             FROM APEX_APPLICATION_PAGE_PROC
+             WHERE APPLICATION_ID = :aid AND PAGE_ID = :pid ${procFilter}
+             ORDER BY EXECUTION_SEQUENCE`,
+            binds
+          );
+          for (const p of procRows) {
+            if (p.PROCESS_SOURCE) {
+              parts.push({
+                title: `Process: ${p.PROCESS_NAME} (${p.PROCESS_POINT})`,
+                content: p.PROCESS_SOURCE,
+              });
+            }
+          }
+        }
+
+        const elapsed = formatDuration(Date.now() - t0);
+
+        if (parts.length === 0) {
+          return { content: [{ type: "text" as const, text: `No source found for page ${params.page_id} in app ${params.app_id}.` }] };
+        }
+
+        if (params.format === "json") {
+          const obj: Record<string, string> = {};
+          for (const p of parts) obj[p.title] = p.content;
+          return { content: [{ type: "text" as const, text: truncateIfNeeded(JSON.stringify(obj, null, 2)) }] };
+        }
+
+        let text = `## Page ${params.page_id} Source | ${elapsed}\n\n`;
+        for (const p of parts) {
+          const lang = p.title.startsWith("JavaScript") ? "javascript"
+            : p.title.startsWith("Inline CSS") ? "css"
+            : p.title.includes("Process") ? "plsql"
+            : "html";
+          text += `### ${p.title}\n\n\`\`\`${lang}\n${p.content}\n\`\`\`\n\n`;
+        }
+        return { content: [{ type: "text" as const, text: truncateIfNeeded(text) }] };
+      } catch (e) {
+        return { content: [{ type: "text" as const, text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
+      }
+    }
+  );
 
   server.tool(
     "apex_list_workspace_users",
@@ -298,19 +410,17 @@ Queries APEX_APPLICATIONS view. Requires APEX installed in the database.`,
 
         const elapsed = formatDuration(Date.now() - t0);
         if (params.format === "json") {
-          return { content: [{ type: "text", text: JSON.stringify({ users: rows, count: rows.length }, null, 2) }] };
+          return { content: [{ type: "text" as const, text: JSON.stringify({ users: rows, count: rows.length }, null, 2) }] };
         }
 
         let text = `## APEX Workspace Users (${rows.length}) | ${elapsed}\n\n`;
         text += formatRowsAsMarkdownTable(rows);
-        return { content: [{ type: "text", text: truncateIfNeeded(text) }] };
+        return { content: [{ type: "text" as const, text: truncateIfNeeded(text) }] };
       } catch (e) {
-        return { content: [{ type: "text", text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
+        return { content: [{ type: "text" as const, text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
       }
     }
   );
-
-  // ─── APEX REST Services ────────────────────────────────────────────────────
 
   server.tool(
     "apex_list_rest_services",
@@ -341,27 +451,21 @@ Queries APEX_APPLICATIONS view. Requires APEX installed in the database.`,
 
         const elapsed = formatDuration(Date.now() - t0);
         if (params.format === "json") {
-          return { content: [{ type: "text", text: JSON.stringify({ restServices: rows, count: rows.length }, null, 2) }] };
+          return { content: [{ type: "text" as const, text: JSON.stringify({ restServices: rows, count: rows.length }, null, 2) }] };
         }
 
         let text = `## ORDS REST Services (${rows.length}) | ${elapsed}\n\n`;
-        if (rows.length) {
-          text += formatRowsAsMarkdownTable(rows);
-        } else {
-          text += "_No ORDS modules found. This may require USER_ORDS_* views which are available when ORDS is enabled._";
-        }
-        return { content: [{ type: "text", text: truncateIfNeeded(text) }] };
+        text += rows.length ? formatRowsAsMarkdownTable(rows) : "_No ORDS modules found._";
+        return { content: [{ type: "text" as const, text: truncateIfNeeded(text) }] };
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (msg.includes("ORA-00942")) {
-          return { content: [{ type: "text", text: "ORDS views not available. Ensure ORDS is enabled for this schema." }] };
+          return { content: [{ type: "text" as const, text: "ORDS views not available. Ensure ORDS is enabled for this schema." }] };
         }
-        return { content: [{ type: "text", text: `Error: ${msg}` }], isError: true };
+        return { content: [{ type: "text" as const, text: `Error: ${msg}` }], isError: true };
       }
     }
   );
-
-  // ─── APEX ORDS Enabled Objects ─────────────────────────────────────────────
 
   server.tool(
     "apex_list_ords_enabled_objects",
@@ -379,17 +483,17 @@ Queries APEX_APPLICATIONS view. Requires APEX installed in the database.`,
         );
         const elapsed = formatDuration(Date.now() - t0);
         if (params.format === "json") {
-          return { content: [{ type: "text", text: JSON.stringify({ objects: rows, count: rows.length }, null, 2) }] };
+          return { content: [{ type: "text" as const, text: JSON.stringify({ objects: rows, count: rows.length }, null, 2) }] };
         }
         let text = `## ORDS-Enabled Objects (${rows.length}) | ${elapsed}\n\n`;
         text += rows.length ? formatRowsAsMarkdownTable(rows) : "_No AutoREST-enabled objects found._";
-        return { content: [{ type: "text", text }] };
+        return { content: [{ type: "text" as const, text }] };
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (msg.includes("ORA-00942")) {
-          return { content: [{ type: "text", text: "USER_ORDS_ENABLED_OBJECTS view not available." }] };
+          return { content: [{ type: "text" as const, text: "USER_ORDS_ENABLED_OBJECTS view not available." }] };
         }
-        return { content: [{ type: "text", text: `Error: ${msg}` }], isError: true };
+        return { content: [{ type: "text" as const, text: `Error: ${msg}` }], isError: true };
       }
     }
   );

@@ -50,15 +50,15 @@ Supports LIKE filtering on table name.`,
         const hasMore = params.offset + rows.length < total;
 
         if (params.format === "json") {
-          return { content: [{ type: "text", text: JSON.stringify({ total, count: rows.length, offset: params.offset, hasMore, tables: rows }, null, 2) }] };
+          return { content: [{ type: "text" as const, text: JSON.stringify({ total, count: rows.length, offset: params.offset, hasMore, tables: rows }, null, 2) }] };
         }
 
         let text = `## Tables (${rows.length} of ${total}) | ${elapsed}\n\n`;
         text += formatRowsAsMarkdownTable(rows);
         if (hasMore) text += `\n\n_More available — use offset=${params.offset + params.limit}_`;
-        return { content: [{ type: "text", text: truncateIfNeeded(text) }] };
+        return { content: [{ type: "text" as const, text: truncateIfNeeded(text) }] };
       } catch (e) {
-        return { content: [{ type: "text", text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
+        return { content: [{ type: "text" as const, text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
       }
     }
   );
@@ -85,7 +85,6 @@ Supports LIKE filtering on table name.`,
       if (ownerBind) baseBinds.owner = ownerBind;
 
       try {
-        // Columns
         const cols = await oracle.queryRows<Record<string, unknown>>(
           `SELECT c.COLUMN_ID, c.COLUMN_NAME, c.DATA_TYPE, c.DATA_LENGTH, c.DATA_PRECISION,
                   c.DATA_SCALE, c.NULLABLE, c.DATA_DEFAULT,
@@ -97,7 +96,6 @@ Supports LIKE filtering on table name.`,
           baseBinds
         );
 
-        // Indexes
         let idxRows: Record<string, unknown>[] = [];
         if (params.include_indexes) {
           idxRows = await oracle.queryRows(
@@ -112,7 +110,6 @@ Supports LIKE filtering on table name.`,
           );
         }
 
-        // Constraints
         let conRows: Record<string, unknown>[] = [];
         if (params.include_constraints) {
           conRows = await oracle.queryRows(
@@ -128,7 +125,6 @@ Supports LIKE filtering on table name.`,
           );
         }
 
-        // Triggers
         let trgRows: Record<string, unknown>[] = [];
         if (params.include_triggers) {
           trgRows = await oracle.queryRows(
@@ -143,7 +139,7 @@ Supports LIKE filtering on table name.`,
         const elapsed = formatDuration(Date.now() - t0);
 
         if (params.format === "json") {
-          return { content: [{ type: "text", text: JSON.stringify({ table: tn, columns: cols, indexes: idxRows, constraints: conRows, triggers: trgRows, executionTime: elapsed }, null, 2) }] };
+          return { content: [{ type: "text" as const, text: JSON.stringify({ table: tn, columns: cols, indexes: idxRows, constraints: conRows, triggers: trgRows, executionTime: elapsed }, null, 2) }] };
         }
 
         let text = `## Table: ${tn} | ${cols.length} columns | ${elapsed}\n\n`;
@@ -151,9 +147,9 @@ Supports LIKE filtering on table name.`,
         if (idxRows.length) text += `### Indexes (${idxRows.length})\n\n` + formatRowsAsMarkdownTable(idxRows) + "\n\n";
         if (conRows.length) text += `### Constraints (${conRows.length})\n\n` + formatRowsAsMarkdownTable(conRows) + "\n\n";
         if (trgRows.length) text += `### Triggers (${trgRows.length})\n\n` + formatRowsAsMarkdownTable(trgRows) + "\n\n";
-        return { content: [{ type: "text", text: truncateIfNeeded(text) }] };
+        return { content: [{ type: "text" as const, text: truncateIfNeeded(text) }] };
       } catch (e) {
-        return { content: [{ type: "text", text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
+        return { content: [{ type: "text" as const, text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
       }
     }
   );
@@ -162,8 +158,7 @@ Supports LIKE filtering on table name.`,
 
   server.tool(
     "oracle_list_objects",
-    `List database objects by type (TABLE, VIEW, PACKAGE, PROCEDURE, FUNCTION, TRIGGER, SEQUENCE, SYNONYM, TYPE, INDEX, MATERIALIZED VIEW, etc.).
-Filter by name pattern and validity status.`,
+    `List database objects by type. Filter by name pattern and validity status.`,
     {
       object_type: z.enum([
         "TABLE", "VIEW", "INDEX", "SEQUENCE", "SYNONYM",
@@ -203,14 +198,14 @@ Filter by name pattern and validity status.`,
 
         const elapsed = formatDuration(Date.now() - t0);
         if (params.format === "json") {
-          return { content: [{ type: "text", text: JSON.stringify({ total, count: rows.length, offset: params.offset, objects: rows }, null, 2) }] };
+          return { content: [{ type: "text" as const, text: JSON.stringify({ total, count: rows.length, offset: params.offset, objects: rows }, null, 2) }] };
         }
 
         let text = `## ${params.object_type}s (${rows.length} of ${total}) | ${elapsed}\n\n`;
         text += formatRowsAsMarkdownTable(rows);
-        return { content: [{ type: "text", text: truncateIfNeeded(text) }] };
+        return { content: [{ type: "text" as const, text: truncateIfNeeded(text) }] };
       } catch (e) {
-        return { content: [{ type: "text", text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
+        return { content: [{ type: "text" as const, text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
       }
     }
   );
@@ -219,7 +214,7 @@ Filter by name pattern and validity status.`,
 
   server.tool(
     "oracle_get_source",
-    `Retrieve source code of a PL/SQL object (PACKAGE, PACKAGE BODY, PROCEDURE, FUNCTION, TRIGGER, TYPE, TYPE BODY) or VIEW definition.`,
+    `Retrieve source code of a PL/SQL object or VIEW definition.`,
     {
       object_name: z.string().min(1).max(128),
       object_type: z.enum(["PACKAGE", "PACKAGE BODY", "PROCEDURE", "FUNCTION", "TRIGGER", "TYPE", "TYPE BODY", "VIEW"]),
@@ -233,9 +228,9 @@ Filter by name pattern and validity status.`,
             `SELECT TEXT FROM ALL_VIEWS WHERE VIEW_NAME = :name ${params.owner ? "AND OWNER = :owner" : "AND OWNER = USER"}`,
             { name: params.object_name.toUpperCase(), ...(params.owner ? { owner: params.owner.toUpperCase() } : {}) }
           );
-          if (!rows.length) return { content: [{ type: "text", text: `View ${params.object_name} not found.` }], isError: true };
+          if (!rows.length) return { content: [{ type: "text" as const, text: `View ${params.object_name} not found.` }], isError: true };
           const text = `## VIEW ${params.object_name}\n\n\`\`\`sql\nCREATE OR REPLACE VIEW ${params.object_name} AS\n${rows[0].TEXT}\n\`\`\``;
-          return { content: [{ type: "text", text: truncateIfNeeded(text) }] };
+          return { content: [{ type: "text" as const, text: truncateIfNeeded(text) }] };
         }
 
         const rows = await oracle.queryRows<{ LINE: number; TEXT: string }>(
@@ -245,14 +240,14 @@ Filter by name pattern and validity status.`,
           { name: params.object_name.toUpperCase(), type: params.object_type, ...(params.owner ? { owner: params.owner.toUpperCase() } : {}) }
         );
 
-        if (!rows.length) return { content: [{ type: "text", text: `${params.object_type} ${params.object_name} not found.` }], isError: true };
+        if (!rows.length) return { content: [{ type: "text" as const, text: `${params.object_type} ${params.object_name} not found.` }], isError: true };
 
         const source = rows.map(r => r.TEXT).join("");
         const elapsed = formatDuration(Date.now() - t0);
         const text = `## ${params.object_type} ${params.object_name} (${rows.length} lines) | ${elapsed}\n\n\`\`\`plsql\n${source}\n\`\`\``;
-        return { content: [{ type: "text", text: truncateIfNeeded(text) }] };
+        return { content: [{ type: "text" as const, text: truncateIfNeeded(text) }] };
       } catch (e) {
-        return { content: [{ type: "text", text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
+        return { content: [{ type: "text" as const, text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
       }
     }
   );
@@ -261,8 +256,7 @@ Filter by name pattern and validity status.`,
 
   server.tool(
     "oracle_search",
-    `Search for database objects by name pattern, or search within PL/SQL source code for a text string.
-Useful for finding where a column, table, or function is referenced.`,
+    `Search for database objects by name pattern, or search within PL/SQL source code.`,
     {
       search_term: z.string().min(1).describe("Text to search"),
       search_in: z.enum(["names", "source", "both"]).default("both"),
@@ -304,22 +298,16 @@ Useful for finding where a column, table, or function is referenced.`,
         const elapsed = formatDuration(Date.now() - t0);
 
         if (params.format === "json") {
-          return { content: [{ type: "text", text: JSON.stringify({ nameResults, sourceResults, executionTime: elapsed }, null, 2) }] };
+          return { content: [{ type: "text" as const, text: JSON.stringify({ nameResults, sourceResults, executionTime: elapsed }, null, 2) }] };
         }
 
         let text = `## Search: "${params.search_term}" | ${elapsed}\n\n`;
-        if (nameResults.length) {
-          text += `### Object Names (${nameResults.length})\n\n` + formatRowsAsMarkdownTable(nameResults) + "\n\n";
-        }
-        if (sourceResults.length) {
-          text += `### Source Code Matches (${sourceResults.length})\n\n` + formatRowsAsMarkdownTable(sourceResults) + "\n\n";
-        }
-        if (!nameResults.length && !sourceResults.length) {
-          text += `_No results found._`;
-        }
-        return { content: [{ type: "text", text: truncateIfNeeded(text) }] };
+        if (nameResults.length) text += `### Object Names (${nameResults.length})\n\n` + formatRowsAsMarkdownTable(nameResults) + "\n\n";
+        if (sourceResults.length) text += `### Source Code Matches (${sourceResults.length})\n\n` + formatRowsAsMarkdownTable(sourceResults) + "\n\n";
+        if (!nameResults.length && !sourceResults.length) text += `_No results found._`;
+        return { content: [{ type: "text" as const, text: truncateIfNeeded(text) }] };
       } catch (e) {
-        return { content: [{ type: "text", text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
+        return { content: [{ type: "text" as const, text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
       }
     }
   );
@@ -328,8 +316,7 @@ Useful for finding where a column, table, or function is referenced.`,
 
   server.tool(
     "oracle_dependencies",
-    `Show object dependencies — what an object uses (references) and what depends on it (referenced by).
-Useful for impact analysis before modifying tables or packages.`,
+    `Show object dependencies — what an object uses and what depends on it.`,
     {
       object_name: z.string().min(1).max(128),
       object_type: z.string().optional(),
@@ -347,7 +334,6 @@ Useful for impact analysis before modifying tables or packages.`,
         let usedByRows: Record<string, unknown>[] = [];
 
         if (params.direction !== "used_by") {
-          // What this object uses
           usesRows = await oracle.queryRows(
             `SELECT REFERENCED_OWNER, REFERENCED_NAME, REFERENCED_TYPE
              FROM ALL_DEPENDENCIES
@@ -359,7 +345,6 @@ Useful for impact analysis before modifying tables or packages.`,
         }
 
         if (params.direction !== "uses") {
-          // What depends on this object
           usedByRows = await oracle.queryRows(
             `SELECT OWNER AS DEPENDENT_OWNER, NAME AS DEPENDENT_NAME, TYPE AS DEPENDENT_TYPE
              FROM ALL_DEPENDENCIES
@@ -372,16 +357,16 @@ Useful for impact analysis before modifying tables or packages.`,
         const elapsed = formatDuration(Date.now() - t0);
 
         if (params.format === "json") {
-          return { content: [{ type: "text", text: JSON.stringify({ uses: usesRows, usedBy: usedByRows, executionTime: elapsed }, null, 2) }] };
+          return { content: [{ type: "text" as const, text: JSON.stringify({ uses: usesRows, usedBy: usedByRows, executionTime: elapsed }, null, 2) }] };
         }
 
         let text = `## Dependencies for ${name} | ${elapsed}\n\n`;
         if (usesRows.length) text += `### Uses (${usesRows.length})\n\n` + formatRowsAsMarkdownTable(usesRows) + "\n\n";
         if (usedByRows.length) text += `### Used By (${usedByRows.length})\n\n` + formatRowsAsMarkdownTable(usedByRows) + "\n\n";
         if (!usesRows.length && !usedByRows.length) text += `_No dependencies found._`;
-        return { content: [{ type: "text", text: truncateIfNeeded(text) }] };
+        return { content: [{ type: "text" as const, text: truncateIfNeeded(text) }] };
       } catch (e) {
-        return { content: [{ type: "text", text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
+        return { content: [{ type: "text" as const, text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
       }
     }
   );

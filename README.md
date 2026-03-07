@@ -1,234 +1,229 @@
 # Oracle APEX MCP Server
 
-Servidor MCP (Model Context Protocol) completo para **Oracle Database** + **Oracle APEX 20.2**, diseñado para integrarse directamente con Claude y habilitar desarrollo auténtico con acceso a la base de datos y metadatos de APEX.
+MCP (Model Context Protocol) server for **Oracle Database** and **Oracle APEX** integration. Provides 25 tools for multi-database management, querying, executing DDL/DML, inspecting database objects, and reading APEX metadata — all through a standardized MCP interface.
 
-## Características
+## Features
 
-### Oracle Database (lectura + escritura)
-- **Queries**: SELECT con bind variables, paginación, formato markdown/JSON
-- **DML**: INSERT, UPDATE, DELETE, MERGE con auto-commit configurable
-- **DDL**: CREATE, ALTER, DROP, TRUNCATE, GRANT, REVOKE
-- **PL/SQL**: Ejecutar bloques anónimos y llamadas a procedimientos
-- **Transacciones**: Múltiples sentencias en una transacción atómica
-- **Explain Plan**: Análisis de planes de ejecución
-- **Compilación**: Recompilar objetos PL/SQL y ver errores
+- **Multi-database support**: switch between databases on the fly without restarting
+- **TNS names**: auto-discovers `tnsnames.ora` from ORACLE_HOME, TNS_ADMIN, or common paths
+- **3 connection modes**: TNS alias, connection string, or manual (host/port/service)
+- **Oracle Database**: query, execute DML/DDL/PL/SQL, transactions, explain plans, compile objects, show errors
+- **Object Inspection**: list tables, describe tables (columns, indexes, constraints, triggers), list objects, get source, search, dependencies
+- **APEX Metadata (read-only)**: list applications, describe apps/pages, workspace users, REST services, ORDS-enabled objects
+- **Connection pooling** with configurable min/max/timeout
+- **Thick mode** support for legacy Oracle databases (pre-12c crypto)
 
-### Inspección de Objetos (lectura)
-- **Tablas**: Listar, describir (columnas, índices, constraints, triggers)
-- **Objetos**: Listar por tipo (PACKAGE, VIEW, PROCEDURE, FUNCTION, etc.)
-- **Código fuente**: Ver source de packages, procedures, views
-- **Búsqueda**: Buscar en nombres de objetos y código fuente
-- **Dependencias**: Análisis de impacto (qué usa / quién lo usa)
-- **Preview de datos**: Muestra de filas con filtros opcionales
+## Requirements
 
-### Oracle APEX 20.2 (solo lectura)
-- **Aplicaciones**: Listar apps, ver detalles (páginas, LOVs, auth schemes)
-- **Páginas**: Describir regiones, items, procesos, dynamic actions, validaciones
-- **Usuarios**: Listar usuarios de workspace
-- **REST/ORDS**: Ver módulos REST, templates, handlers
-- **AutoREST**: Ver objetos habilitados para ORDS
+- **Node.js** >= 18.0.0
+- **Oracle Database** accessible via network (any version supported by `oracledb` driver)
+- **Oracle Instant Client** (only if using Thick mode for legacy databases)
 
-## Herramientas Disponibles (21 tools)
-
-| Tool | Categoría | Tipo |
-|------|-----------|------|
-| `oracle_health_check` | DB | Read |
-| `oracle_query` | DB | Read |
-| `oracle_execute` | DB | Write |
-| `oracle_transaction` | DB | Write |
-| `oracle_explain_plan` | DB | Read |
-| `oracle_compile_object` | DB | Write |
-| `oracle_show_errors` | DB | Read |
-| `oracle_table_data_preview` | DB | Read |
-| `oracle_connection_info` | DB | Read |
-| `oracle_list_tables` | Objects | Read |
-| `oracle_describe_table` | Objects | Read |
-| `oracle_list_objects` | Objects | Read |
-| `oracle_get_source` | Objects | Read |
-| `oracle_search` | Objects | Read |
-| `oracle_dependencies` | Objects | Read |
-| `apex_list_applications` | APEX | Read |
-| `apex_describe_application` | APEX | Read |
-| `apex_describe_page` | APEX | Read |
-| `apex_list_workspace_users` | APEX | Read |
-| `apex_list_rest_services` | APEX | Read |
-| `apex_list_ords_enabled_objects` | APEX | Read |
-
-## Instalación
-
-### Prerrequisitos
-- Node.js >= 18.0.0
-- Acceso a Oracle Database (12c R1.2 o superior)
-- Oracle Instant Client (solo si `ORACLE_OLD_CRYPTO=true`)
-
-### Pasos
+## Quick Install (auto-registers with Claude Code)
 
 ```bash
 git clone <repo-url>
 cd oracle-apex-mcp-server
 npm install
-npm run build
+npm run install:claude
 ```
 
-## Configuración
+That's it. Restart Claude Code and start using it. No manual configuration needed.
 
-### Variables de Entorno
+The installer will:
+1. Install dependencies
+2. Build the TypeScript project
+3. Register the MCP server in `~/.claude/mcp.json`
 
-| Variable | Descripción | Default |
-|----------|-------------|---------|
-| `ORACLE_HOST` | Host del servidor Oracle | `localhost` |
-| `ORACLE_PORT` | Puerto | `1521` |
-| `ORACLE_SERVICE_NAME` | Nombre del servicio | `XE` |
-| `ORACLE_USERNAME` | Usuario | `hr` |
-| `ORACLE_PASSWORD` | Contraseña | (requerido) |
-| `ORACLE_CONNECTION_STRING` | TNS connect string completo (alternativo) | — |
-| `ORACLE_OLD_CRYPTO` | Usar modo Thick para Oracle antiguo | `false` |
-| `ORACLE_CLIENT_LIB_DIR` | Ruta a Oracle Instant Client | — |
-| `ORACLE_POOL_MIN` | Conexiones mínimas del pool | `1` |
-| `ORACLE_POOL_MAX` | Conexiones máximas del pool | `10` |
-| `ORACLE_POOL_TIMEOUT` | Timeout del pool (segundos) | `60` |
-| `ORACLE_FETCH_SIZE` | Filas por fetch | `100` |
-| `ORACLE_STMT_CACHE_SIZE` | Cache de statements | `30` |
+> To register for a specific project instead: `npm run install:project`
 
-### Configuración MCP para Claude Desktop
+> **Windows note**: If `npm run build` runs out of memory, use:
+> ```cmd
+> set NODE_OPTIONS=--max-old-space-size=4096
+> npx tsc
+> ```
+
+## How It Works
+
+When you start a Claude Code session, the server starts with no pre-configured database. You choose how to connect:
+
+### 1. Browse available databases from TNS
+
+```
+> list my available oracle databases
+  (Claude calls oracle_list_tns_entries)
+
+> connect to PROD_DB as user hr
+  (Claude calls oracle_connect mode=tns tns_alias=PROD_DB username=hr password=...)
+```
+
+### 2. Connect with host/port/service
+
+```
+> connect to oracle on 192.168.1.100 port 1521 service MYDB as user admin
+  (Claude calls oracle_connect mode=manual host=192.168.1.100 port=1521 service_name=MYDB ...)
+```
+
+### 3. Switch databases anytime
+
+```
+> switch to DEV_DB
+  (Claude calls oracle_connect mode=tns tns_alias=DEV_DB ...)
+
+> now switch to TEST_DB
+  (same — closes old pool, opens new one)
+```
+
+### 4. Check current connection
+
+```
+> which database am I connected to?
+  (Claude calls oracle_current_connection)
+```
+
+## Configuration
+
+### Environment Variables (all optional)
+
+Set these in `~/.claude/mcp.json` under `env` if you want a default connection at startup:
+
+| Variable | Default | Description |
+|---|---|---|
+| `ORACLE_HOST` | `localhost` | Oracle DB hostname |
+| `ORACLE_PORT` | `1521` | Oracle DB port |
+| `ORACLE_SERVICE_NAME` | `XE` | Oracle service name |
+| `ORACLE_USERNAME` | `hr` | Database username (also reads `ORACLE_USER`) |
+| `ORACLE_PASSWORD` | _(empty)_ | Database password |
+| `ORACLE_CONNECTION_STRING` | _(auto-built)_ | Full TNS connect string (overrides host/port/service) |
+| `ORACLE_TNS_ALIAS` | _(none)_ | TNS alias to use from tnsnames.ora |
+| `TNS_ADMIN` | _(none)_ | Directory containing tnsnames.ora |
+| `ORACLE_HOME` | _(none)_ | Oracle home directory (fallback for TNS lookup) |
+| `TNS_NAMES_FILE` | _(auto-detected)_ | Explicit path to tnsnames.ora |
+| `ORACLE_POOL_MIN` | `1` | Minimum pool connections |
+| `ORACLE_POOL_MAX` | `10` | Maximum pool connections |
+| `ORACLE_POOL_TIMEOUT` | `60` | Pool timeout in seconds |
+| `ORACLE_STMT_CACHE_SIZE` | `30` | Statement cache size |
+| `ORACLE_FETCH_SIZE` | `100` | Fetch array size |
+| `ORACLE_OLD_CRYPTO` | `false` | Set `true` to enable Thick mode (required for pre-12c databases) |
+| `ORACLE_CLIENT_LIB_DIR` | _(none)_ | Path to Oracle Instant Client (Thick mode only) |
+
+### TNS Discovery
+
+The server automatically searches for `tnsnames.ora` in these locations (in order):
+
+1. `$TNS_ADMIN/tnsnames.ora`
+2. `$ORACLE_HOME/network/admin/tnsnames.ora`
+3. Common Windows paths (`C:\oracle\...`, `C:\app\oracle\...`)
+4. Common Linux paths (`/etc/oracle/...`, `/opt/oracle/...`, `/u01/...`)
+
+## Manual Claude Code Setup
+
+If you prefer manual configuration instead of the auto-installer:
+
+### Option 1: CLI command
+
+```bash
+claude mcp add-json oracle-apex '{"type":"stdio","command":"node","args":["C:/Users/sotelos/oracle-apex-mcp-server/dist/index.js"],"env":{"TNS_ADMIN":"C:/oracle/network/admin"}}' --scope user
+```
+
+### Option 2: Edit `~/.claude/mcp.json`
 
 ```json
 {
   "mcpServers": {
     "oracle-apex": {
+      "type": "stdio",
       "command": "node",
-      "args": ["<ruta>/oracle-apex-mcp-server/dist/index.js"],
+      "args": ["C:/Users/sotelos/oracle-apex-mcp-server/dist/index.js"],
       "env": {
-        "ORACLE_HOST": "tu-host",
-        "ORACLE_PORT": "1521",
-        "ORACLE_SERVICE_NAME": "tu-servicio",
-        "ORACLE_USERNAME": "tu-usuario",
-        "ORACLE_PASSWORD": "tu-password"
-      }
-    }
-  }
-}
-```
-
-### Para Oracle 12c con crypto antiguo
-
-```json
-{
-  "mcpServers": {
-    "oracle-apex": {
-      "command": "node",
-      "args": ["<ruta>/oracle-apex-mcp-server/dist/index.js"],
-      "env": {
-        "ORACLE_HOST": "tu-host",
-        "ORACLE_PORT": "1521",
-        "ORACLE_SERVICE_NAME": "tu-servicio",
-        "ORACLE_USERNAME": "tu-usuario",
-        "ORACLE_PASSWORD": "tu-password",
+        "TNS_ADMIN": "C:/oracle/network/admin",
         "ORACLE_OLD_CRYPTO": "true",
-        "ORACLE_CLIENT_LIB_DIR": "C:\\oracle\\instantclient_19_26"
+        "ORACLE_CLIENT_LIB_DIR": "C:/oracle/instantclient_19_26"
       }
     }
   }
 }
 ```
 
-## Ejemplos de Uso
+### With default connection at startup
 
-### Health Check
-```
-oracle_health_check()
-```
-
-### Query con bind variables
-```
-oracle_query({
-  sql: "SELECT * FROM employees WHERE department_id = :dept_id",
-  binds: { dept_id: 10 },
-  max_rows: 50,
-  format: "markdown"
-})
-```
-
-### Ejecutar DML
-```
-oracle_execute({
-  sql: "UPDATE employees SET salary = salary * 1.1 WHERE department_id = :dept",
-  binds: { dept: 10 },
-  auto_commit: true
-})
+```json
+{
+  "mcpServers": {
+    "oracle-apex": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["C:/Users/sotelos/oracle-apex-mcp-server/dist/index.js"],
+      "env": {
+        "ORACLE_HOST": "myhost",
+        "ORACLE_PORT": "1521",
+        "ORACLE_SERVICE_NAME": "MYDB",
+        "ORACLE_USERNAME": "myuser",
+        "ORACLE_PASSWORD": "mypassword"
+      }
+    }
+  }
+}
 ```
 
-### Transacción
-```
-oracle_transaction({
-  statements: [
-    "INSERT INTO audit_log (action, created_date) VALUES ('SALARY_UPDATE', SYSDATE)",
-    "UPDATE employees SET salary = salary * 1.1 WHERE department_id = 10"
-  ],
-  rollback_on_error: true
-})
+## Available Tools (25)
+
+### Connection Management (4) — NEW
+
+| Tool | Description |
+|---|---|
+| `oracle_list_tns_entries` | List all databases from tnsnames.ora (auto-discovered or custom path) |
+| `oracle_connect` | Connect/switch to a database (TNS alias, connection string, or manual) |
+| `oracle_disconnect` | Disconnect and close the connection pool |
+| `oracle_current_connection` | Show which database is currently connected |
+
+### Database Tools (9)
+
+| Tool | Description |
+|---|---|
+| `oracle_health_check` | Check Oracle DB and APEX connectivity, version, pool status |
+| `oracle_query` | Execute read-only SELECT/WITH queries (up to 10,000 rows) |
+| `oracle_execute` | Execute DML, DDL, or PL/SQL with optional auto-commit |
+| `oracle_transaction` | Execute multiple statements in a single transaction |
+| `oracle_explain_plan` | Generate execution plan for SQL optimization |
+| `oracle_compile_object` | Compile/recompile PL/SQL objects (PACKAGE, PROCEDURE, FUNCTION, etc.) |
+| `oracle_show_errors` | Show compilation errors (like SQL*Plus SHOW ERRORS) |
+| `oracle_table_data_preview` | Preview sample data from a table with optional WHERE/ORDER BY |
+| `oracle_connection_info` | Show current connection config (password masked) |
+
+### Object Inspection Tools (6)
+
+| Tool | Description |
+|---|---|
+| `oracle_list_tables` | List tables with row counts, comments, last analyzed date |
+| `oracle_describe_table` | Full table description: columns, indexes, constraints, triggers |
+| `oracle_list_objects` | List objects by type (TABLE, VIEW, PACKAGE, etc.) with filters |
+| `oracle_get_source` | Get PL/SQL source code or VIEW definition |
+| `oracle_search` | Search object names and/or PL/SQL source code |
+| `oracle_dependencies` | Show object dependencies (uses / used by) |
+
+### APEX Metadata Tools (6) — Read-Only
+
+| Tool | Description |
+|---|---|
+| `apex_list_applications` | List APEX applications with page counts |
+| `apex_describe_application` | App details: pages, LOVs, auth schemes, build options |
+| `apex_describe_page` | Page details: regions, items, processes, dynamic actions, validations |
+| `apex_list_workspace_users` | List APEX workspace users with admin/login status |
+| `apex_list_rest_services` | List ORDS RESTful service modules, templates, handlers |
+| `apex_list_ords_enabled_objects` | List AutoREST-enabled tables/views |
+
+## Development
+
+```bash
+npm run build            # Compile TypeScript
+npm run start            # Run the compiled server
+npm run dev              # Build + start
+npm run install:claude   # Build + register in ~/.claude/mcp.json
+npm run install:project  # Build + register in .claude/mcp.json (current dir)
+npm run clean            # Remove dist/
 ```
 
-### Describir tabla completa
-```
-oracle_describe_table({
-  table_name: "EMPLOYEES",
-  include_indexes: true,
-  include_constraints: true,
-  include_triggers: true
-})
-```
-
-### Ver código fuente de un package
-```
-oracle_get_source({
-  object_name: "PKG_PRE_VISACION",
-  object_type: "PACKAGE BODY"
-})
-```
-
-### Buscar en código fuente
-```
-oracle_search({
-  search_term: "apex_json.parse",
-  search_in: "source"
-})
-```
-
-### Análisis de dependencias
-```
-oracle_dependencies({
-  object_name: "VISACION_PREVIA",
-  direction: "used_by"
-})
-```
-
-### Listar apps APEX
-```
-apex_list_applications({ format: "markdown" })
-```
-
-### Describir página APEX con todo
-```
-apex_describe_page({
-  app_id: 100,
-  page_id: 10,
-  include_regions: true,
-  include_items: true,
-  include_processes: true,
-  include_dynamic_actions: true,
-  include_validations: true
-})
-```
-
-## Integración con Skills de APEX
-
-Este MCP está diseñado para trabajar en conjunto con:
-
-1. **apex-migrate-dev skill**: Acceso directo a la BD para validar schemas, ver source de packages, compilar y probar
-2. **System prompts de APEX 20.2**: Los queries sobre APEX views entregan el contexto real de la aplicación
-3. **Pre-visación API integration**: Consultar tablas de visacion_previa, feedback_matching, log_webhook_eventos directamente
-
-## Licencia
+## License
 
 MIT

@@ -1,7 +1,7 @@
 {
   "name": "@anthropic-apex/oracle-apex-mcp-server",
-  "version": "1.0.0",
-  "description": "MCP server for Oracle Database + Oracle APEX 20.2 integration — queries, DDL/DML, transactions, object inspection, and APEX REST API read-only access",
+  "version": "1.1.0",
+  "description": "MCP server for Oracle Database + Oracle APEX integration — multi-database, TNS support, queries, DDL/DML, transactions, object inspection, and APEX metadata read-only access",
   "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
@@ -17,18 +17,21 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "node --max-old-space-size=4096 ./node_modules/typescript/bin/tsc",
+    "build:win": "set NODE_OPTIONS=--max-old-space-size=4096 && tsc",
     "start": "node dist/index.js",
     "dev": "npm run build && npm run start",
+    "install:claude": "node install.js --scope user",
+    "install:project": "node install.js --scope project",
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.0",
+    "@modelcontextprotocol/sdk": "1.6.1",
     "oracledb": "^6.8.0",
-    "zod": "^3.25.0"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "typescript": "^5.8.0"
+    "typescript": "^5.6.2"
   }
 }

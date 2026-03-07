@@ -2,15 +2,9 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { OracleService } from "../services/oracle-service.js";
 import {
-  QuerySchema, ExecuteSchema, TransactionSchema, ExplainPlanSchema,
-  CompileObjectSchema, ShowErrorsSchema, TableDataPreviewSchema, HealthCheckSchema,
-} from "../schemas/tool-schemas.js";
-import {
   isReadOnly, classifySql, formatDuration, truncateIfNeeded,
-  formatRowsAsMarkdownTable, friendlyOracleError,
+  formatRowsAsMarkdownTable,
 } from "../utils/helpers.js";
-
-type SchemaShape<T extends z.ZodRawShape> = T;
 
 export function registerDbTools(server: McpServer, oracle: OracleService): void {
 
@@ -36,7 +30,7 @@ export function registerDbTools(server: McpServer, oracle: OracleService): void 
       text += `**Workspace:** ${h.apex.workspace ?? "N/A"}\n\n`;
       text += `_Checked in ${elapsed}_`;
 
-      return { content: [{ type: "text", text }] };
+      return { content: [{ type: "text" as const, text }] };
     }
   );
 
@@ -56,7 +50,7 @@ Use for: SELECT, WITH queries. Max 10,000 rows.`,
     async (params) => {
       if (!isReadOnly(params.sql)) {
         return {
-          content: [{ type: "text", text: "Error: oracle_query only accepts SELECT/WITH statements. Use oracle_execute for DML/DDL/PL/SQL." }],
+          content: [{ type: "text" as const, text: "Error: oracle_query only accepts SELECT/WITH statements. Use oracle_execute for DML/DDL/PL/SQL." }],
           isError: true,
         };
       }
@@ -67,16 +61,16 @@ Use for: SELECT, WITH queries. Max 10,000 rows.`,
 
         if (params.format === "json") {
           const output = { ...result, executionTime: elapsed };
-          return { content: [{ type: "text", text: truncateIfNeeded(JSON.stringify(output, null, 2)) }] };
+          return { content: [{ type: "text" as const, text: truncateIfNeeded(JSON.stringify(output, null, 2)) }] };
         }
 
         let text = `**${result.rowCount} row(s)** returned`;
         if (result.hasMore) text += ` _(more available — increase max_rows or add WHERE clause)_`;
         text += ` | ${elapsed}\n\n`;
         text += formatRowsAsMarkdownTable(result.rows);
-        return { content: [{ type: "text", text: truncateIfNeeded(text) }] };
+        return { content: [{ type: "text" as const, text: truncateIfNeeded(text) }] };
       } catch (e) {
-        return { content: [{ type: "text", text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
+        return { content: [{ type: "text" as const, text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
       }
     }
   );
@@ -95,7 +89,7 @@ Returns rows affected and execution time. Supports auto-commit toggle.`,
     async (params) => {
       if (isReadOnly(params.sql)) {
         return {
-          content: [{ type: "text", text: "Error: Use oracle_query for SELECT statements." }],
+          content: [{ type: "text" as const, text: "Error: Use oracle_query for SELECT statements." }],
           isError: true,
         };
       }
@@ -108,9 +102,9 @@ Returns rows affected and execution time. Supports auto-commit toggle.`,
         if (params.auto_commit) text += " | Committed";
         if (result.lastRowid) text += `\nLast ROWID: ${result.lastRowid}`;
         if (result.outBinds) text += `\nOut binds: ${JSON.stringify(result.outBinds)}`;
-        return { content: [{ type: "text", text }] };
+        return { content: [{ type: "text" as const, text }] };
       } catch (e) {
-        return { content: [{ type: "text", text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
+        return { content: [{ type: "text" as const, text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
       }
     }
   );
@@ -137,17 +131,17 @@ Automatically rolls back on error if rollback_on_error is true.`,
         text += `**Statements:** ${result.steps.length} | ${elapsed}\n\n`;
 
         for (const step of result.steps) {
-          const icon = step.success ? "✅" : "❌";
+          const icon = step.success ? "OK" : "FAIL";
           const sqlPreview = step.sql.length > 80 ? step.sql.slice(0, 77) + "..." : step.sql;
-          text += `${icon} **Step ${step.index + 1}:** \`${sqlPreview}\``;
+          text += `[${icon}] **Step ${step.index + 1}:** \`${sqlPreview}\``;
           if (step.success) text += ` — ${step.rowsAffected ?? 0} rows`;
           if (step.error) text += `\n   Error: ${step.error}`;
           text += "\n";
         }
 
-        return { content: [{ type: "text", text }] };
+        return { content: [{ type: "text" as const, text }] };
       } catch (e) {
-        return { content: [{ type: "text", text: `Transaction error: ${e instanceof Error ? e.message : e}` }], isError: true };
+        return { content: [{ type: "text" as const, text: `Transaction error: ${e instanceof Error ? e.message : e}` }], isError: true };
       }
     }
   );
@@ -193,9 +187,9 @@ Returns the plan table output for query optimization analysis.`,
           text += (row.PLAN_LINE ?? "") + "\n";
         }
         text += `\`\`\`\n\n_Generated in ${elapsed}_`;
-        return { content: [{ type: "text", text }] };
+        return { content: [{ type: "text" as const, text }] };
       } catch (e) {
-        return { content: [{ type: "text", text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
+        return { content: [{ type: "text" as const, text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
       }
     }
   );
@@ -234,16 +228,16 @@ Returns compilation status and any errors.`,
         );
 
         if (errRows.length === 0) {
-          return { content: [{ type: "text", text: `✅ ${params.object_type} ${params.object_name} compiled successfully.` }] };
+          return { content: [{ type: "text" as const, text: `${params.object_type} ${params.object_name} compiled successfully.` }] };
         }
 
-        let text = `⚠️ ${params.object_type} ${params.object_name} compiled with **${errRows.length} error(s)**:\n\n`;
+        let text = `${params.object_type} ${params.object_name} compiled with **${errRows.length} error(s)**:\n\n`;
         for (const e of errRows) {
           text += `- **Line ${e.LINE}, Col ${e.POSITION}:** ${e.TEXT.trim()}\n`;
         }
-        return { content: [{ type: "text", text }] };
+        return { content: [{ type: "text" as const, text }] };
       } catch (e) {
-        return { content: [{ type: "text", text: `Compile error: ${e instanceof Error ? e.message : e}` }], isError: true };
+        return { content: [{ type: "text" as const, text: `Compile error: ${e instanceof Error ? e.message : e}` }], isError: true };
       }
     }
   );
@@ -273,16 +267,16 @@ Returns compilation status and any errors.`,
         );
 
         if (rows.length === 0) {
-          return { content: [{ type: "text", text: `No errors found for ${params.object_type} ${params.object_name}.` }] };
+          return { content: [{ type: "text" as const, text: `No errors found for ${params.object_type} ${params.object_name}.` }] };
         }
 
         let text = `## Errors for ${params.object_type} ${params.object_name}\n\n`;
         for (const r of rows) {
           text += `**${r.ATTRIBUTE} at Line ${r.LINE}, Col ${r.POSITION}:** ${r.TEXT.trim()}\n`;
         }
-        return { content: [{ type: "text", text }] };
+        return { content: [{ type: "text" as const, text }] };
       } catch (e) {
-        return { content: [{ type: "text", text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
+        return { content: [{ type: "text" as const, text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
       }
     }
   );
@@ -313,15 +307,15 @@ Optionally filter with WHERE clause and ORDER BY.`,
         const elapsed = formatDuration(Date.now() - t0);
 
         if (params.format === "json") {
-          return { content: [{ type: "text", text: truncateIfNeeded(JSON.stringify(result, null, 2)) }] };
+          return { content: [{ type: "text" as const, text: truncateIfNeeded(JSON.stringify(result, null, 2)) }] };
         }
 
         let text = `## ${params.table_name} — ${result.rowCount} row(s) | ${elapsed}\n\n`;
         text += formatRowsAsMarkdownTable(result.rows);
         if (result.hasMore) text += `\n\n_More rows available._`;
-        return { content: [{ type: "text", text: truncateIfNeeded(text) }] };
+        return { content: [{ type: "text" as const, text: truncateIfNeeded(text) }] };
       } catch (e) {
-        return { content: [{ type: "text", text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
+        return { content: [{ type: "text" as const, text: `Error: ${e instanceof Error ? e.message : e}` }], isError: true };
       }
     }
   );
@@ -341,7 +335,7 @@ Optionally filter with WHERE clause and ORDER BY.`,
         `**Pool:** min=${cfg.poolMin} max=${cfg.poolMax} timeout=${cfg.poolTimeout}s\n` +
         `**Fetch Size:** ${cfg.fetchSize}\n` +
         `**Thick Mode:** ${cfg.useThickMode}\n`;
-      return { content: [{ type: "text", text }] };
+      return { content: [{ type: "text" as const, text }] };
     }
   );
 }
