@@ -11,8 +11,12 @@ import {
  *
  * Key version differences in APEX dictionary views:
  * - APEX_APPLICATIONS: PAGES column (all versions), CREATED_ON (21.1+)
- * - APEX_APPLICATION_PAGES: INLINE_CSS (20.2+, was CSS_INLINE in some earlier)
+ * - APEX_APPLICATION_PAGES: INLINE_CSS (20.2+, was CSS_INLINE in some earlier), PAGE_CSS_CLASSES (20.2+)
  * - APEX_APPLICATION_PAGE_REGIONS: TEMPLATE (20.2+, was REGION_TEMPLATE in some earlier), STATIC_ID (all)
+ * - APEX_APPLICATION_PAGE_DA: DYNAMIC_ACTION_NAME, WHEN_EVENT_NAME, WHEN_ELEMENT, DYNAMIC_ACTION_SEQUENCE
+ * - APEX_APPLICATION_PAGE_DA_ACTS: ACTION_NAME, ACTION_CODE, ACTION_SEQUENCE, ATTRIBUTE_01..15, AFFECTED_ELEMENTS
+ * - APEX_APPLICATION_PAGE_VAL: VALIDATION_FAILURE_TEXT (not ERROR_MESSAGE)
+ * - APEX_APPLICATION_PAGE_RPT_COLS: COLUMN_ALIAS, HEADING, DISPLAY_SEQUENCE, DISPLAY_AS
  */
 export function registerApexTools(server: McpServer, oracle: OracleService): void {
 
@@ -176,7 +180,11 @@ Queries APEX_APPLICATIONS view. Adapts to detected APEX version automatically.`,
       include_items: z.boolean().default(true),
       include_processes: z.boolean().default(true),
       include_dynamic_actions: z.boolean().default(false),
+      include_da_actions: z.boolean().default(false).describe("Include DA action details (PL/SQL, JS, affected elements)"),
+      include_report_columns: z.boolean().default(false).describe("Include classic/IR report column definitions"),
       include_validations: z.boolean().default(false),
+      include_buttons: z.boolean().default(false).describe("Include page buttons"),
+      include_lov_details: z.boolean().default(false).describe("Include LOV definitions on items"),
       format: z.enum(["json", "markdown"]).default("markdown"),
     },
     async (params) => {
@@ -184,8 +192,8 @@ Queries APEX_APPLICATIONS view. Adapts to detected APEX version automatically.`,
       const binds = { aid: params.app_id, pid: params.page_id };
 
       try {
-        // PAGE_CSS_CLASSES available in 21.1+
-        const extraPageCols = oracle.isApexAtLeast(21.1) ? "PAGE_CSS_CLASSES," : "";
+        // PAGE_CSS_CLASSES available in 20.2+
+        const extraPageCols = oracle.isApexAtLeast(20.2) ? "PAGE_CSS_CLASSES," : "";
 
         const pageRows = await oracle.queryRows(
           `SELECT PAGE_ID, PAGE_NAME, PAGE_MODE, PAGE_GROUP, PAGE_FUNCTION,
@@ -216,9 +224,12 @@ Queries APEX_APPLICATIONS view. Adapts to detected APEX version automatically.`,
 
         let items: Record<string, unknown>[] = [];
         if (params.include_items) {
+          const lovCols = params.include_lov_details
+            ? "LOV_NAMED_LOV, LOV_DEFINITION, ITEM_LABEL_TEMPLATE,"
+            : "LOV_NAMED_LOV,";
           items = await oracle.queryRows(
             `SELECT ITEM_NAME, DISPLAY_AS, LABEL, REGION,
-                    IS_REQUIRED, ITEM_DEFAULT, LOV_NAMED_LOV, LOV_DEFINITION,
+                    IS_REQUIRED, ITEM_DEFAULT, ${lovCols}
                     CONDITION_TYPE, DISPLAY_SEQUENCE
              FROM APEX_APPLICATION_PAGE_ITEMS
              WHERE APPLICATION_ID = :aid AND PAGE_ID = :pid
@@ -243,11 +254,12 @@ Queries APEX_APPLICATIONS view. Adapts to detected APEX version automatically.`,
         let das: Record<string, unknown>[] = [];
         if (params.include_dynamic_actions) {
           das = await oracle.queryRows(
-            `SELECT DYNAMIC_ACTION_NAME, EVENT_NAME, WHEN_TYPE, WHEN_ELEMENT,
-                    CONDITION_TYPE, DISPLAY_SEQUENCE
+            `SELECT DYNAMIC_ACTION_NAME, WHEN_EVENT_NAME, WHEN_SELECTION_TYPE,
+                    WHEN_ELEMENT, WHEN_REGION, CONDITION_TYPE,
+                    DYNAMIC_ACTION_SEQUENCE, NUMBER_OF_ACTIONS
              FROM APEX_APPLICATION_PAGE_DA
              WHERE APPLICATION_ID = :aid AND PAGE_ID = :pid
-             ORDER BY DISPLAY_SEQUENCE`,
+             ORDER BY DYNAMIC_ACTION_SEQUENCE`,
             binds
           );
         }
@@ -256,7 +268,8 @@ Queries APEX_APPLICATIONS view. Adapts to detected APEX version automatically.`,
         if (params.include_validations) {
           validations = await oracle.queryRows(
             `SELECT VALIDATION_NAME, VALIDATION_TYPE, VALIDATION_EXPRESSION1,
-                    VALIDATION_SEQUENCE, CONDITION_TYPE, ERROR_MESSAGE
+                    VALIDATION_SEQUENCE, CONDITION_TYPE, VALIDATION_FAILURE_TEXT,
+                    ASSOCIATED_ITEM
              FROM APEX_APPLICATION_PAGE_VAL
              WHERE APPLICATION_ID = :aid AND PAGE_ID = :pid
              ORDER BY VALIDATION_SEQUENCE`,
@@ -264,10 +277,53 @@ Queries APEX_APPLICATIONS view. Adapts to detected APEX version automatically.`,
           );
         }
 
+        let daActions: Record<string, unknown>[] = [];
+        if (params.include_da_actions) {
+          daActions = await oracle.queryRows(
+            `SELECT da.DYNAMIC_ACTION_NAME, a.ACTION_NAME, a.ACTION_CODE,
+                    a.ACTION_SEQUENCE, a.EXECUTE_ON_PAGE_INIT,
+                    a.AFFECTED_ELEMENTS, a.AFFECTED_ELEMENTS_TYPE, a.AFFECTED_REGION,
+                    DBMS_LOB.SUBSTR(a.ATTRIBUTE_01, 500, 1) AS ATTRIBUTE_01_PREVIEW,
+                    a.ATTRIBUTE_02, a.STOP_EXECUTION_ON_ERROR
+             FROM APEX_APPLICATION_PAGE_DA_ACTS a,
+                  APEX_APPLICATION_PAGE_DA da
+             WHERE a.APPLICATION_ID = :aid AND a.PAGE_ID = :pid
+             AND da.APPLICATION_ID = a.APPLICATION_ID AND da.PAGE_ID = a.PAGE_ID
+             AND da.DYNAMIC_ACTION_ID = a.DYNAMIC_ACTION_ID
+             ORDER BY da.DYNAMIC_ACTION_SEQUENCE, a.ACTION_SEQUENCE`,
+            binds
+          );
+        }
+
+        let buttons: Record<string, unknown>[] = [];
+        if (params.include_buttons) {
+          buttons = await oracle.queryRows(
+            `SELECT BUTTON_NAME, LABEL, BUTTON_POSITION, BUTTON_SEQUENCE,
+                    BUTTON_ACTION, REDIRECT_URL, REGION, BUTTON_IS_HOT,
+                    CONDITION_TYPE
+             FROM APEX_APPLICATION_PAGE_BUTTONS
+             WHERE APPLICATION_ID = :aid AND PAGE_ID = :pid
+             ORDER BY BUTTON_SEQUENCE`,
+            binds
+          );
+        }
+
+        let reportColumns: Record<string, unknown>[] = [];
+        if (params.include_report_columns) {
+          reportColumns = await oracle.queryRows(
+            `SELECT REGION_NAME, COLUMN_ALIAS, HEADING, DISPLAY_SEQUENCE,
+                    DISPLAY_AS, COLUMN_ALIGNMENT, HEADING_ALIGNMENT
+             FROM APEX_APPLICATION_PAGE_RPT_COLS
+             WHERE APPLICATION_ID = :aid AND PAGE_ID = :pid
+             ORDER BY REGION_NAME, DISPLAY_SEQUENCE`,
+            binds
+          );
+        }
+
         const elapsed = formatDuration(Date.now() - t0);
 
         if (params.format === "json") {
-          return { content: [{ type: "text" as const, text: JSON.stringify({ page: pageRows[0], regions, items, processes, dynamicActions: das, validations }, null, 2) }] };
+          return { content: [{ type: "text" as const, text: JSON.stringify({ page: pageRows[0], regions, items, buttons, processes, dynamicActions: das, daActions, reportColumns, validations }, null, 2) }] };
         }
 
         let text = `## Page ${params.page_id} | ${versionTag()} | ${elapsed}\n\n`;
@@ -275,7 +331,10 @@ Queries APEX_APPLICATIONS view. Adapts to detected APEX version automatically.`,
         if (regions.length) text += `### Regions (${regions.length})\n\n` + formatRowsAsMarkdownTable(regions) + "\n\n";
         if (items.length) text += `### Items (${items.length})\n\n` + formatRowsAsMarkdownTable(items) + "\n\n";
         if (processes.length) text += `### Processes (${processes.length})\n\n` + formatRowsAsMarkdownTable(processes) + "\n\n";
+        if (buttons.length) text += `### Buttons (${buttons.length})\n\n` + formatRowsAsMarkdownTable(buttons) + "\n\n";
         if (das.length) text += `### Dynamic Actions (${das.length})\n\n` + formatRowsAsMarkdownTable(das) + "\n\n";
+        if (daActions.length) text += `### DA Actions Detail (${daActions.length})\n\n` + formatRowsAsMarkdownTable(daActions) + "\n\n";
+        if (reportColumns.length) text += `### Report Columns (${reportColumns.length})\n\n` + formatRowsAsMarkdownTable(reportColumns) + "\n\n";
         if (validations.length) text += `### Validations (${validations.length})\n\n` + formatRowsAsMarkdownTable(validations) + "\n\n";
         return { content: [{ type: "text" as const, text: truncateIfNeeded(text) }] };
       } catch (e) {
@@ -298,8 +357,10 @@ Useful for reviewing or modifying page logic. Returns CLOB content as text.`,
       include_css: z.boolean().default(true).describe("Include Inline CSS"),
       include_region_source: z.boolean().default(false).describe("Include full region source (HTML/SQL)"),
       include_process_source: z.boolean().default(false).describe("Include full process PL/SQL source"),
+      include_da_source: z.boolean().default(false).describe("Include DA action PL/SQL/JS source code"),
       region_name: z.string().optional().describe("Filter regions by name (LIKE match)"),
       process_name: z.string().optional().describe("Filter processes by name (LIKE match)"),
+      da_name: z.string().optional().describe("Filter dynamic actions by name (LIKE match)"),
       format: z.enum(["json", "markdown"]).default("markdown"),
     },
     async (params) => {
@@ -374,6 +435,35 @@ Useful for reviewing or modifying page logic. Returns CLOB content as text.`,
               parts.push({
                 title: `Process: ${p.PROCESS_NAME} (${p.PROCESS_POINT})`,
                 content: p.PROCESS_SOURCE,
+              });
+            }
+          }
+        }
+
+        // DA action sources
+        if (params.include_da_source) {
+          const daFilter = params.da_name ? "AND UPPER(da.DYNAMIC_ACTION_NAME) LIKE UPPER(:daname)" : "";
+          if (params.da_name) binds.daname = `%${params.da_name}%`;
+          const daRows = await oracle.queryRows<{
+            DYNAMIC_ACTION_NAME: string; ACTION_NAME: string;
+            ACTION_SEQUENCE: number; ATTRIBUTE_01: string | null;
+          }>(
+            `SELECT da.DYNAMIC_ACTION_NAME, a.ACTION_NAME, a.ACTION_SEQUENCE,
+                    a.ATTRIBUTE_01
+             FROM APEX_APPLICATION_PAGE_DA_ACTS a,
+                  APEX_APPLICATION_PAGE_DA da
+             WHERE a.APPLICATION_ID = :aid AND a.PAGE_ID = :pid
+             AND da.APPLICATION_ID = a.APPLICATION_ID AND da.PAGE_ID = a.PAGE_ID
+             AND da.DYNAMIC_ACTION_ID = a.DYNAMIC_ACTION_ID
+             ${daFilter}
+             ORDER BY da.DYNAMIC_ACTION_SEQUENCE, a.ACTION_SEQUENCE`,
+            binds
+          );
+          for (const d of daRows) {
+            if (d.ATTRIBUTE_01) {
+              parts.push({
+                title: `DA: ${d.DYNAMIC_ACTION_NAME} → ${d.ACTION_NAME} (seq ${d.ACTION_SEQUENCE})`,
+                content: d.ATTRIBUTE_01,
               });
             }
           }
