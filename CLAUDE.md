@@ -102,3 +102,135 @@ The APEX schema (e.g., `APEX_200200` for APEX 20.2) contains internal tables tha
 - `wwv_flow_worksheet_rpts` → IR saved reports (application_user = 'APXWS_DEFAULT' for default)
 - `wwv_flow_step_buttons` → page buttons
 - `wwv_flow_steps` → page-level properties (inline_css, javascript_code, css_file_urls)
+
+## Oracle Forms to APEX Migration Knowledge
+
+### Architecture Patterns
+
+**Two-page approach (mandatory)**:
+- Page 1: Interactive Report (IR) — list with filters, search, export
+- Page 2: Modal Form — CRUD operations (Create/Read/Update/Delete)
+- Never use a standalone Form page without an IR behind it
+
+**PL/SQL package pattern (mandatory)**:
+- One single `PKG_<ENTITY>` per entity — NEVER split into `_LECTURA` / `_ESCRITURA`
+- Contains: queries (get_lista, get_detalle), DML (guardar, eliminar), validations (validar), business logic (procesar, anular, procesar_lote)
+- BULK operations mandatory: `FORALL`, `BULK COLLECT` — never row-by-row loops
+- No `COMMIT` internal — APEX controls the transaction
+- Use `RETURNING INTO` for inserts to get generated IDs
+- Check `SQL%ROWCOUNT` after DML for affected rows verification
+
+### APEX Page Creation via wwv_flow_api
+
+**Critical requirements when creating pages programmatically**:
+- `user_interface_id`: REQUIRED — query `SELECT id FROM wwv_flow_user_interfaces WHERE flow_id = <app_id>` to get it
+- `page_mode`: 'NORMAL' for regular pages, 'MODAL' for modal dialogs
+- `step_title`: the page title displayed in breadcrumbs/tabs
+
+**Region creation**:
+- `plug_source_type`: 'NATIVE_IR' for Interactive Report, 'NATIVE_SQL_REPORT' for Classic Report, 'STATIC' for static content
+- For IR regions, you MUST also create: `wwv_flow_worksheets`, `wwv_flow_worksheet_columns`, and `wwv_flow_worksheet_rpts` (default report)
+- Region template classes: `region-con-bordes borde-primario` (with borders, primary style)
+
+**Item naming convention**: `P<page_number>_<COLUMN_NAME>` (e.g., `P937_ID_ORDEN_PAGO`)
+
+**Item templates**: Always use `Optional - Floating` template for consistent floating labels
+
+**CSS**: Reference `#WORKSPACE_IMAGES#template-floating-minimalista.css` in page CSS File URLs
+
+**Money/amount formatting**: `TO_CHAR(column, 'FM999G999G999G990D00')` — never raw NUMBER display
+
+### Dynamic Action (DA) Creation
+
+When inserting into `wwv_flow_page_da_events`:
+- `bind_type` = `'bind'` (not 'live')
+- `event_result` = `'TRUE'` (not 'true')
+- `triggering_element_type` = `'JQUERY_SELECTOR'`, `'BUTTON'`, `'ITEM'`, or `'REGION'`
+- `triggering_element` = CSS selector or item/button name
+- `condition_element_type` / `condition_element` for conditional execution
+
+When inserting into `wwv_flow_page_da_actions`:
+- `action` = `'NATIVE_JAVASCRIPT_CODE'`, `'NATIVE_SUBMIT_PAGE'`, `'NATIVE_REFRESH'`, `'NATIVE_HIDE'`, `'NATIVE_SHOW'`, `'NATIVE_SET_VALUE'`, `'NATIVE_EXECUTE_PLSQL_CODE'`
+- `attribute_01` = the JavaScript code or PL/SQL code depending on action type
+- `event_id` = FK to `wwv_flow_page_da_events.id`
+- `execute_on_page_init` = `'Y'` or `'N'`
+
+### Interactive Report (IR) Programmatic Checklist
+
+To create a working IR programmatically, ALL 4 components are required:
+1. **Region** (`wwv_flow_page_plugs`) with `plug_source_type = 'NATIVE_IR'` and the SQL query in `plug_source`
+2. **Worksheet** (`wwv_flow_worksheets`) linked via `region_id`
+3. **Worksheet Columns** (`wwv_flow_worksheet_columns`) — one per SELECT column, with `column_identifier` (A, B, C...) and `db_column_name`
+4. **Default Report** (`wwv_flow_worksheet_rpts`) with `application_user = 'APXWS_DEFAULT'` and `is_default = 'Y'`
+
+Missing any one of these results in a broken/empty IR page.
+
+### Virtual Column for Forms
+
+When creating Form regions backed by a query (not table), add a `UNIQUELY_IDENTIFY_ROWS_BY` virtual column:
+```sql
+-- In the form region source
+SELECT id, col1, col2, ..., id AS UNIQUELY_IDENTIFY_ROWS_BY FROM my_table
+```
+This tells APEX which column is the PK for DML operations.
+
+### Authorization Pattern
+
+```sql
+dev_permiso_apx(p_nIdPrograma => :APP_PAGE_ID, p_vPermisoDml => 'S')
+```
+- `p_vPermisoDml`: 'S' = select/view, 'I' = insert, 'U' = update, 'D' = delete
+- Applied as Authorization Scheme on pages, regions, buttons, or items
+
+### Button Patterns
+
+| Button | Type | Behavior |
+|--------|------|----------|
+| CANCEL | Dynamic Action | Close modal dialog |
+| DELETE | Redirect | Confirm dialog → delete process → redirect to IR page |
+| SAVE | Submit Page | Runs page processes (validation + DML) |
+| CREATE | Submit Page | Same as SAVE but for new records |
+
+### Forms XML Analysis Keys
+
+When parsing Oracle Forms .fmb XML (after frmf2xml conversion):
+- `<Block>` → APEX Region (check `QueryDataSourceName` for table/view)
+- `<Item>` → APEX Page Item (check `ItemType`, `DataType`, `MaximumLength`)
+- `<Trigger>` → APEX Process, Validation, or Dynamic Action (check `TriggerType`)
+- `<LOV>` → APEX List of Values (check `ListType`, `RecordGroup`)
+- `<ProgramUnit>` → Candidate for PL/SQL Package procedure/function
+
+**DataType codes**: 1=CHAR, 2=NUMBER, 12=DATE, 112=CLOB
+**ItemType codes**: 1=TEXT, 3=LIST(SELECT), 6=RADIO, 7=CHECK_BOX, 8=DISPLAY_ONLY, 12=LONG_TEXT, 14=BUTTON
+
+### Common Legacy Schema Patterns
+
+Legacy Oracle Forms schemas (especially Oracle 6i era) often use:
+- Abbreviated table names: `ORD_PAGO` instead of `ORDEN_PAGO`, `PREST_SRV` instead of `PRESTADOR_SERVICIO`
+- Verify actual table names with `oracle_list_tables` or `oracle_search` before generating PL/SQL
+- Join patterns often involve `CONTRATO_CLIENTE` as the central linking table
+- `FACTURA_PREPAGA` columns: check actual column names — they vary between schemas (e.g., `NRO_FACTURA` vs `NUMERO_FACTURA`)
+
+### JasperReports Integration
+
+For migrating Oracle Reports (.rdf) to APEX:
+1. Convert .rdf to XML using rdf2xml tool
+2. Generate JRXML template for JasperReports Server
+3. Use `pkg_jasperreports` PL/SQL package for APEX integration
+4. AJAX callback pattern: button → JavaScript → AJAX callback → PL/SQL → JasperReports REST API → PDF download
+
+### NOT NULL Constraints in wwv_flow_* Tables
+
+When inserting into APEX internal tables, these columns are NOT NULL and commonly missed:
+- `wwv_flow_page_plugs`: `flow_id`, `page_id`, `plug_name`, `plug_display_sequence`
+- `wwv_flow_step_items`: `flow_id`, `flow_step_id`, `name`, `data_type`, `display_as`
+- `wwv_flow_worksheets`: `flow_id`, `page_id`, `region_id`
+- `wwv_flow_worksheet_columns`: `worksheet_id`, `db_column_name`, `column_identifier`
+- `wwv_flow_step_processing`: `flow_id`, `flow_step_id`, `process_name`, `process_sql_clob`
+
+### Large ID Precision
+
+APEX internal IDs can exceed JavaScript's `Number.MAX_SAFE_INTEGER`. When working with these IDs:
+- Use `TO_CHAR(id)` in queries to preserve precision
+- In PL/SQL, use `NUMBER` type (not PLS_INTEGER)
+- When generating IDs via `wwv_flow_id.next_val`, the values are safe

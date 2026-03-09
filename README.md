@@ -123,7 +123,7 @@ If you prefer manual configuration instead of the auto-installer:
 ### Option 1: CLI command
 
 ```bash
-claude mcp add-json oracle-apex '{"type":"stdio","command":"node","args":["C:/Users/sotelos/oracle-apex-mcp-server/dist/index.js"],"env":{"TNS_ADMIN":"C:/oracle/network/admin"}}' --scope user
+claude mcp add-json oracle-apex '{"type":"stdio","command":"node","args":["/ruta/a/oracle-apex-mcp-server/dist/index.js"],"env":{"TNS_ADMIN":"/ruta/a/network/admin"}}' --scope user
 ```
 
 ### Option 2: Edit `~/.claude/mcp.json`
@@ -134,11 +134,11 @@ claude mcp add-json oracle-apex '{"type":"stdio","command":"node","args":["C:/Us
     "oracle-apex": {
       "type": "stdio",
       "command": "node",
-      "args": ["C:/Users/sotelos/oracle-apex-mcp-server/dist/index.js"],
+      "args": ["/ruta/a/oracle-apex-mcp-server/dist/index.js"],
       "env": {
-        "TNS_ADMIN": "C:/oracle/network/admin",
+        "TNS_ADMIN": "/ruta/a/network/admin",
         "ORACLE_OLD_CRYPTO": "true",
-        "ORACLE_CLIENT_LIB_DIR": "C:/oracle/instantclient_19_26"
+        "ORACLE_CLIENT_LIB_DIR": "/ruta/a/instantclient"
       }
     }
   }
@@ -153,7 +153,7 @@ claude mcp add-json oracle-apex '{"type":"stdio","command":"node","args":["C:/Us
     "oracle-apex": {
       "type": "stdio",
       "command": "node",
-      "args": ["C:/Users/sotelos/oracle-apex-mcp-server/dist/index.js"],
+      "args": ["/ruta/a/oracle-apex-mcp-server/dist/index.js"],
       "env": {
         "ORACLE_HOST": "myhost",
         "ORACLE_PORT": "1521",
