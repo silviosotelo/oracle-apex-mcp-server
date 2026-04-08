@@ -2,6 +2,19 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Documentation Reference Files
+
+Detailed APEX and Oracle documentation lives in the `docs/` folder:
+
+| File | Description |
+|------|-------------|
+| [docs/apex-data-dictionary.md](docs/apex-data-dictionary.md) | APEX Data Dictionary views with ALL verified column names, ORA-00904 error prevention, standard query patterns |
+| [docs/apex-plsql-apis.md](docs/apex-plsql-apis.md) | Complete reference for all 41 APEX PL/SQL packages with methods, parameters, and usage patterns |
+| [docs/apex-js-apis.md](docs/apex-js-apis.md) | Complete APEX JavaScript API reference - all namespaces, methods, practical patterns |
+| [docs/oracle-db-apis.md](docs/oracle-db-apis.md) | Oracle DB APIs (DBMS_LOB, DBMS_CRYPTO, UTL_*, JSON, REGEXP, analytics, dictionary views) |
+
+These files contain the detailed knowledge. The sections below in CLAUDE.md provide a quick-reference summary.
+
 ## Build & Run
 
 ```bash
