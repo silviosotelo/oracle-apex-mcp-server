@@ -1,0 +1,1174 @@
+# APEX_UI_DEFAULT_UPDATE (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 63904-65076)
+
+APEX_UI_DEFAULT_UPDATE
+
+The APEX_UI_DEFAULT_UPDATE package provides procedures to access user interface defaults
+from within SQL Developer or SQLcl.
+
+You can use this package to set the user interface defaults associated with a table within a
+schema. The package must be called from within the schema that owns the table you are
+updating.
+
+User interface defaults enable you to assign default user interface properties to a table,
+column, or view within a specified schema. When you create a form or report using a wizard,
+the wizard uses this information to create default values for region and item properties. Utilizing
+user interface defaults can save valuable development time and has the added benefit of
+providing consistency across multiple pages in an application.
+
+� ADD_AD_COLUMN Procedure
+� ADD_AD_SYNONYM Procedure
+� DEL_AD_COLUMN Procedure
+� DEL_AD_SYNONYM Procedure
+� DEL_COLUMN Procedure
+� DEL_GROUP Procedure
+� DEL_TABLE Procedure
+� SYNCH_TABLE Procedure
+� UPD_AD_COLUMN Procedure
+� UPD_AD_SYNONYM Procedure
+� UPD_COLUMN Procedure
+� UPD_DISPLAY_IN_FORM Procedure
+� UPD_DISPLAY_IN_REPORT Procedure
+� UPD_FORM_REGION_TITLE Procedure
+� UPD_GROUP Procedure
+� UPD_ITEM_DISPLAY_HEIGHT Procedure
+� UPD_ITEM_DISPLAY_WIDTH Procedure
+� UPD_ITEM_FORMAT_MASK Procedure
+� UPD_ITEM_HELP Procedure
+� UPD_LABEL Procedure
+� UPD_REPORT_ALIGNMENT Procedure
+� UPD_REPORT_FORMAT_MASK Procedure
+� UPD_REPORT_REGION_TITLE Procedure
+� UPD_TABLE Procedure
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 1 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                             Chapter 62
+                                                                                    ADD_AD_COLUMN Procedure
+
+See Also
+Managing User Interface Defaults in Oracle APEX SQL Workshop Guide
+
+62.1 ADD_AD_COLUMN Procedure
+
+                       Adds a User Interface Default Attribute Dictionary entry with the provided definition. Up to three
+                       synonyms can be provided during the creation. Additional synonyms can be added post-
+                       creation using apex_ui_default_update.add_ad_synonym. Synonyms share the column
+                       definition of their base column.
+
+                       Syntax
+
+APEX_UI_DEFAULT_UPDATE.ADD_AD_COLUMN (
+
+p_column_name                                          IN VARCHAR2,
+
+p_label                                                IN VARCHAR2 DEFAULT NULL,
+
+p_help_text                                            IN VARCHAR2 DEFAULT NULL,
+
+p_format_mask                                          IN VARCHAR2 DEFAULT NULL,
+
+p_default_value                                        IN VARCHAR2 DEFAULT NULL,
+
+p_form_format_mask                                     IN VARCHAR2 DEFAULT NULL,
+
+p_form_display_width IN VARCHAR2 DEFAULT NULL,
+
+p_form_display_height IN VARCHAR2 DEFAULT NULL,
+
+p_form_data_type                                       IN VARCHAR2 DEFAULT NULL,
+
+p_report_format_mask IN VARCHAR2 DEFAULT NULL,
+
+p_report_col_alignment IN VARCHAR2 DEFAULT NULL,
+
+p_syn_name1                                            IN VARCHAR2 DEFAULT NULL,
+
+p_syn_name2                                            IN VARCHAR2 DEFAULT NULL,
+
+p_syn_name3                                            IN VARCHAR2 DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_column_name
+p_label                                                Name of column to be created.
+p_help_text
+p_format_mask                                          Used for item label and report column heading.
+
+p_default_value                                        Used for help text for items and interactive report columns
+p_form_format_mask
+                                                       Used as the format mask for items and report columns. Can be
+p_form_display_width                                   overwritten by report for form specific format masks.
+p_form_display_height                                  Used as the default value for items.
+
+p_form_data_type                                       If provided, used as the format mask for items, overriding any
+                                                       value for the general format mask.
+p_report_format_mask                                   Used as the width of any items using this Attribute Definition.
+
+p_report_col_alignment                                 Used as the height of any items using this Attribute Definition
+                                                       (only used by item types such as text areas and shuttles).
+                                                       Used as the data type for items (results in an automatic
+                                                       validation). Valid values are VARCHAR, NUMBER and DATE.
+                                                       If provided, used as the format mask for report columns,
+                                                       overriding any value for the general format mask.
+                                                       Used as the alignment for report column data (for example,
+                                                       number are usually right justified). Valid values are LEFT, CENTER,
+                                                       and RIGHT.
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 2 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                           Chapter 62
+                                                                                ADD_AD_SYNONYM Procedure
+
+Parameter                                              Description
+p_syn_name1
+p_syn_name2                                            Name of synonym to be created along with this column. For more
+                                                       than 3, use APEX_UI_DEFAULT_UPDATE.ADD_AD_SYNONYM.
+p_syn_name3
+                                                       Name of second synonym to be created along with this column.
+                                                       For more than 3, use
+                                                       APEX_UI_DEFAULT_UPDATE.ADD_AD_SYNONYM.
+
+                                                       Name of third synonym to be created along with this column. For
+                                                       more than 3, use
+                                                       APEX_UI_DEFAULT_UPDATE.ADD_AD_SYNONYM.
+
+Example
+
+The following example creates a new attribute to the UI Defaults Attribute Dictionary within the
+workspace associated with the current schema. It also creates a synonym for that attribute.
+
+BEGIN
+
+apex_ui_default_update.add_ad_column (
+
+       p_column_name                                   => 'CREATED_BY',
+
+       p_label                                         => 'Created By',
+
+       p_help_text                                     => 'User that created the record.',
+
+       p_form_display_width => 30,
+
+       p_form_data_type                                => 'VARCHAR',
+
+       p_report_col_alignment => 'LEFT',
+
+       p_syn_name1                                     => 'CREATED_BY_USER' );
+
+END;
+
+62.2 ADD_AD_SYNONYM Procedure
+
+                       If the column name is found within the User Interface Default Attribute Dictionary, the synonym
+                       provided is created and associated with that column. Synonyms share the column definition of
+                       their base column.
+
+                       Syntax
+
+APEX_UI_DEFAULT_UPDATE.ADD_AD_SYNONYM (
+
+      p_column_name                                    IN VARCHAR2,
+
+      p_syn_name                                       IN VARCHAR2 );
+
+Parameters
+
+Parameter                                              Description
+p_column_name
+                                                       Name of column with the Attribute Dictionary that the synonym is being
+p_syn_name                                             created for.
+                                                       Name of synonym to be created.
+
+API Reference                                                                               July 24, 2026
+G26651-03                                                                                   Page 3 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                              Chapter 62
+                                                                                     DEL_AD_COLUMN Procedure
+
+Example
+
+The following example add the synonym CREATED_BY_USER to the CREATED_BY attribute
+of the UI Defaults Attribute Dictionary within the workspace associated with the current
+schema.
+
+BEGIN
+      apex_ui_default_update.add_ad_synonym (
+           p_column_name => 'CREATED_BY',
+           p_syn_name => 'CREATED_BY_USER' );
+
+END;
+
+62.3 DEL_AD_COLUMN Procedure
+
+                       If the column name is found within the User Interface Default Attribute Dictionary, the column,
+                       along with any associated synonyms, is deleted.
+
+                       Syntax
+
+APEX_UI_DEFAULT_UPDATE.DEL_AD_COLUMN (
+
+p_column_name                                          IN VARCHAR2 );
+
+Parameters
+
+Parameter                                              Description
+p_column_name                                          Name of column to be deleted
+
+Example
+
+The following example deletes the attribute CREATED_BY from the UI Defaults Attribute
+Dictionary within the workspace associated with the current schema.
+
+BEGIN
+      apex_ui_default_update.del_ad_column (
+           p_column_name => 'CREATED_BY' );
+
+END;
+
+62.4 DEL_AD_SYNONYM Procedure
+
+                       If the synonym name is found within the User Interface Default Attribute Dictionary, the
+                       synonym name is deleted.
+
+                       Syntax
+
+APEX_UI_DEFAULT_UPDATE.DEL_AD_SYNONYM (
+
+p_syn_name                                             IN VARCHAR2 );
+
+API Reference                                                                        July 24, 2026
+G26651-03                                                                            Page 4 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                          Chapter 62
+                                                                                      DEL_COLUMN Procedure
+
+Parameters
+
+Parameter                                              Description
+p_syn_name                                             Name of synonym to be deleted
+
+Example
+
+The following example deletes the synonym CREATED_BY_USER from the UI Defaults
+Attribute Dictionary within the workspace associated with the current schema.
+
+BEGIN
+      apex_ui_default_update.del_ad_synonym (
+           p_syn_name => 'CREATED_BY_USER' );
+
+END;
+
+62.5 DEL_COLUMN Procedure
+
+                       If the provided table and column exists within the user's schema's table based User Interface
+                       Defaults, the UI Defaults for it are deleted.
+
+Syntax
+
+APEX_UI_DEFAULT_UPDATE.DEL_COLUMN (
+
+p_table_name                                           IN VARCHAR2,
+
+p_column_name                                          IN VARCHAR2 );
+
+Parameters
+
+Parameter                                              Description
+p_table_name                                           Name of table whose column's UI Defaults are to be deleted.
+p_column_name                                          Name of column whose UI Defaults are to be deleted.
+
+Example
+
+The following example deletes the column CREATED_BY from the EMP table definition within the
+UI Defaults Table Dictionary within the current schema.
+
+BEGIN
+      apex_ui_default_update.del_column (
+           p_table_name => 'EMP',
+           p_column_name => 'CREATED_BY' );
+
+END;
+
+62.6 DEL_GROUP Procedure
+
+                       If the provided table and group exists within the user's schema's table based User Interface
+                       Defaults, the UI Defaults for it are deleted and any column within the table that references that
+                       group has the group_id set to null.
+
+API Reference                                                                         July 24, 2026
+G26651-03                                                                             Page 5 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                       Chapter 62
+                                                                       DEL_TABLE Procedure
+
+Syntax
+
+APEX_UI_DEFAULT_UPDATE.DEL_GROUP (
+
+p_table_name                                           IN VARCHAR2,
+
+p_group_name                                           IN VARCHAR2 );
+
+Parameters
+
+Parameter                                              Description
+p_table_name                                           Name of table whose group UI Defaults are to be deleted.
+p_group_name                                           Name of group whose UI Defaults are to be deleted.
+
+Example
+
+The following example deletes the group AUDIT_INFO from the EMP table definition within the UI
+Defaults Table Dictionary within the current schema.
+
+BEGIN
+      apex_ui_default_update.del_group (
+           p_table_name => 'EMP',
+           p_group_name => 'AUDIT_INFO' );
+
+END;
+
+62.7 DEL_TABLE Procedure
+
+                       If the provided table exists within the user's schema's table based User Interface Defaults, the
+                       UI Defaults for it is deleted. This includes the deletion of any groups defined for the table and
+                       all the columns associated with the table.
+
+                       Syntax
+
+APEX_UI_DEFAULT_UPDATE.DEL_TABLE (
+
+p_table_name                                           IN VARCHAR2 );
+
+Parameters
+
+Parameter                                              Description
+p_table_name                                           Table name.
+
+Example
+
+The following example removes the UI Defaults for the EMP table that are associated with the
+current schema.
+
+begin
+      apex_ui_default_update.del_table (
+            p_table_name => 'EMP' );
+
+end;
+/
+
+API Reference                                                                                                    July 24, 2026
+G26651-03                                                                                                        Page 6 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                      Chapter 62
+                                                                                  SYNCH_TABLE Procedure
+
+62.8 SYNCH_TABLE Procedure
+
+                       If the Table Based User Interface Defaults for the table do not already exist within the user's
+                       schema, they are defaulted. If they do exist, they are synchronized, meaning, the columns in
+                       the table is matched against the column in the UI Defaults Table Definitions. Additions and
+                       deletions are used to make them match.
+
+                       Syntax
+
+APEX_UI_DEFAULT_UPDATE.SYNCH_TABLE (
+
+p_table_name                                           IN VARCHAR2 );
+
+Parameters
+
+Parameter                                              Description
+p_table_name                                           Table name.
+
+Example
+
+The following example synchronizes the UI Defaults for the EMP table that are associated with
+the current schema.
+
+BEGIN
+      apex_ui_default_update.synch_table (
+           p_table_name => 'EMP' );
+
+END;
+
+62.9 UPD_AD_COLUMN Procedure
+
+                       If the column name is found within the User Interface Default Attribute Dictionary, the column
+                       entry is updated using the provided parameters. If 'null%' is passed in, the value of the
+                       associated parameter is set to null.
+
+                       Syntax
+
+APEX_UI_DEFAULT_UPDATE.UPD_AD_COLUMN (
+
+p_column_name                                          IN VARCHAR2,
+
+p_new_column_name                                      IN VARCHAR2 DEFAULT NULL,
+
+p_label                                                IN VARCHAR2 DEFAULT NULL,
+
+p_help_text                                            IN VARCHAR2 DEFAULT NULL,
+
+p_format_mask                                          IN VARCHAR2 DEFAULT NULL,
+
+p_default_value                                        IN VARCHAR2 DEFAULT NULL,
+
+p_form_format_mask                                     IN VARCHAR2 DEFAULT NULL,
+
+p_form_display_width IN VARCHAR2 DEFAULT NULL,
+
+p_form_display_height IN VARCHAR2 DEFAULT NULL,
+
+p_form_data_type                                       IN VARCHAR2 DEFAULT NULL,
+
+p_report_format_mask IN VARCHAR2 DEFAULT NULL,
+
+p_report_col_alignment IN VARCHAR2 DEFAULT NULL );
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 7 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                    Chapter 62
+                                                                         UPD_AD_SYNONYM Procedure
+
+Parameters                                             Description
+
+ Parameter                                             Name of column to be updated
+p_column_name
+p_new_column_name                                      New name for column, if column is being renamed
+p_label
+p_help_text                                            Used for item label and report column heading
+p_format_mask
+                                                       Used for help text for items and interactive report columns
+p_default_value
+p_form_format_mask                                     Used as the format mask for items and report columns. Can be
+                                                       overwritten by report for form specific format masks.
+p_form_display_width                                   Used as the default value for items.
+p_form_display_height
+                                                       If provided, used as the format mask for items, overriding any
+p_form_data_type                                       value for the general format mask.
+                                                       Used as the width of any items using this Attribute Definition.
+p_report_format_mask
+                                                       Used as the height of any items using this Attribute Definition
+p_report_col_alignment                                 (only used by item types such as text areas and shuttles).
+                                                       Used as the data type for items (results in an automatic
+                                                       validation). Valid values are VARCHAR, NUMBER and DATE.
+
+                                                       If provided, used as the format mask for report columns,
+                                                       overriding any value for the general format mask.
+                                                       Used as the alignment for report column data (for example,
+                                                       number are usually right justified). Valid values are LEFT,
+                                                       CENTER, and RIGHT.
+
+       Note
+
+       If p_label through p_report_col_alignment are set to 'null%', the value is nullified. If
+       no value is passed in, that column is not updated.
+
+Example
+
+The following example updates the CREATED_BY column in the UI Defaults Attribute Dictionary
+within the workspace associated with the current schema, setting the form_format_mask to
+null.
+
+BEGIN
+
+apex_ui_default_update.upd_ad_column (
+
+       p_column_name                                   => 'CREATED_BY',
+
+       p_form_format_mask => 'null%');
+
+END;
+
+62.10 UPD_AD_SYNONYM Procedure
+
+                       If the synonym name is found within the User Interface Default Attribute Dictionary, the
+                       synonym name is updated.
+
+API Reference                                                            July 24, 2026
+G26651-03                                                                Page 8 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                           Chapter 62
+                                                                                       UPD_COLUMN Procedure
+
+Syntax
+
+APEX_UI_DEFAULT_UPDATE.UPD_AD_SYNONYM (
+
+p_syn_name                                             IN VARCHAR2,
+
+p_new_syn_name                                         IN VARCHAR2 DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_syn_name                                             Name of synonym to be updated.
+p_new_syn_name                                         New name for synonym.
+
+Example
+
+The following example updates the CREATED_BY_USER synonym in the UI Defaults Attribute
+Dictionary within the workspace associated with the current schema.
+
+BEGIN
+      apex_ui_default_update.upd_ad_synonym (
+           p_syn_name => 'CREATED_BY_USER',
+           p_new_syn_name => 'USER_CREATED_BY');
+
+END;
+
+62.11 UPD_COLUMN Procedure
+
+                       If the provided table and column exists within the user's schema's table based User Interface
+                       Defaults, the provided parameters are updated. If 'null%' is passed in, the value of the
+                       associated parameter is set to null.
+
+                       Syntax
+
+APEX_UI_DEFAULT_UPDATE.UPD_COLUMN (
+
+p_table_name                                           IN VARCHAR2,
+
+p_column_name                                          IN VARCHAR2,
+
+p_group_id                                             IN VARCHAR2 DEFAULT NULL,
+
+p_label                                                IN VARCHAR2 DEFAULT NULL,
+
+p_help_text                                            IN VARCHAR2 DEFAULT NULL,
+
+p_display_in_form                                      IN VARCHAR2 DEFAULT NULL,
+
+p_display_seq_form                                     IN VARCHAR2 DEFAULT NULL,
+
+p_mask_form                                            IN VARCHAR2 DEFAULT NULL,
+
+p_default_value                                        IN VARCHAR2 DEFAULT NULL,
+
+p_required                                             IN VARCHAR2 DEFAULT NULL,
+
+p_display_width                                        IN VARCHAR2 DEFAULT NULL,
+
+p_max_width                                            IN VARCHAR2 DEFAULT NULL,
+
+p_height                                               IN VARCHAR2 DEFAULT NULL,
+
+p_display_in_report IN VARCHAR2 DEFAULT NULL,
+
+p_display_seq_report IN VARCHAR2 DEFAULT NULL,
+
+p_mask_report                                          IN VARCHAR2 DEFAULT NULL,
+
+p_alignment                                            IN VARCHAR2 DEFAULT NULL );
+
+API Reference                                                                          July 24, 2026
+G26651-03                                                                              Page 9 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                          Chapter 62
+                                                                                                      UPD_COLUMN Procedure
+
+Parameters
+
+Parameter                                              Description
+
+p_table_name                                           Name of table whose column's UI Defaults are being updated.
+
+p_column_name                                          Name of column whose UI Defaults are being updated.
+
+p_group_id                                             ID of group to be associated with the column.
+
+p_label                                                When creating a form against this table or view, this is used as the label for
+                                                       the item if this column is included. When creating a report or tabular form, this
+                                                       is used as the column heading if this column is included.
+
+p_help_text                                            When creating a form against this table or view, this becomes the help text for
+                                                       the resulting item.
+
+p_display_in_form When creating a form against this table or view, this determines whether this
+                                   column is displayed in the resulting form page. Valid values are Y and N.
+
+p_display_seq_form When creating a form against this table or view, this determines the sequence
+                                   in which the columns are displayed in the resulting form page.
+
+p_mask_form                                            When creating a form against this table or view, this specifies the mask that is
+                                                       applied to the item, such as 999-99-9999. This is not used for character
+                                                       based items.
+
+p_default_value                                        When creating a form against this table or view, this specifies the default
+                                                       value for the item resulting from this column.
+
+p_required                                             When creating a form against this table or view, this specifies to generate a
+                                                       validation in which the resulting item must be NOT NULL. Valid values are Y
+                                                       and N.
+
+p_display_width                                        When creating a form against this table or view, this specifies the display
+                                                       width of the item resulting from this column.
+
+p_max_width                                            When creating a form against this table or view, this specifies the maximum
+                                                       string length that a user is allowed to enter in the item resulting from this
+                                                       column.
+
+p_height                                               When creating a form against this table or view, this specifies the display
+                                                       height of the item resulting from this column.
+
+p_display_in_report When creating a report against this table or view, this determines whether this
+                                   column is displayed in the resulting report. Valid values are Y and N.
+
+p_display_seq_repor When creating a report against this table or view, this determines the
+
+t                                                      sequence in which the columns are displayed in the resulting report.
+
+p_mask_report                                          When creating a report against this table or view, this specifies the mask that
+                                                       is applied against the data, such as 999-99-9999. This is not used for
+                                                       character based items.
+
+p_alignment                                            When creating a report against this table or view, this determines the
+                                                       alignment for the resulting report column. Valid values are L for Left, C for
+                                                       Center, and R for Right.
+
+   Note
+
+   If p_group_id through p_alignment are set to 'null%', the value is nullified. If no value
+   is passed in, that column is not updated.
+
+API Reference                                                                                                       July 24, 2026
+G26651-03                                                                                                           Page 10 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                        Chapter 62
+                                                                       UPD_DISPLAY_IN_FORM Procedure
+
+Example
+
+The following example updates the column DEPT_NO within the EMP table definition within the UI
+Defaults Table Dictionary within the current schema, setting the group_id to null.
+
+BEGIN
+
+apex_ui_default_update.upd_column (
+
+       p_table_name => 'EMP',
+
+       p_column_name => 'DEPT_NO',
+
+       p_group_id                                      => 'null%' );
+
+END;
+
+62.12 UPD_DISPLAY_IN_FORM Procedure
+
+                       The UPD_DISPLAY_IN_FORM procedure sets the display in form user interface defaults. This user
+                       interface default is used by wizards when you select to create a form based upon the table. It
+                       controls whether the column is included by default or not.
+
+                       Syntax
+
+APEX_UI_DEFAULT_UPDATE.UPD_DISPLAY_IN_FORM (
+
+      p_table_name                                     IN VARCHAR2,
+
+      p_column_name                                    IN VARCHAR2,
+
+      p_display_in_form                                IN VARCHAR2 );
+
+Parameters
+
+Parameter                                              Description
+p_table_name
+p_column_name                                          Table name.
+p_display_in_form                                      Column name.
+                                                       Determines whether to display in the form by default, valid values are Y
+                                                       and N.
+
+Example
+
+In the following example, when creating a Form against the DEPT table, the display option on
+the DEPTNO column defaults to 'No'.
+
+APEX_UI_DEFAULT_UPDATE.UPD_DISPLAY_IN_FORM(
+      p_table_name => 'DEPT',
+      p_column_name => 'DEPTNO',
+      p_display_in_form => 'N');
+
+62.13 UPD_DISPLAY_IN_REPORT Procedure
+
+                       The UPD_DISPLAY_IN_REPORT procedure sets the display in report user interface default. This
+                       user interface default is used by wizards when you select to create a report based upon the
+                       table and controls whether the column is included by default or not.
+
+API Reference                                                          July 24, 2026
+G26651-03                                                              Page 11 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                         Chapter 62
+                                                                                   UPD_FORM_REGION_TITLE Procedure
+
+Syntax
+
+APEX_UI_DEFAULT_UPDATE.UPD_DISPLAY_IN_REPORT (
+
+p_table_name                                           IN VARCHAR2,
+
+p_column_name                                          IN VARCHAR2,
+
+p_display_in_report IN VARCHAR2 );
+
+Parameters
+
+Parameter                                              Description
+p_table_name
+p_column_name                                          Table name.
+p_display_in_report                                    Column name.
+                                                       Determines whether to display in the report by default, valid values are
+                                                       Y and N.
+
+Example
+
+In the following example, when creating a Report against the DEPT table, the display option on
+the DEPTNO column defaults to 'No'.
+
+APEX_UI_DEFAULT_UPDATE.UPD_DISPLAY_IN_REPORT(
+      p_table_name => 'DEPT',
+      p_column_name => 'DEPTNO',
+      p_display_in_report => 'N');
+
+62.14 UPD_FORM_REGION_TITLE Procedure
+
+                       The UPD_FORM_REGION_TITLE procedure updates the Form Region Title user interface default.
+                       User interface defaults are used in wizards when you create a form based upon the specified
+                       table.
+
+                       Syntax
+
+APEX_UI_DEFAULT_UPDATE.UPD_FORM_REGION_TITLE (
+
+p_table_name                                           IN VARCHAR2,
+
+p_form_region_title IN VARCHAR2 DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_table_name                                           Table name.
+p_form_region_title                                    Desired form region title.
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 12 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                         Chapter 62
+                                                                                                       UPD_GROUP Procedure
+
+Example
+
+This example demonstrates how to set the Forms Region Title user interface default on the
+DEPT table.
+
+APEX_UI_DEFAULT_UPDATE.UPD_FORM_REGION_TITLE (
+
+p_table_name                                           => 'DEPT',
+
+p_form_region_title => 'Department Details');
+
+62.15 UPD_GROUP Procedure
+
+                       If the provided table and group exist within the user's schema's table based User Interface
+                       Defaults, the group name, description and display sequence of the group are updated. If 'null%'
+                       is passed in for p_description or p_display_sequence, the value is set to null.
+
+                       Syntax
+
+APEX_UI_DEFAULT_UPDATE.UPD_GROUP (
+
+p_table_name                                           IN VARCHAR2,
+
+p_group_name                                           IN VARCHAR2,
+
+p_new_group_name                                       IN VARCHAR2 DEFAULT NULL,
+
+p_description                                          IN VARCHAR2 DEFAULT NULL,
+
+p_display_sequence                                     IN VARCHAR2 DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_table_name
+p_group_name                                           Name of table whose group is being updated.
+p_new_group_name                                       Group being updated.
+p_description                                          New name for group, if group is being renamed.
+p_display_sequence                                     Description of group.
+                                                       Display sequence of group.
+
+Note
+
+If p_description or p_display_sequence are set to 'null%', the value is nullified. If no
+value is passed in, that column is not updated.
+
+Example
+
+The following example updates the description of the group AUDIT_INFO within the EMP table
+definition within the UI Defaults Table Dictionary within the current schema.
+
+BEGIN
+      apex_ui_default_update.upd_group (
+           p_table_name => 'EMP',
+           p_group_name => 'AUDIT_INFO',
+           p_description => 'Audit columns' );
+
+END;
+
+API Reference                                                                                          July 24, 2026
+G26651-03                                                                                              Page 13 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                             Chapter 62
+                                                                     UPD_ITEM_DISPLAY_HEIGHT Procedure
+
+62.16 UPD_ITEM_DISPLAY_HEIGHT Procedure
+
+                       Sets the item display height user interface default. This user interface default is used by
+                       wizards when you select to create a form based upon the table and include the specified
+                       column. Display height controls if the item is a text box or a text area.
+
+                       Syntax
+
+APEX_UI_DEFAULT_UPDATE.UPD_ITEM_DISPLAY_HEIGHT (
+
+p_table_name                                           IN VARCHAR2,
+
+p_column_name                                          IN VARCHAR2,
+
+p_display_height                                       IN NUMBER );
+
+Parameters
+
+Parameter                                              Description
+p_table_name                                           Table name.
+p_column_name                                          Column name.
+p_display_height                                       Display height of any items created based upon this column.
+
+Example
+
+The following example sets a default item height of 3 when creating an item on the DNAME
+column against the DEPT table.
+
+APEX_UI_DEFAULT_UPDATE.UPD_ITEM_DISPLAY_HEIGHT(
+    p_table_name => 'DEPT',
+    p_column_name => 'DNAME',
+    p_display_height => 3);
+
+62.17 UPD_ITEM_DISPLAY_WIDTH Procedure
+
+                       The UPD_ITEM_DISPLAY_WIDTH procedure sets the item display width user interface default.
+                       This user interface default is used by wizards when you select to create a form based upon the
+                       table and include the specified column.
+
+                       Syntax
+
+APEX_UI_DEFAULT_UPDATE.UPD_ITEM_DISPLAY_WIDTH (
+
+p_table_name                                           IN VARCHAR2,
+
+p_column_name                                          IN VARCHAR2,
+
+p_display_width                                        IN NUMBER );
+
+Parameters
+
+Parameter                                              Description
+p_table_name                                           Table name.
+p_column_name                                          Column name.
+p_display_width                                        Display width of any items created based upon this column.
+
+API Reference                                                                                                      July 24, 2026
+G26651-03                                                                                                          Page 14 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                          Chapter 62
+                                                                     UPD_ITEM_FORMAT_MASK Procedure
+
+Example
+
+The following example sets a default item width of 5 when creating an item on the DEPTNO
+column against the DEPT table.
+
+APEX_UI_DEFAULT_UPDATE.UPD_ITEM_DISPLAY_WIDTH(
+    p_table_name => 'DEPT',
+    p_column_name => 'DEPTNO',
+    p_display_width => 5);
+
+62.18 UPD_ITEM_FORMAT_MASK Procedure
+
+                       The UPD_ITEM_FORMAT_MASK procedure sets the item format mask user interface default. This
+                       user interface default is used by wizards when you select to create a form based upon the
+                       table and include the specified column. Item format mask is typically used to format numbers
+                       and dates.
+
+                       Syntax
+
+APEX_UI_DEFAULT_UPDATE.UPD_ITEM_FORMAT_MASK (
+
+p_table_name                                           IN VARCHAR2,
+
+p_column_name                                          IN VARCHAR2,
+
+p_format_mask                                          IN VARCHAR2 DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_table_name                                           Table name.
+p_column_name                                          Column name.
+p_format_mask                                          Format mask to be associated with the column.
+
+Example
+
+In the following example, when creating a Form against the EMP table, the default item format
+mask on the HIREDATE column is set to 'DD-MON-YYYY'.
+
+APEX_UI_DEFAULT_UPDATE.UPD_ITEM_FORMAT_MASK(
+      p_table_name => 'EMP',
+      p_column_name => 'HIREDATE',
+      p_format_mask=> 'DD-MON-YYYY');
+
+62.19 UPD_ITEM_HELP Procedure
+
+                       The UPD_ITEM_HELP procedure updates the help text for the specified table and column. This
+                       user interface default is used when you create a form based upon the table and select to
+                       include the specified column.
+
+                       Syntax
+
+APEX_UI_DEFAULT_UPDATE.UPD_ITEM_HELP (
+
+p_table_name                                           IN VARCHAR2,
+
+API Reference                                                                                         July 24, 2026
+G26651-03                                                                                             Page 15 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                     Chapter 62
+                                                                                    UPD_LABEL Procedure
+
+      p_column_name                                    IN VARCHAR2,
+      p_help_text                                      IN VARCHAR2 DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_table_name                                           Table name.
+p_column_name                                          Column name.
+p_help_text                                            Desired help text.
+
+Example
+
+This example demonstrates how to set the User Interface Item Help Text default for the
+DEPTNO column in the DEPT table.
+
+APEX_UI_DEFAULT_UPDATE.UPD_ITEM_HELP(
+    p_table_name => 'DEPT',
+    p_column_name => 'DEPTNO',
+    p_help_text => 'The number assigned to the department.');
+
+62.20 UPD_LABEL Procedure
+
+                       The UPD_LABEL procedure sets the label used for items. This user interface default is used
+                       when you create a form or report based on the specified table and include a specific column.
+
+                       Syntax
+
+APEX_UI_DEFAULT_UPDATE.UPD_LABEL (
+
+p_table_name                                           IN VARCHAR2,
+
+p_column_name                                          IN VARCHAR2,
+
+p_label                                                IN VARCHAR2 DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_table_name                                           Table name.
+p_column_name                                          Column name.
+p_label                                                Desired item label.
+
+Example
+
+This example demonstrates how to set the User Interface Item Label default for the DEPTNO
+column in the DEPT table.
+
+APEX_UI_DEFAULT_UPDATE.UPD_LABEL(
+    p_table_name => 'DEPT',
+    p_column_name => 'DEPTNO',
+    p_label => 'Department Number');
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 16 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                            Chapter 62
+                                                                       UPD_REPORT_ALIGNMENT Procedure
+
+62.21 UPD_REPORT_ALIGNMENT Procedure
+
+                       The UPD_REPORT_ALIGNMENT procedure sets the report alignment user interface default.
+                       This user interface default is used by wizards when you select to create a report based upon
+                       the table and include the specified column and determines if the report column should be left,
+                       center, or right justified.
+
+                       Syntax
+
+APEX_UI_DEFAULT_UPDATE.UPD_REPORT_ALIGNMENT (
+
+p_table_name                                           IN VARCHAR2,
+
+p_column_name                                          IN VARCHAR2,
+
+p_report_alignment                                     IN VARCHAR2 );
+
+Parameters
+
+Parameter                                              Description
+p_table_name
+p_column_name                                          Table name.
+p_report_alignment                                     Column name.
+                                                       Defines the alignment of the column in a report. Valid values are L
+                                                       (left), C (center) and R (right).
+
+Example
+
+In the following example, when creating a Report against the DEPT table, the default column
+alignment on the DEPTNO column is set to Right justified.
+
+APEX_UI_DEFAULT_UPDATE.UPD_REPORT_ALIGNMENT(
+      p_table_name => 'DEPT',
+      p_column_name => 'DEPTNO',
+      p_report_alignment => 'R');
+
+62.22 UPD_REPORT_FORMAT_MASK Procedure
+
+                       The UPD_REPORT_FORMAT_MASK procedure sets the report format mask user interface default.
+                       This user interface default is used by wizards when you select to create a report based upon
+                       the table and include the specified column. Report format mask is typically used to format
+                       numbers and dates.
+
+                       Syntax
+
+APEX_UI_DEFAULT_UPDATE.UPD_REPORT_FORMAT_MASK (
+
+p_table_name                                           IN VARCHAR2,
+
+p_column_name                                          IN VARCHAR2,
+
+p_format_mask                                          IN VARCHAR2 DEFAULT NULL );
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 17 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                              Chapter 62
+                                                                                     UPD_REPORT_REGION_TITLE Procedure
+
+Parameters
+
+Parameter                                              Description
+p_table_name
+p_column_name                                          Table name.
+p_format_mask                                          Column name.
+                                                       Format mask to be associated with the column whenever it is included
+                                                       in a report.
+
+Example
+
+In the following example, when creating a Report against the EMP table, the default format
+mask on the HIREDATE column is set to 'DD-MON-YYYY'.
+
+APEX_UI_DEFAULT_UPDATE.UPD_REPORT_FORMAT_MASK(
+      p_table_name => 'EMP',
+      p_column_name => 'HIREDATE',
+      p_format_mask=> 'DD-MON-YYYY');
+
+62.23 UPD_REPORT_REGION_TITLE Procedure
+
+                       The UPD_REPORT_REGION_TITLE procedure sets the Report Region Title. User interface defaults
+                       are used in wizards when a report is created on a table.
+
+                       Syntax
+
+APEX_UI_DEFAULT_UPDATE.UPD_REPORT_REGION_TITLE (
+
+p_table_name                                           IN VARCHAR2,
+
+p_report_region_title IN VARCHAR2 DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_table_name                                           Table name.
+p_report_region_title                                  Desired report region title.
+
+Example
+
+This example demonstrates how to set the Reports Region Title user interface default on the
+DEPT table.
+
+APEX_UI_DEFAULT_UPDATE.UPD_REPORT_REGION_TITLE (
+
+p_table_name                                           => 'DEPT',
+
+p_report_region_title => 'Departments');
+
+62.24 UPD_TABLE Procedure
+
+                       If the provided table exists within the user's schema's table based User Interface Defaults, the
+                       form region title and report region title are updated to match those provided. If 'null%' is passed
+                       in for p_form_region_title or p_report_region_title, the value is set to null.
+
+API Reference                                                                        July 24, 2026
+G26651-03                                                                            Page 18 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                          Chapter 62
+                                                                                                         UPD_TABLE Procedure
+
+Syntax
+
+APEX_UI_DEFAULT_UPDATE.UPD_TABLE (
+
+   p_table_name                                        IN VARCHAR2,
+
+   p_form_region_title IN VARCHAR2 DEFAULT NULL,
+
+   p_report_region_title IN VARCHAR2 DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_table_name                                           Name of table being updated.
+p_form_region_title                                    Region title used for forms.
+p_report_region_title                                  Region title used for reports and tabular forms.
+
+       Note
+
+       If null% is passed in for p_form_region_title or p_report_region_title, the value
+       is set to null. If no value is passed in, that column is not updated.
+
+Example
+
+The following example updates the EMP table definition within the UI Defaults Table Dictionary
+within the current schema.
+
+begin
+
+      apex_ui_default_update.upd_table (
+
+        p_table_name                                   => 'EMP',
+
+        p_form_region_title => 'Employee Details',
+
+        p_report_region_title => 'Employees' );
+
+end;
+
+/
+
+API Reference                                                                                            July 24, 2026
+G26651-03                                                                                                Page 19 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+63

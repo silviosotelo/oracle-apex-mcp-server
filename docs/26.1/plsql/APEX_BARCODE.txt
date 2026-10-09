@@ -1,0 +1,459 @@
+# APEX_BARCODE (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 12687-13144)
+
+APEX_BARCODE
+
+                       The APEX_BARCODE package contains the implementation to generate different types of
+                       barcodes. The supported output types are SVG value or PNG file BLOB.
+                       � GET_CODE128_PNG Function
+                       � GET_CODE128_SVG Function
+                       � GET_EAN8_PNG Function
+                       � GET_EAN8_SVG Function
+                       � GET_QRCODE_PNG Function
+                       � GET_QRCODE_SVG Function
+
+14.1 GET_CODE128_PNG Function
+
+                       This function generates a Code 128 barcode, configured according to the specified options,
+                       and returns a BLOB in PNG format.
+
+                       Syntax
+
+APEX_BARCODE.GET_CODE128_PNG (
+
+p_value                                                IN VARCHAR2,
+
+p_scale                                                IN NUMBER DEFAULT c_default_scale,
+
+p_foreground_color IN VARCHAR2 DEFAULT c_default_foreground_color,
+
+p_background_color IN VARCHAR2 DEFAULT NULL )
+
+RETURN BLOB;
+
+Parameters
+
+Parameter                                              Description
+p_value
+p_scale                                                Value to be encoded into the Code 128 barcode.
+
+p_foreground_color                                     Makes the original PNG p_scale times larger (integer
+p_background_color                                     1-10). Default 1. The original size is determined by the input
+                                                       length.
+                                                       Foreground color. Must be in hex code. Default #000000.
+                                                       Background color. Must be in hex code. Default null
+                                                       (transparent).
+
+Returns
+The Code 128 barcode PNG image file.
+
+API Reference                                                                              July 24, 2026
+G26651-03                                                                                    Page 1 of 7
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                      Chapter 14
+                                                                                            GET_CODE128_SVG Function
+
+Example
+
+The following example generates a PNG Code 128-type barcode file with specified scale,
+foreground color, and background color.
+
+DECLARE
+
+l_output blob;
+
+BEGIN
+
+l_output := apex_barcode.get_code128_png(
+
+                    p_value                                          => 'apex.oracle.com',
+
+                    p_scale                                          => 1,
+
+                    p_foreground_color => '#4cd964',
+
+                    p_background_color => '#c7c7cc' );
+
+END;
+
+14.2 GET_CODE128_SVG Function
+
+                       This function generates a Code 128 barcode, configured according to the specified options,
+                       and returns a CLOB in SVG format.
+
+                       Syntax
+
+APEX_BARCODE.GET_CODE128_SVG (
+
+      p_value                                          IN VARCHAR2,
+
+      p_size                                           IN NUMBER DEFAULT c_default_size,
+
+      p_foreground_color IN VARCHAR2 DEFAULT c_default_foreground_color,
+
+      p_background_color IN VARCHAR2 DEFAULT NULL )
+
+      RETURN CLOB;
+
+Parameters
+
+Parameter                                              Description
+p_value
+p_size                                                 Value to be encoded into the Code 128 barcode.
+p_foreground_color                                     Size of the Code 128 barcode (in pixels). Default 256px.
+p_background_color                                     Foreground color. Must be in hex code. Default #000000.
+                                                       Background color. Must be in hex code. Default null
+                                                       (transparent).
+
+Returns
+The SVG value of the Code 128 barcode.
+
+Example
+
+The following example generates an SVG Code 128-type barcode with specified foreground
+color and background color.
+
+DECLARE
+   l_output clob;
+
+BEGIN
+   l_output := apex_barcode.get_code128_svg(
+
+API Reference                                                                               July 24, 2026
+G26651-03                                                                                     Page 2 of 7
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                 Chapter 14
+                                                                                            GET_EAN8_PNG Function
+
+                    p_value                                          => 'apex.oracle.com',
+
+                    p_foreground_color => '#4cd964',
+
+                    p_background_color => '#c7c7cc' );
+
+sys.dbms_outout.put_line( l_output );
+
+END;
+
+14.3 GET_EAN8_PNG Function
+
+                       This function generates an EAN 8 barcode that is configured according to the specified
+                       options, and returns a BLOB in PNG format.
+
+                       Syntax
+
+APEX_BARCODE.GET_EAN8_PNG (
+
+      p_value                                          IN VARCHAR2,
+
+      p_scale                                          IN NUMBER DEFAULT c_default_scale,
+
+      p_foreground_color IN VARCHAR2 DEFAULT c_default_foreground_color,
+
+      p_background_color IN VARCHAR2 DEFAULT NULL )
+
+      RETURN BLOB;
+
+Parameters
+
+Parameter                                              Description
+p_value
+p_scale                                                Value to be encoded into the EAN 8 barcode. Must be
+                                                       numeric with a maximum of 8 characters.
+p_foreground_color                                     Makes the orignial PNG p_scale times larger (integer
+p_background_color                                     1-10). Default is 1. The original size is determined by the
+                                                       input length.
+                                                       Foreground color. Must be in hex code. Defaults is #000000.
+
+                                                       Background color. Must be in hex code. Default is null
+                                                       (transparent).
+
+Returns
+The EAN 8 barcode PNG image file.
+
+Raises
+WWV_FLOW_BARCODE_API.NUMERIC_INPUT_ERROR: when p_value exceeds 8 characters.
+
+Example
+
+The following example generates a PNG EAN 8 type of barcode file with desired scale,
+foreground color, and background color.
+
+DECLARE
+
+l_output blob;
+
+BEGIN
+
+l_output := apex_barcode.get_ean8_png(
+
+                    p_value                                          => '12345678',
+
+                    p_scale                                          => 1,
+
+                    p_foreground_color => '#4cd964',
+
+API Reference                                                                               July 24, 2026
+G26651-03                                                                                     Page 3 of 7
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                              Chapter 14
+                                                                                          GET_EAN8_SVG Function
+
+                p_background_color => '#c7c7cc' );
+
+END;
+
+14.4 GET_EAN8_SVG Function
+
+                       This function generates an EAN 8 barcode that is configured according to the specified
+                       options, and returns a CLOB in SVG format.
+
+                       Syntax
+
+APEX_BARCODE.GET_EAN8_SVG (
+
+p_value                                                IN VARCHAR2,
+
+p_size                                                 IN NUMBER DEFAULT c_default_size,
+
+p_foreground_color IN VARCHAR2 DEFAULT c_default_foreground_color,
+
+p_background_color IN VARCHAR2 DEFAULT NULL )
+
+RETURN CLOB;
+
+Parameters
+
+Parameter                                              Description
+p_value
+                                                       Value to be encoded into the EAN 8 Barcode. Format is
+p_size                                                 numeric with a maximum of 8 digits.
+p_foreground_color                                     Size of the EAN 8 Barcode (in pixels). Default 256px.
+p_background_color                                     Foreground color. Must be in hex code. Default #000000.
+                                                       Background color. Must be in hex code. Default null
+                                                       (transparent).
+
+Returns
+The SVG value of the EAN 8 barcode.
+
+Raises
+WWV_FLOW_BARCODE_API.NUMERIC_INPUT_ERROR: when p_value exceeds 8 digits.
+
+Example
+
+The following example generates an SVG EAN 8 type of barcode with specified foreground
+and background colors.
+
+DECLARE
+
+l_output clob;
+
+BEGIN
+
+l_output := apex_barcode.get_ean8_svg(
+
+                p_value                                              => '12345678',
+
+                p_foreground_color => '#4cd964',
+
+                p_background_color => '#c7c7cc');
+
+sys.dbms_outout.put_line( l_output );
+
+END;
+
+API Reference                                                                             July 24, 2026
+G26651-03                                                                                   Page 4 of 7
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                              Chapter 14
+                                                                                     GET_QRCODE_PNG Function
+
+14.5 GET_QRCODE_PNG Function
+
+                       This function generates a QR code that is configured according to the specified options and
+                       returns a BLOB in PNG format.
+
+                       Syntax
+
+APEX_BARCODE.GET_QRCODE_PNG (
+
+p_value                                                IN VARCHAR2,
+
+p_scale                                                IN NUMBER     DEFAULT c_default_scale,
+
+p_quiet                                                IN NUMBER     DEFAULT c_default_quiet,
+
+p_eclevel                                              IN t_eclevel_type DEFAULT c_default_eclevel,
+
+p_foreground_color IN VARCHAR2                                       DEFAULT c_default_foreground_color,
+
+p_background_color IN VARCHAR2                                       DEFAULT NULL )
+
+RETURN BLOB;
+
+Parameters
+
+ Parameter                                                        Description
+p_value
+p_scale                                                           Value to be encoded into the QR Code.
+p_quiet
+p_eclevel                                                         Makes the orignial PNG p_scale times larger (integer
+                                                                  1-10). Default 1. The original size is determined by the input
+p_foreground_color                                                length.
+p_background_color
+Returns                                                           Blank area (positive integer value) around the QR Code
+The QR code PNG image file.                                       used to help the scanners clearly distinguish the QR Code
+                                                                  from its surroundings for good scannability. Defaults 1.
+
+                                                                  The error-correction level. The level determines the
+                                                                  percentage of the total QR code that can be dirty or
+                                                                  damaged and still be valid.
+
+                                                                  Default c_eclevel_type_high.
+
+                                                                  Possible values:
+
+                                                                  � c_eclevel_type_low - 7% of data bytes can be
+                                                                        restored.
+
+                                                                  � c_eclevel_type_medium - 15% of data bytes can be
+                                                                        restored.
+
+                                                                  � c_eclevel_type_quartile - 25% of data bytes can
+                                                                        be restored.
+
+                                                                  � c_eclevel_type_high - 30% of data bytes can be
+                                                                        restored.
+
+                                                                  Foreground color. Must be in hex format. Default #000000.
+
+                                                                  Background color. Must be in hex format. Default null
+                                                                  (transparent).
+
+API Reference                                                                                        July 24, 2026
+G26651-03                                                                                              Page 5 of 7
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                     Chapter 14
+                                                                                            GET_QRCODE_SVG Function
+
+Example
+
+The following example generates a QR code PNG file with a determined foreground and
+background color. This function is usually used when a QR code image file is needed.
+
+DECLARE
+
+l_output blob;
+
+BEGIN
+
+l_output := apex_barcode.get_qrcode_png(
+
+                    p_value                                          => 'apex.example.com',
+
+                    p_scale                                          => 1,
+
+                    p_quiet                                          => 5,
+
+                    p_eclevel                                        => c_eclevel_type_high,
+
+                    p_foreground_color => '#4cd964',
+
+                    p_background_color => '#c7c7cc' );
+
+END;
+
+14.6 GET_QRCODE_SVG Function
+
+                       This function generates a QR code that is configured according to the specified options and
+                       returns a CLOB in SVG format.
+
+                       Syntax
+
+APEX_BARCODE.GET_QRCODE_SVG (
+
+      p_value                                          IN VARCHAR2,
+
+      p_size                                           IN NUMBER            DEFAULT c_default_size,
+
+      p_quiet                                          IN NUMBER            DEFAULT c_default_quiet,
+
+      p_eclevel                                        IN t_eclevel_type DEFAULT c_default_eclevel,
+
+      p_foreground_color IN VARCHAR2                                        DEFAULT c_default_foreground_color,
+
+      p_background_color IN VARCHAR2                                        DEFAULT NULL )
+
+      RETURN CLOB;
+
+Parameters
+
+Parameter                                                         Description
+p_value
+p_size                                                            Value to be encoded into the QR code.
+p_foreground_color                                                Size of the QR code (in pixels). Defaults to 256px.
+p_background_color
+                                                                  Foreground color. Must be in hex format. Default #000000.
+p_quiet                                                           Background color. Must be in hex format. Default null
+                                                                  (transparent).
+                                                                  Blank area (positive integer value) around the QR Code
+                                                                  used to help the scanners clearly distinguish the QR code
+                                                                  from its surroundings for good scannability. Defaults to 1.
+
+API Reference                                                                                         July 24, 2026
+G26651-03                                                                                               Page 6 of 7
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                       Chapter 14
+                                                                              GET_QRCODE_SVG Function
+
+Parameter                                              Description
+p_eclevel
+                                                       The error-correction level. The level determines the
+                                                       percentage of the total QR code that can be dirty or
+                                                       damaged and still be valid.
+
+                                                       Default c_eclevel_type_high.
+
+                                                       Possible values:
+
+                                                       � c_eclevel_type_low - 7% of data bytes can be
+                                                             restored.
+
+                                                       � c_eclevel_type_medium - 15% of data bytes can be
+                                                             restored.
+
+                                                       � c_eclevel_type_quartile - 25% of data bytes can
+                                                             be restored.
+
+                                                       � c_eclevel_type_high - 30% of data bytes can be
+                                                             restored.
+
+Returns
+The SVG value of the QR code.
+
+Example
+
+Generates an SVG QR code with a determined foreground and background color. This function
+is usually used in rendering QR code page item.
+
+DECLARE
+
+l_output clob;
+
+BEGIN
+
+l_output := apex_barcode.get_qrcode_svg(
+
+                p_value                                => 'apex.oracle.com',
+
+                p_foreground_color => '#4cd964',
+
+                p_background_color => '#c7c7cc' );
+
+sys.dbms_outout.put_line( l_output );
+
+END;
+
+API Reference                                                                 July 24, 2026
+G26651-03                                                                       Page 7 of 7
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+15

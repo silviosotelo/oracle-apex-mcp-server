@@ -1,0 +1,2828 @@
+# APEX_IR (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 39630-42456)
+
+APEX_IR
+
+                       The APEX_IR package provides utilities you can use when programming in the Oracle APEX
+                       environment related to interactive reports. You can use the APEX_IR package to get an
+                       interactive report runtime query based on local and remote data source, add filters, reset or
+                       clear report settings, delete saved reports and manage subscriptions.
+
+                       � Constants and Data Types
+                       � ADD_FILTER Procedure Signature 1
+                       � ADD_FILTER Procedure Signature 2
+                       � ADD_FILTER Procedure Signature 3
+                       � CHANGE_REPORT_OWNER Procedure
+                       � CHANGE_SUBSCRIPTION_EMAIL Procedure
+                       � CHANGE_SUBSCRIPTION_LANG Procedure
+                       � CLEAR_REPORT Procedure Signature 1
+                       � CLEAR_REPORT Procedure Signature 2
+                       � CLEAR_REPORT Procedure Signature 3
+                       � CLONE_REPORT Function
+                       � DELETE_REPORT Procedure
+                       � DELETE_SUBSCRIPTION Procedure
+                       � EXPORT_SAVED_REPORTS Function
+                       � GET_LAST_VIEWED_REPORT_ID Function
+                       � GET_REPORT Function (Deprecated)
+                       � IMPORT_SAVED_REPORTS Procedure
+                       � RESET_REPORT Procedure Signature 1
+                       � RESET_REPORT Procedure Signature 2
+                       � RESET_REPORT Procedure Signature 3
+
+37.1 Constants and Data Types
+
+Constants
+The APEX_IR package uses the following constants.
+
+c_view_report                                          constant VARCHAR2(20) := 'REPORT';
+c_view_groupby                                         constant varchar2(20) := 'GROUP_BY';
+c_view_pivot                                           constant varchar2(20) := 'PIVOT';
+
+API Reference                                                                                July 24, 2026
+G26651-03                                                                                    Page 1 of 18
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                   Chapter 37
+                                                                   ADD_FILTER Procedure Signature 1
+
+Data Types
+The APEX_IR package uses the following data types.
+
+type t_report is record(
+
+    sql_query varchar2(32767),
+
+    binds        apex_plugin_util.t_bind_list)
+
+);
+
+37.2 ADD_FILTER Procedure Signature 1
+
+                       This procedure creates a filter on an interactive report using a report ID.
+
+    Note
+
+    The use of this procedure in a page rendering process causes report download issues
+    (CSV, HTML, Email, and so on). When a user downloads the report, the interactive
+    report reloads the page with download format in the REQUEST value. Any interactive
+    report settings changes (such as add filter or reset report) are done in partial page
+    refresh. Thus, the download data may not match the report data user is seeing. For
+    this reason, Oracle recommends only using this procedure in a page submit process.
+
+Syntax
+
+APEX_IR.ADD_FILTER (
+
+    p_page_id                                          IN NUMBER,
+
+    p_region_id IN NUMBER,
+
+    p_report_column IN VARCHAR2,
+
+    p_filter_value IN VARCHAR2,
+
+    p_operator_abbr IN VARCHAR2 DEFAULT NULL,
+
+    p_report_id IN NUMBER DEFAULT NULL )
+
+Parameters
+
+Parameter        Description
+p_page_id
+p_region_id      Page of the current Oracle APEX application that contains an interactive report.
+p_report_column  The interactive report region (ID).
+p_filter_value   Name of the report SQL column, or column alias, to be filtered.
+                 The filter value. This value is not used for N and NN.
+                 Enter multiple valuables in a comma-separated list. Enclose multiple filter values
+                 separated by commas in backslash characters (\). For example, if the
+                 p_operator_abbr is type IN or NIN, and you wish to filter for the values CLOSED
+                 and OPEN, then set p_filter_value to \CLOSED,OPEN\.
+
+API Reference                                                                                       July 24, 2026
+G26651-03                                                                                           Page 2 of 18
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                              Chapter 37
+                                                              ADD_FILTER Procedure Signature 2
+
+Parameter         Description
+p_operator_abbr
+                  Filter type. Valid values are as follows:
+p_report_id       EQ = Equals
+                  NEQ = Not Equals
+                  LT = Less than
+                  LTE = Less then or equal to
+                  GT = Greater Than
+                  GTE = Greater than or equal to
+                  LIKE = SQL Like operator
+                  NLIKE = Not Like
+                  N = Null
+                  NN = Not Null
+                  C = Contains
+                  NC = Not Contains
+                  IN = SQL In Operator
+                  NIN = SQL Not In Operator
+
+                  The saved report ID within the current application page. If p_report_id is
+                  NULL, it adds the filter to the last viewed report settings.
+
+Example
+
+The following example shows how to use the ADD_FILTER procedure to filter the interactive
+report with report ID of 880629800374638220 in page 1, region 2505704029884282 of the current
+application with DEPTNO equals 30.
+
+BEGIN
+
+APEX_IR.ADD_FILTER(
+
+       p_page_id                                       => 1,
+
+       p_region_id => 2505704029884282,
+
+       p_report_column => 'DEPTNO',
+
+       p_filter_value => '30',
+
+       p_operator_abbr => 'EQ',
+
+       p_report_id => 880629800374638220);
+
+END;
+
+37.3 ADD_FILTER Procedure Signature 2
+
+                       This procedure creates a filter on an interactive report using a report alias.
+
+       Note
+
+       The use of this procedure in a page rendering process causes report download issues
+       (CSV, HTML, Email, and so on). When a user downloads the report, the interactive
+       report reloads the page with download format in the REQUEST value. Any interactive
+       report settings changes (such as add filter or reset report) are done in partial page
+       refresh. Thus, the download data may not match the report data user is seeing. For
+       this reason, Oracle recommends only using this procedure in a page submit process.
+
+API Reference                                                                                          July 24, 2026
+G26651-03                                                                                              Page 3 of 18
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                   Chapter 37
+                                                                   ADD_FILTER Procedure Signature 2
+
+Syntax
+
+APEX_IR.ADD_FILTER (
+
+p_page_id                                              IN NUMBER,
+
+p_region_id IN NUMBER,
+
+p_report_column IN VARCHAR2,
+
+p_filter_value IN VARCHAR2,
+
+p_operator_abbr IN VARCHAR2 DEFAULT NULL,
+
+p_report_alias IN VARCHAR2 DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_page_id
+p_region_id                                            Page of the current Oracle APEX application that contains an
+p_report_column                                        interactive report.
+p_filter_value                                         The interactive report region (ID).
+p_operator_abbr                                        Name of the report SQL column, or column alias, to be filtered.
+                                                       This is the filter value. This value is not used for N and NN.
+p_report_alias                                         Filter type. Valid values are as follows:
+                                                       EQ = Equals
+                                                       NEQ = Not Equals
+                                                       LT = Less than
+                                                       LTE = Less then or equal to
+                                                       GT = Greater Than
+                                                       GTE = Greater than or equal to
+                                                       LIKE = SQL Like operator
+                                                       NLIKE = Not Like
+                                                       N = Null
+                                                       NN = Not Null
+                                                       C = Contains
+                                                       NC = Not Contains
+                                                       IN = SQL In Operator
+                                                       NIN = SQL Not In Operator
+
+                                                       The saved report alias within the current application page. If
+                                                       p_report_alias is NULL, it adds filter to the last viewed report
+                                                       settings.
+
+Example
+
+The following example shows how to use the ADD_FILTER procedure to filter an interactive
+report with a report alias of CATEGORY_REPORT in page 1, region 2505704029884282 of the
+current application with DEPTNO equals 30.
+
+BEGIN
+
+APEX_IR.ADD_FILTER(
+
+        p_page_id                                      => 1,
+
+        p_region_id => 2505704029884282,
+
+        p_report_column => 'DEPTNO',
+
+        p_filter_value => '30',
+
+        p_operator_abbr => 'EQ',
+
+API Reference                                                      July 24, 2026
+G26651-03                                                          Page 4 of 18
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                     Chapter 37
+                                                                     ADD_FILTER Procedure Signature 3
+
+        p_report_alias => 'CATEGORY_REPORT');
+
+END;
+
+37.4 ADD_FILTER Procedure Signature 3
+
+                       This procedure creates a filter on an interactive report using a report Static ID.
+
+      Note
+
+      The use of this procedure in a page rendering process causes report download issues
+      (CSV, HTML, Email, and so on). When a user downloads the report, the interactive
+      report reloads the page with download format in the REQUEST value. Any interactive
+      report settings changes (such as add filter or reset report) are done in partial page
+      refresh. Thus, the download data may not match the report data user is seeing. For
+      this reason, Oracle recommends only using this procedure in a page submit process.
+
+Syntax
+
+APEX_IR.ADD_FILTER (
+
+      p_page_id                                        IN NUMBER,
+
+      p_region_static_id IN VARCHAR2,
+
+      p_report_column                                  IN VARCHAR2,
+
+      p_filter_value                                   IN VARCHAR2,
+
+      p_operator_abbr                                  IN VARCHAR2   DEFAULT NULL,
+                                                                     DEFAULT NULL );
+      p_report_static_id IN VARCHAR2
+
+Parameters
+
+Parameter                                              Description
+p_page_id
+                                                       Page of the current Oracle APEX application that contains an
+p_region_static_id                                     interactive report.
+p_report_column                                        The interactive report region Static ID.
+p_filter_value
+p_operator_abbr                                        Name of the report SQL column, or column alias, to be filtered.
+
+                                                       This is the filter value. This value is not used for N and NN.
+
+                                                       Filter type. Valid values are as follows:
+                                                       � EQ = Equals
+                                                       � NEQ = Not Equals
+                                                       � LT = Less than
+                                                       � LTE = Less then or equal to
+                                                       � GT = Greater Than
+                                                       � GTE = Greater than or equal to
+                                                       � LIKE = SQL Like operator
+                                                       � NLIKE = Not Like
+                                                       � N = Null
+                                                       � NN = Not Null
+                                                       � C = Contains
+                                                       � NC = Not Contains
+                                                       � IN = SQL In Operator
+                                                       � NIN = SQL Not In Operator
+
+API Reference                                                                                              July 24, 2026
+G26651-03                                                                                                  Page 5 of 18
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                    Chapter 37
+                                                              CHANGE_REPORT_OWNER Procedure
+
+Parameter                                              Description
+p_report_static_id
+                                                       The saved report alias within the current application page. If
+                                                       p_report_static_id is NULL, it adds the filter to the last viewed
+                                                       report.
+
+Example
+
+The following example shows how to use the ADD_FILTER procedure to filter an interactive
+report with a report Static ID of category-report in page 1 and region Static ID group-region
+of the current application with DEPTNO equals 30.
+
+BEGIN
+
+APEX_IR.ADD_FILTER(
+
+       p_page_id                                       => 1,
+
+       p_region_static_id => 'group-region',
+
+       p_report_column => 'DEPTNO',
+
+       p_filter_value => '30',
+
+       p_operator_abbr => 'EQ',
+
+       p_report_static_id => 'category-report' );
+
+END;
+
+37.5 CHANGE_REPORT_OWNER Procedure
+
+                       This procedure changes the owner of a saved interactive report using a report ID. This
+                       procedure cannot change the owner of default interactive reports.
+
+                       Syntax
+
+APEX_IR.CHANGE_REPORT_OWNER (
+      p_report_id IN NUMBER,
+      p_old_owner IN VARCHAR2,
+      p_new_owner IN VARCHAR2 )
+
+Parameters
+
+Parameters                                             Description
+p_report_id
+p_old_owner                                            The saved report ID within the current application page.
+                                                       The previous owner name to change from (case sensitive). The owner
+p_new_owner                                            needs to a valid login user accessing the report.
+                                                       The new owner name to change to (case sensitive). The owner must
+                                                       be a valid login user accessing the report.
+
+Example
+
+This example shows how to use CHANGE_REPORT_OWNER procedure to change the old owner
+name of JOHN to the new owner name of JOHN.DOE for a saved report. The saved report has
+a report ID of 1235704029884282.
+
+BEGIN
+      APEX_IR.CHANGE_REPORT_OWNER (
+            p_report_id => 1235704029884282,
+
+API Reference                                                 July 24, 2026
+G26651-03                                                     Page 6 of 18
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                     Chapter 37
+                                                                        CHANGE_SUBSCRIPTION_EMAIL Procedure
+
+      p_old_owner                                      => 'JOHN',
+      p_new_owner                                      => 'JOHN.DOE');
+
+END;
+
+37.6 CHANGE_SUBSCRIPTION_EMAIL Procedure
+
+                       This procedure changes the interactive report subscription's email address. When an email is
+                       sent out, the subscription sends a message to the defined email address.
+
+                       Syntax
+
+APEX_IR.CHANGE_SUBSCRIPTION_EMAIL (
+      p_subscription_id IN NUMBER,
+      p_email_address IN VARCHAR2 );
+
+Parameters
+
+Parameter                                              Description
+p_subscription_id
+                                                       Subscription ID to change the email address within the current
+p_email_address                                        workspace.
+                                                       The new email address to change to. The email address needs to be a
+                                                       valid email syntax and cannot be set to null.
+
+Example
+
+The following example shows how to use the CHANGE_SUBSCRIPTION_EMAIL procedure to
+change the email address to some.user@example.com for the interactive report subscription
+956136850459718525.
+
+BEGIN
+      APEX_IR.CHANGE_SUBSCRIPTION_EMAIL (
+            p_subscription_id => 956136850459718525,
+            p_email_address => 'some.user@example.com');
+
+END;
+
+37.7 CHANGE_SUBSCRIPTION_LANG Procedure
+
+                       This procedure changes the interactive report subscription language.
+                       Syntax
+
+APEX_IR.CHANGE_SUBSCRIPTION_LANG (
+
+p_subscription_id IN NUMBER,
+
+p_language                                             IN VARCHAR2 )
+
+Parameters
+
+Parameter                                              Description
+p_subscription_id                                      Subscription ID to change the language within the current workspace.
+
+API Reference                                                                                July 24, 2026
+G26651-03                                                                                    Page 7 of 18
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                        Chapter 37
+                                                                  CLEAR_REPORT Procedure Signature 1
+
+Parameter                                              Description
+p_language
+                                                       This is an IANA language code. Some examples include: en, de, de-
+                                                       at, zh-cn, and pt-br.
+
+Example
+
+The following example shows how to use the CHANGE_SUBSCRIPTION_LANG procedure to change
+the subscription with the ID of 567890123 to German in the current workspace.
+
+BEGIN
+
+APEX_IR.CHANGE_SUBSCRIPTION_LANG(
+
+       p_subscription_id => 567890123,
+
+       p_language                                      => 'de');
+
+END;
+
+37.8 CLEAR_REPORT Procedure Signature 1
+
+                       This procedure clears report settings using the report ID.
+
+       Note
+
+       The use of this procedure in a page rendering process causes report download issues
+       (CSV, HTML, Email, and so on). When a user downloads the report, the interactive
+       report reloads the page with download format in the REQUEST value. Any interactive
+       report settings changes (such as add filter or reset report) are done in partial page
+       refresh. Thus, the download data may not match the report data user is seeing. For
+       this reason, Oracle recommends only using this procedure in a page submit process.
+
+Syntax
+
+APEX_IR.CLEAR_REPORT (
+      p_page_id IN NUMBER,
+      p_region_id IN NUMBER,
+      p_report_id IN NUMBER DEFAULT NULL )
+
+Parameters
+
+Parameter                                              Description
+p_page_id
+                                                       Page of the current Oracle APEX application that contains an
+p_region_id                                            interactive report.
+p_report_id                                            The interactive report region (ID).
+                                                       The saved report ID within the current application page. If
+                                                       p_report_id is NULL, it clears the last viewed report settings.
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 8 of 18
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                    Chapter 37
+                                                              CLEAR_REPORT Procedure Signature 2
+
+Example
+
+The following example shows how to use the CLEAR_REPORT procedure to clear interactive
+report settings with a report ID of 880629800374638220 in page 1, region 2505704029884282 of
+the current application.
+
+BEGIN
+
+APEX_IR.CLEAR_REPORT(
+
+        p_page_id                                      => 1,
+
+        p_region_id => 2505704029884282,
+
+        p_report_id => 880629800374638220);
+
+END;
+
+37.9 CLEAR_REPORT Procedure Signature 2
+
+                       This procedure clears report settings using report alias.
+
+       Note
+
+       The use of this procedure in a page rendering process causes report download issues
+       (CSV, HTML, Email, and so on). When a user downloads the report, the interactive
+       report reloads the page with download format in the REQUEST value. Any interactive
+       report settings changes (such as add filter or reset report) are done in partial page
+       refresh. Thus, the download data may not match the report data user is seeing. For
+       this reason, Oracle recommends only using this procedure in a page submit process.
+
+Syntax
+
+APEX_IR.CLEAR_REPORT (
+
+p_page_id          IN NUMBER,
+
+p_region_id IN NUMBER,
+
+p_report_alias IN VARCHAR2 DEFAULT NULL )
+
+Parameters
+
+Parameter                                              Description
+p_page_id
+                                                       Page of the current Oracle APEX application that contains an
+p_region_id                                            interactive report.
+p_report_alias                                         The interactive report region (ID).
+                                                       The saved report alias within the current application page. If
+                                                       p_report_alias is NULL, it clears the last viewed report settings.
+
+Example
+
+The following example shows how to use the CLEAR_REPORT procedure to clear interactive
+report settings with report alias of CATEGORY_REPORT in page 1, region 2505704029884282 of the
+current application.
+
+BEGIN
+      APEX_IR.CLEAR_REPORT(
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 9 of 18
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                         Chapter 37
+                                                                   CLEAR_REPORT Procedure Signature 3
+
+        p_page_id                                      => 1,
+
+        p_region_id => 2505704029884282,
+
+        p_report_alias => 'CATEGORY_REPORT');
+
+END;
+
+37.10 CLEAR_REPORT Procedure Signature 3
+
+                       This procedure clears report settings using the report Static ID.
+
+       Note
+
+       The use of this procedure in a page rendering process causes report download issues
+       (CSV, HTML, Email, and so on). When a user downloads the report, the interactive
+       report reloads the page with download format in the REQUEST value. Any interactive
+       report settings changes (such as add filter or reset report) are done in a partial page
+       refresh. Thus, the download data may not match the report data user is seeing. For
+       this reason, Oracle recommends only using this procedure in a page submit process.
+
+Syntax
+
+APEX_IR.CLEAR_REPORT (
+
+      p_page_id                                        IN NUMBER,
+
+      p_region_static_id IN VARCHAR2,
+
+      p_report_static_id IN VARCHAR2                               DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_page_id
+                                                       Page of the current Oracle APEX application that contains an
+p_region_static_id                                     interactive report.
+p_report_static_id                                     The interactive report region Static ID.
+
+                                                       The saved report Static ID within the current application page. If
+                                                       p_report_static_id is NULL, it clears the last viewed report
+                                                       settings.
+
+Example
+
+The following example shows how to use the CLEAR_REPORT procedure to clear the interactive
+report with report alias of category-report in page 1, region Static ID group-region of the
+current application.
+
+BEGIN
+
+      APEX_IR.CLEAR_REPORT(
+
+        p_page_id                                      => 1,
+
+        p_region_static_id => 'group-region',
+
+        p_report_static_id => 'category-report' );
+
+END;
+
+API Reference                                                                             July 24, 2026
+G26651-03                                                                                 Page 10 of 18
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                         Chapter 37
+                                                                                    CLONE_REPORT Function
+
+37.11 CLONE_REPORT Function
+
+                       This function clones a user-saved report and returns a new report ID.
+                       You can clone user-saved reports into a Private or Public report, but you cannot clone into a
+                       default report. Private reports can be cloned if the new owner matches the original owner.
+
+                       Syntax
+
+APEX_IR.CLONE_REPORT (
+
+p_report_id                                            IN NUMBER,
+
+p_new_name                                             IN VARCHAR2,
+
+p_new_description IN VARCHAR2 DEFAULT NULL,
+
+p_new_owner                                            IN VARCHAR2 DEFAULT apex_application.g_user,
+
+p_new_is_public IN BOOLEAN DEFAULT FALSE,
+
+p_replace_report IN BOOLEAN DEFAULT TRUE )
+
+RETURN NUMBER;
+
+Parameters
+
+Parameter                                                          Description
+p_report_id
+p_new_name                                                         The source report ID to clone.
+p_new_description
+p_new_owner                                                        The new report name.
+
+p_new_is_public                                                    The new report description.
+
+p_replace_report                                                   The case-sensitive new owner of the report. If not passed,
+                                                                   current user is the owner.
+                                                                   If new report is Public. If not passed, clones as Private
+                                                                   report.
+                                                                   If TRUE (default), report will be replaced if exists. If FALSE,
+                                                                   an error raises if a report with the same name and owner
+                                                                   already exists.
+
+Example
+
+The following example clones a report ID selected from a page item value. The report name
+and owner are overwritten by the parameter values, and the report is cloned as public report.
+
+DECLARE
+
+l_new_report_id number;
+
+BEGIN
+
+l_new_report_id := apex_ir.clone_report (
+
+                                                       p_report_id   => :P1_REPORT_ID,
+
+                                                       p_new_name    => 'New Cloned Report',
+
+                                                       p_new_owner   => :APP_USER,
+
+                                                       p_new_is_public => true );
+
+END;
+
+37.12 DELETE_REPORT Procedure
+
+                       This procedure deletes saved interactive reports. The deleted saved report is removed from
+                       the current logged-in workspace and application.
+
+API Reference                                                                                        July 24, 2026
+G26651-03                                                                                            Page 11 of 18
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                   Chapter 37
+                                                                                 DELETE_SUBSCRIPTION Procedure
+
+Syntax
+
+APEX_IR.DELETE_REPORT (
+      p_report_id IN NUMBER )
+
+Parameters
+
+Parameter                                              Description
+p_report_id                                            Report ID to delete within the current Oracle APEX application.
+
+Example
+
+The following example shows how to use the DELETE_REPORT procedure to delete the saved
+interactive report with ID of 880629800374638220 in the current application.
+
+BEGIN
+      APEX_IR.DELETE_REPORT (
+            p_report_id => 880629800374638220);
+
+END;
+
+37.13 DELETE_SUBSCRIPTION Procedure
+
+                       This procedure deletes interactive report subscriptions.
+                       Syntax
+
+APEX_IR.DELETE_SUBSCRIPTION (
+      p_subscription_id IN NUMBER )
+
+Parameters
+
+Parameter                                              Description
+p_subscription_id                                      Subscription ID to delete within the current workspace.
+
+Example
+
+The following example shows how to use the DELETE_SUBSCRIPTION procedure to delete the
+subscription with ID of 567890123 in the current workspace.
+
+BEGIN
+      APEX_IR.DELETE_SUBSCRIPTION(
+            p_subscription_id => 567890123);
+
+END;
+
+37.14 EXPORT_SAVED_REPORTS Function
+
+                       This function exports multiple saved reports from the current app and workspace. Exports
+                       default or user-saved reports.
+
+                       If calling outside of Oracle APEX, use apex_util.set_workspace to set the current workspace.
+
+API Reference                                                                                                   July 24, 2026
+G26651-03                                                                                                       Page 12 of 18
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                    Chapter 37
+                                                                          GET_LAST_VIEWED_REPORT_ID Function
+
+Syntax
+
+APEX_IR.EXPORT_SAVED_REPORTS (
+
+p_report_ids                                           IN apex_t_number,
+
+p_credential_static_id IN VARCHAR2 )
+
+RETURN CLOB;
+
+Parameters
+
+Parameter                                              Description
+p_report_ids
+p_credential_static_id                                 The array of report IDs to export.
+
+                                                       The Key Pair authentication credential static ID. This
+                                                       credential is used to create a signature for the export.
+                                                       Create compatible public and private keys using OpenSSH,
+                                                       and use those to create a Key Pair workspace web
+                                                       credential.
+
+Returns
+The signed and base64-encoded report export JSON object in CLOB.
+
+Example
+The following example exports report IDs ( 111111, 222222 ) from the current workspace using
+my_API_key_pair credential.
+
+DECLARE
+
+l_export_clob clob;
+
+BEGIN
+
+l_export_clob := apex_ir.export_saved_reports (
+
+                                                       p_report_ids       => apex_t_number(
+
+                                                                          111111, 222222 ),
+
+                                                       p_credential_static_id => 'my_API_key_pair' );
+
+END;
+
+                              See Also
+                                 SET_WORKSPACE Procedure
+
+37.15 GET_LAST_VIEWED_REPORT_ID Function
+
+                       This function returns the last viewed base report ID of the specified page and region.
+                       Syntax
+
+                       APEX_IR.GET_LAST_VIEWED_REPORT_ID (
+                              p_page_id IN NUMBER,
+                              p_region_id IN VARCHAR2 )
+                              RETURN NUMBER;
+
+API Reference                                                                                July 24, 2026
+G26651-03                                                                                    Page 13 of 18
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                Chapter 37
+                                                              GET_REPORT Function (Deprecated)
+
+Parameters
+
+Parameter                                              Description
+p_page_id
+                                                       Page of the current Oracle APEX application that contains an
+p_region_id                                            interactive report.
+                                                       The interactive report static ID or region ID.
+
+Example
+
+The following example shows how to use the GET_LAST_VIEWED_REPORT_ID function to retrieve
+the last viewed report ID in page 1, region group-region of the current application.
+
+DECLARE
+
+l_report_id number;
+
+BEGIN
+
+l_report_id := APEX_IR.GET_LAST_VIEWED_REPORT_ID (
+
+         p_page_id                                     => 1,
+
+         p_region_id => 'group-region' );
+
+sys.htp.p('Last Viewed Report ID = ' || l_report_id);
+
+END;
+
+37.16 GET_REPORT Function (Deprecated)
+
+       Note
+
+       This API is deprecated and will be removed in a future release.
+
+       To execute the query of an Interactive Report within PL/SQL code, use
+       OPEN_QUERY_CONTEXT Function Signature 1 in APEX_REGION instead.
+
+This function returns an interactive report runtime query.
+Syntax
+
+APEX_IR.GET_REPORT(
+
+      p_page_id IN NUMBER,
+
+      p_region_id IN NUMBER,
+
+      p_report_id IN NUMBER DEFAULT NULL,
+
+      p_view  IN VARCHAR2 DEFAULT c_view_report )
+
+      RETURN t_report;
+
+Parameters
+
+Parameter                                              Description
+p_page_id
+                                                       Page of the current Oracle APEX application that contains an
+p_region_id                                            interactive report.
+p_report_id                                            The interactive report region ID.
+                                                       The saved report ID within the current application page. If
+                                                       p_report_id is NULL, retrieves last viewed report query.
+
+API Reference                                                 July 24, 2026
+G26651-03                                                     Page 14 of 18
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                      Chapter 37
+                                                                 IMPORT_SAVED_REPORTS Procedure
+
+Parameter                                              Description
+p_view
+                                                       The view type available for the report. The values can be
+                                                       APEX_IR.C_VIEW_REPORT, APEX_IR.C_VIEW_GROUPBY, or
+                                                       APEX_IR.C_VIEW_PIVOT.
+
+                                                       If p_view is NULL, retrieves the view currently used by the report. If
+                                                       the p_view passed does not exist for the current report, an error
+                                                       raises.
+
+See Also
+OPEN_QUERY_CONTEXT Function Signature 1
+
+37.17 IMPORT_SAVED_REPORTS Procedure
+
+                       This procedure imports saved reports into an app in the current workspace. Supports importing
+                       default or user-saved reports.
+                       If calling outside of Oracle APEX, use apex_util.set_workspace to set the current workspace.
+
+                       Syntax
+
+APEX_IR.IMPORT_SAVED_REPORTS (
+
+p_export_content                                       IN CLOB,
+
+p_credential_static_id IN VARCHAR2,
+
+p_replace_report                                       IN BOOLEAN DEFAULT TRUE,
+
+p_new_owner                                            IN VARCHAR2 DEFAULT apex_application.g_user,
+
+p_new_application_id IN NUMBER DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_export_content
+p_credential_static_id                                 The signed and base64-encoded report export JSON.
+
+p_replace_report                                       The Key Pair authentication credential static ID. The same
+p_new_owner                                            credential used to sign the export content is used to verify.
+                                                       If TRUE (default), report is replaced if exists.
+p_new_application_id
+                                                       The case-sensitive new owner of the reports. Only non-
+                                                       default reports can be overwritten with p_new_owner.
+
+                                                       The new application ID of the reports. The reports are
+                                                       imported to the application containing valid interactive report
+                                                       regions.
+
+Example
+
+The following example imports reports using the uploaded export file and my_API_key_pair
+credential. The owner and application ID of the reports are overwritten by the entered page
+item values during the import.
+
+DECLARE
+      l_blob blob;
+
+API Reference                                                                    July 24, 2026
+G26651-03                                                                        Page 15 of 18
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                Chapter 37
+                                                                          RESET_REPORT Procedure Signature 1
+
+BEGIN
+      SELECT blob_content
+            INTO l_blob
+            FROM apex_application_temp_files
+      WHERE name = :P1_FILE;
+
+apex_ir.import_saved_reports (
+
+      p_export_content                                 => apex_util.blob_to_clob( l_blob ),
+
+      p_credential_static_id => 'my_API_key_pair',
+
+      p_new_owner                                      => :P1_NEW_OWNER,
+
+      p_new_application_id => :P1_NEW_APP_ID );
+
+END;
+
+      See Also
+      SET_WORKSPACE Procedure
+
+37.18 RESET_REPORT Procedure Signature 1
+
+                       This procedure resets report settings to the developer defined default settings using the report
+                       ID.
+
+      Note
+
+      The use of this procedure in a page rendering process causes report download issues
+      (CSV, HTML, Email, and so on). When a user downloads the report, the interactive
+      report reloads the page with download format in the REQUEST value. Any interactive
+      report settings changes (such as add filter or reset report) are done in partial page
+      refresh. Thus, the download data may not match the report data user is seeing. For
+      this reason, Oracle recommends only using this procedure in a page submit process.
+
+Syntax
+
+APEX_IR.RESET_REPORT (
+      p_page_id IN NUMBER,
+      p_region_id IN NUMBER,
+      p_report_id IN NUMBER DEFAULT NULL )
+
+Parameters
+
+Parameter                                              Description
+p_page_id
+                                                       Page of the current Oracle APEX application that contains an
+p_region_id                                            interactive report.
+p_report_id                                            The interactive report region ID.
+                                                       The saved report ID within the current application page. If
+                                                       p_report_id is NULL, it resets the last viewed report settings.
+
+API Reference                                                                                July 24, 2026
+G26651-03                                                                                    Page 16 of 18
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                    Chapter 37
+                                                              RESET_REPORT Procedure Signature 2
+
+Example
+
+The following example shows how to use the RESET_REPORT procedure signature 1 to reset
+interactive report settings with report ID of 880629800374638220 in page 1, region
+2505704029884282 of the current application.
+
+BEGIN
+
+APEX_IR.RESET_REPORT(
+
+        p_page_id                                      => 1,
+
+        p_region_id => 2505704029884282,
+
+        p_report_id => 880629800374638220);
+
+END;
+
+37.19 RESET_REPORT Procedure Signature 2
+
+                       This procedure resets report settings using the report alias.
+
+       Note
+
+       The use of this procedure in a page rendering process causes report download issues
+       (CSV, HTML, Email, and so on). When a user downloads the report, the interactive
+       report reloads the page with download format in the REQUEST value. Any interactive
+       report settings changes (such as add filter or reset report) are done in partial page
+       refresh. Thus, the download data may not match the report data user is seeing. For
+       this reason, Oracle recommends only using this procedure in a page submit process.
+
+Syntax
+
+APEX_IR.RESET_REPORT (
+
+p_page_id          IN NUMBER,
+
+p_region_id IN NUMBER,
+
+p_report_alias IN VARCHAR2 DEFAULT NULL )
+
+Parameters
+
+Parameter                                              Description
+p_page_id
+                                                       Page of the current Oracle APEX application that contains an
+p_region_id                                            interactive report.
+p_report_alias                                         The interactive report region ID.
+                                                       The saved report alias within the current application page. If
+                                                       p_report_alias is NULL, it resets the last viewed report settings.
+
+Example
+
+The following example shows how to use the RESET_REPORT procedure to reset interactive
+report settings with a report alias of CATEGORY_REPORT in page 1, region 2505704029884282 of
+the current application.
+
+BEGIN
+      APEX_IR.RESET_REPORT(
+
+API Reference                                                                         July 24, 2026
+G26651-03                                                                             Page 17 of 18
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                         Chapter 37
+                                                                   RESET_REPORT Procedure Signature 3
+
+        p_page_id                                      => 1,
+
+        p_region_id => 2505704029884282,
+
+        p_report_alias => 'CATEGORY_REPORT');
+
+END;
+
+37.20 RESET_REPORT Procedure Signature 3
+
+                       This procedure resets report settings to the developer-defined default settings using the report
+                       Static ID.
+
+      Note
+
+      The use of this procedure in a page rendering process causes report download issues
+      (CSV, HTML, Email, and so on). When a user downloads the report, the interactive
+      report reloads the page with download format in the REQUEST value. Any interactive
+      report settings changes (such as add filter or reset report) are done in partial page
+      refresh. Thus, the download data may not match the report data user is seeing. For
+      this reason, Oracle recommends only using this procedure in a page submit process.
+
+Syntax
+
+APEX_IR.RESET_REPORT (
+
+p_page_id                                              IN NUMBER,
+
+p_region_static_id IN VARCHAR2,
+
+p_report_static_id IN VARCHAR2                                     DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_page_id
+                                                       Page of the current Oracle APEX application that contains an
+p_region_static_id                                     interactive report.
+p_report_static_id                                     The interactive report region Static ID.
+
+                                                       The saved report Static ID within the current application page. If
+                                                       p_report_static_id is NULL, it resets the last viewed report
+                                                       settings.
+
+Example
+
+The following example shows how to use the RESET_REPORT procedure to reset interactive
+report settings with a report Static ID of category-report in page 1, region group-region of
+the current application.
+
+BEGIN                                                         => 1,
+      APEX_IR.RESET_REPORT(                                   => 'group-region',
+            p_page_id                                         => 'category-report' );
+            p_region_static_id
+            p_report_static_id
+
+END;
+
+API Reference                                                                          July 24, 2026
+G26651-03                                                                              Page 18 of 18
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+38
+
+APEX_ITEM (Legacy)
+
+                       This API is designated as legacy.
+                       You can use the APEX_ITEM package to create form elements dynamically based on a SQL
+                       query instead of creating individual items page by page.
+                       � CHECKBOX2 Function
+                       � DATE_POPUP Function
+                       � DATE_POPUP2 Function
+                       � DISPLAY_AND_SAVE Function
+                       � HIDDEN Function
+                       � MD5_CHECKSUM Function
+                       � MD5_HIDDEN Function
+                       � POPUP_FROM_LOV Function
+                       � POPUP_FROM_QUERY Function
+                       � POPUPKEY_FROM_LOV Function
+                       � POPUPKEY_FROM_QUERY Function
+                       � RADIOGROUP Function
+                       � SELECT_LIST Function
+                       � SELECT_LIST_FROM_LOV Function
+                       � SELECT_LIST_FROM_LOV_XL Function
+                       � SELECT_LIST_FROM_QUERY Function
+                       � SELECT_LIST_FROM_QUERY_XL Function
+                       � SWITCH Function
+                       � TEXT Function
+                       � TEXTAREA Function
+                       � TEXT_FROM_LOV Function
+                       � TEXT_FROM_LOV_QUERY Function
+
+38.1 CHECKBOX2 Function
+
+                       This function creates check boxes.
+
+                       Syntax
+
+APEX_ITEM.CHECKBOX2 (                                  IN NUMBER,
+      p_idx                                            IN VARCHAR2 DEFAULT NULL,
+      p_value                                          IN VARCHAR2 DEFAULT NULL,
+      p_attributes
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 1 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                    Chapter 38
+                                                                                    CHECKBOX2 Function
+
+p_checked_values                                       IN  VARCHAR2 DEFAULT NULL,
+                                                           VARCHAR2 DEFAULT ':',
+p_checked_values_delimiter IN                              VARCHAR2 DEFAULT NULL,
+                                                           VARCHAR2 DEFAULT NULL )
+p_item_id                                              IN
+
+p_item_label                                           IN
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_idx
+                                                       Number that determines which APEX_APPLICATION global
+p_value                                                variable is used. Valid range of values is 1 to 50. For
+p_attributes                                           example 1 creates F01 and 2 creates F02
+p_checked_values                                       Value of a check box, hidden field, or input form item
+p_checked_values_delimiter                             Controls the size of the text field
+                                                       Values to be checked by default
+p_item_id                                              Delimits the values in the previous parameter,
+p_item_label                                           p_checked_values
+                                                       HTML attribute ID for the <input> tag
+                                                       Invisible label created for the item
+
+Examples of Default Check Box Behavior
+
+The following example demonstrates how to create a selected check box for each employee in
+the emp table.
+
+SELECT APEX_ITEM.CHECKBOX2(1,empno,'CHECKED') "Select",
+      ename, job
+
+FROM emp
+ORDER BY 1
+
+The following example demonstrates how to have all check boxes for employees display
+without being selected.
+
+SELECT APEX_ITEM.CHECKBOX2(1,empno) "Select",
+      ename, job
+
+FROM emp
+ORDER BY 1
+
+The following example demonstrates how to select the check boxes for employees who work in
+department 10.
+
+SELECT APEX_ITEM.CHECKBOX2(1,empno,DECODE(deptno,10,'CHECKED',NULL)) "Select",
+      ename, job
+
+FROM emp
+ORDER BY 1
+
+The next example demonstrates how to select the check boxes for employees who work in
+department 10 or department 20.
+
+SELECT APEX_ITEM.CHECKBOX2(1,deptno,NULL,'10:20',':') "Select",
+      ename, job
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 2 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                        Chapter 38
+                                                       DATE_POPUP Function
+
+FROM emp
+ORDER BY 1
+
+Creating an On-Submit Process
+
+If you are using check boxes in your application, you might need to create an On Submit
+process to perform a specific type of action on the selected rows. For example, you could have
+a Delete button that uses the following logic:
+
+SELECT APEX_ITEM.CHECKBOX2(1,empno) "Select",
+      ename, job
+
+FROM emp
+ORDER by 1
+
+Consider the following sample on-submit process:
+
+FOR I in 1..APEX_APPLICATION.G_F01.COUNT LOOP
+      DELETE FROM emp WHERE empno = to_number(APEX_APPLICATION.G_F01(i));
+
+END LOOP;
+
+The following example demonstrates how to create unselected checkboxes for each employee
+in the emp table, with a unique ID. This is useful for referencing records from within JavaScript
+code:
+
+SELECT APEX_ITEM.CHECKBOX2(1,empno,NULL,NULL,NULL,'f01_#ROWNUM#') "Select",
+      ename, job
+
+FROM emp
+ORDER BY 1
+
+38.2 DATE_POPUP Function
+
+                       Use this function with forms that include date fields. The DATE_POPUP function dynamically
+                       generates a date field that has a popup calendar button.
+
+                       Syntax
+
+APEX_ITEM.DATE_POPUP (                                 IN NUMBER,
+      p_idx                                            IN NUMBER,
+      p_row                                            IN VARCHAR2 DEFAULT NULL,
+      p_value                                          IN DATE DEFAULT 'DD-MON-YYYY',
+      p_date_format                                    IN NUMBER DEFAULT 20,
+      p_size                                           IN NUMBER DEFAULT 2000,
+      p_maxlength                                      IN VARCHAR2 DEFAULT NULL,
+      p_attributes                                     IN VARCHAR2 DEFAULT NULL,
+      p_item_id                                        IN VARCHAR2 DEFAULT NULL )
+      p_item_label
+      RETURN VARCHAR2;
+
+API Reference                                                                          July 24, 2026
+G26651-03                                                                              Page 3 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                   Chapter 38
+                                                                 DATE_POPUP2 Function
+
+Parameters
+
+Parameter                                              Description
+p_idx
+                                                       Number that determines which APEX_APPLICATION global
+p_row                                                  variable is used.Valid range of values is 1 to 50. For
+                                                       example, 1 creates F01 and 2 creates F02.
+p_value
+p_date_format                                          This parameter is deprecated. Anything specified for this
+p_size                                                 value is ignored.
+p_maxlength                                            Value of a field item.
+                                                       Valid database date format.
+p_attributes                                           Controls HTML tag attributes (such as disabled).
+p_item_id                                              Determines the maximum number of enterable characters.
+p_item_label                                           Becomes the maxlength attribute of the <input> HTML tag.
+                                                       Extra HTML parameters you want to add.
+                                                       HTML attribute ID for the <input> tag.
+                                                       Invisible label created for the item.
+
+Example
+
+The following example demonstrates how to use APEX_ITEM.DATE_POPUP to create popup
+calendar buttons for the hiredate column.
+
+SELECT
+      empno,
+      APEX_ITEM.HIDDEN(1,empno)||
+      APEX_ITEM.TEXT(2,ename) ename,
+      APEX_ITEM.TEXT(3,job) job,
+      mgr,
+      APEX_ITEM.DATE_POPUP(4,rownum,hiredate,'dd-mon-yyyy') hd,
+      APEX_ITEM.TEXT(5,sal) sal,
+      APEX_ITEM.TEXT(6,comm) comm,
+      deptno
+
+FROM emp
+ORDER BY 1
+
+                              See Also
+                                 Oracle AI Database SQL Language Reference for more information about the TO_CHAR
+                                 or TO_DATE functions
+
+38.3 DATE_POPUP2 Function
+
+                       Use this function with forms that include date fields. The DATE_POPUP2 function dynamically
+                       generates a date field that has a jQuery based popup calendar with button.
+
+API Reference                                                    July 24, 2026
+G26651-03                                                        Page 4 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                        Chapter 38
+                                                                                      DATE_POPUP2 Function
+
+Syntax
+
+APEX_ITEM.DATE_POPUP2 (                                IN NUMBER,
+      p_idx                                            IN DATE DEFAULT NULL,
+      p_value                                          IN VARCHAR2 DEFAULT NULL,
+      p_date_format                                    IN NUMBER DEFAULT 20,
+      p_size                                           IN NUMBER DEFAULT 2000,
+      p_maxLength                                      IN VARCHAR2 DEFAULT NULL,
+      p_attributes                                     IN VARCHAR2 DEFAULT NULL,
+      p_item_id                                        IN VARCHAR2 DEFAULT NULL,
+      p_item_label                                     IN VARCHAR2 DEFAULT NULL,
+      p_default_value                                  IN VARCHAR2 DEFAULT NULL,
+      p_max_value                                      IN VARCHAR2 DEFAULT NULL,
+      p_min_value                                      IN VARCHAR2 DEFAULT 'button',
+      p_show_on                                        IN VARCHAR2 DEFAULT NULL,
+      p_number_of_months                               IN VARCHAR2 DEFAULT 'none',
+      p_navigation_list_for                            IN VARCHAR2 DEFAULT NULL,
+      p_year_range                                     IN VARCHAR2 DEFAULT NULL )
+      p_validation_date
+      RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_idx
+                                                       Number that determines which APEX_APPLICATION global
+p_value                                                variable is used. Valid range of values is 1 to 50. For
+p_date_format                                          example, 1 creates F01 and 2 creates F02.
+p_size                                                 Value of a field item.
+p_maxlength
+                                                       Valid database date format.
+p_attributes
+p_item_id                                              Controls HTML tag attributes (such as disabled).
+p_item_label
+p_default_value                                        Determines the maximum number of enterable characters.
+                                                       Becomes the maxlength attribute of the <input> HTML tag.
+p_max_value                                            Extra HTML parameters you want to add.
+p_min_value
+p_show_on                                              HTML attribute ID for the <input> tag.
+                                                       Invisible label created for the item.
+p_number_of_months
+                                                       The default date which should be selected in datepicker
+p_navigation_list_for                                  calendar popup.
+                                                       The Maximum date that can be selected from the datepicker.
+p_year_range
+p_validation_date                                      The Minimum date that can be selected from the datepicker.
+
+                                                       Determines when the datepicker displays, on button click or
+                                                       on focus of the item or both.
+                                                       Determines number of months displayed. Value should be in
+                                                       this array format: [row,column]
+                                                       Determines if a select list is displayed for Changing Month,
+                                                       Year, or Both. Possible values include: MONTH, YEAR,
+                                                       MONTH_AND_YEAR. Default NULL.
+                                                       The range of years displayed in the year selection list.
+
+                                                       Used to store the Date value for the which date validation
+                                                       failed.
+
+API Reference                                                                         July 24, 2026
+G26651-03                                                                             Page 5 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                          Chapter 38
+                                                                                DISPLAY_AND_SAVE Function
+
+See Also
+
+Oracle AI Database SQL Language Reference for information about the TO_CHAR or
+TO_DATE functions
+
+38.4 DISPLAY_AND_SAVE Function
+
+                       Use this function to display an item as text, but save its value to session state.
+                       Syntax
+
+APEX_ITEM.DISPLAY_AND_SAVE (
+
+p_idx         IN NUMBER,
+
+p_value       IN VARCHAR2 DEFAULT NULL,
+
+p_item_id IN VARCHAR2 DEFAULT NULL,
+
+p_item_label IN VARCHAR2 DEFAULT NULL )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_idx
+                                                       Number that determines which APEX_APPLICATION global variable is
+p_value                                                used.Valid range of values is 1 to 50. For example, 1 creates F01 and 2
+p_item_id                                              creates F02.
+p_item_label                                           Current value.
+                                                       HTML attribute ID for the <span> tag.
+                                                       Invisible label created for the item.
+
+Example
+The following example demonstrates how to use the APEX_ITEM.DISPLAY_AND_SAVE function.
+
+SELECT APEX_ITEM.DISPLAY_AND_SAVE(10,empno) c FROM emp
+
+38.5 HIDDEN Function
+
+                       This function dynamically generates hidden form items.
+                       Syntax
+
+APEX_ITEM.HIDDEN (
+
+p_idx         IN                                       NUMBER,
+                                                       VARCHAR2 DEFAULT
+p_value       IN                                       VARCHAR2 DEFAULT NULL,
+                                                       VARCHAR2 DEFAULT NULL,
+p_attributes IN                                        VARCHAR2 DEFAULT NULL )
+
+p_item_id IN
+
+p_item_label IN
+
+RETURN VARCHAR2;
+
+API Reference                                                                                              July 24, 2026
+G26651-03                                                                                                  Page 6 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                             Chapter 38
+                                                       MD5_CHECKSUM Function
+
+Parameters
+
+Parameter                                              Description
+p_idx
+                                                       Number to identify the item you want to generate. The
+p_value                                                number determines which G_FXX global is populated
+p_attributes                                           See also APEX_APPLICATION.
+p_item_id
+p_item_label                                           Value of the hidden input form item.
+                                                       Extra HTML parameters you want to add.
+                                                       HTML attribute ID for the <input> tag.
+                                                       Invisible label created for the item.
+
+Example
+
+Typically, the primary key of a table is stored as a hidden column and used for subsequent
+update processing, for example:
+
+SELECT
+      empno,
+      APEX_ITEM.HIDDEN(1,empno)||
+      APEX_ITEM.TEXT(2,ename) ename,
+      APEX_ITEM.TEXT(3,job) job,
+      mgr,
+      APEX_ITEM.DATE_POPUP(4,rownum,hiredate,'dd-mon-yyyy') hiredate,
+      APEX_ITEM.TEXT(5,sal) sal,
+      APEX_ITEM.TEXT(6,comm) comm,
+      deptno
+
+FROM emp
+ORDER BY 1
+
+The previous query could use the following page process to process the results:
+
+BEGIN
+      FOR i IN 1..APEX_APPLICATION.G_F01.COUNT LOOP
+            UPDATE emp
+                   SET
+                         ename=APEX_APPLICATION.G_F02(i),
+                         job=APEX_APPLICATION.G_F03(i),
+                               hiredate=to_date(APEX_APPLICATION.G_F04(i),'dd-mon-yyyy'),
+                               sal=APEX_APPLICATION.G_F05(i),
+                               comm=APEX_APPLICATION.G_F06(i)
+            WHERE empno=to_number(APEX_APPLICATION.G_F01(i));
+      END LOOP;
+
+END;
+
+                       Note that the G_F01 column (which corresponds to the hidden EMPNO) is used as the key to
+                       update each row.
+
+38.6 MD5_CHECKSUM Function
+
+                       Use this function for lost update detection. Lost update detection ensures data integrity in
+                       applications where data can be accessed concurrently.
+
+API Reference                                                                    July 24, 2026
+G26651-03                                                                        Page 7 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                        Chapter 38
+                                                       MD5_HIDDEN Function
+
+This function produces hidden form fields with a name attribute equal to fcs and as value a
+MD5 checksum based on up to 50 inputs. APEX_ITEM.MD5_CHECKSUM also produces an
+MD5 checksum using Oracle Database DBMS_CRYPTO:
+
+DBMS_CRYPTO.HASH (
+      SRC => UTL_RAW.CAST_TO_RAW('my_string'),
+      TYP => DBMS_CRYPTO.HASH_MD5 );
+
+An MD5 checksum provides data integrity through hashing and sequencing to ensure that data
+is not altered or stolen as it is transmitted over a network.
+
+Syntax
+
+APEX_ITEM.MD5_CHECKSUM (
+      p_value01 IN VARCHAR2 DEFAULT NULL,
+      p_value02 IN VARCHAR2 DEFAULT NULL,
+      p_value03 IN VARCHAR2 DEFAULT NULL,
+      ...
+      p_value50 IN VARCHAR2 DEFAULT NULL,
+      p_col_sep IN VARCHAR2 DEFAULT '|',
+      p_item_id IN VARCHAR2 DEFAULT NULL )
+      RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_value01                                              Fifty available inputs. If no parameters are supplied, defaults to
+...                                                    NULL.
+p_value50
+p_col_sep                                              String used to separate p_value inputs. Defaults to | (pipe
+                                                       symbol).
+p_item_id                                              ID of the HTML form item.
+
+Example
+
+This function generates hidden form elements with the name fcs. The values can
+subsequently be accessed by using the APEX_APPLICATION.G_FCS array.
+
+SELECT APEX_ITEM.MD5_CHECKSUM(ename,job,sal) md5_cks,
+           ename, job, sal
+
+FROM emp
+
+38.7 MD5_HIDDEN Function
+
+                       Use this function for lost update detection. Lost update detection ensures data integrity in
+                       applications where data can be accessed concurrently.
+
+API Reference                                                                   July 24, 2026
+G26651-03                                                                       Page 8 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                            Chapter 38
+                                                                                   POPUP_FROM_LOV Function
+
+This function produces a hidden form field with a MD5 checksum as value which is based on
+up to 50 inputs. APEX_ITEM.MD5_HIDDEN also produces an MD5 checksum using Oracle
+database DBMS_CRYPTO:
+
+UTL_RAW.CAST_TO_RAW(DBMS_CRYPTO.MD5())
+
+An MD5 checksum provides data integrity through hashing and sequencing to ensure that data
+is not altered or stolen as it is transmitted over a network.
+
+Syntax
+
+APEX_ITEM.MD5_HIDDEN (
+
+p_idx           IN NUMBER,
+
+p_value01 IN VARCHAR2 DEFAULT NULL,
+
+p_value02 IN VARCHAR2 DEFAULT NULL,
+
+p_value03 IN VARCHAR2 DEFAULT NULL,
+
+...
+
+p_value50 IN VARCHAR2 DEFAULT NULL,
+
+p_col_sep IN VARCHAR2 DEFAULT '|',
+
+p_item_id IN VARCHAR2 DEFAULT NULL )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter       Description
+p_idx
+                Indicates the form element to be generated. For example, 1 equals F01 and 2
+p_value01...50  equals F02. Typically the p_idx parameter is constant for a given column.
+p_col_sep       Fifty available inputs. Parameters not supplied default to NULL.
+p_item_id       String used to separate p_value inputs. Defaults to the pipe symbol ( | ).
+                ID of the HTML form item.
+
+Example
+
+The p_idx parameter specifies the FXX form element to be generated. In the following
+example, 7 generates F07. Also note that an HTML hidden form element is generated.
+
+SELECT APEX_ITEM.MD5_HIDDEN(7,ename,job,sal)md5_h, ename, job, sal
+FROM emp
+
+38.8 POPUP_FROM_LOV Function
+
+                       This function generates an HTML popup select list from an application shared list of values
+                       (LOV). Like other available functions in the APEX_ITEM package, POPUP_FROM_LOV function is
+                       designed to generate forms with F01 to F50 form array elements.
+
+                       Syntax
+
+APEX_ITEM.POPUP_FROM_LOV (
+
+p_idx                                                  IN  NUMBER,
+                                                           VARCHAR2 DEFAULT NULL,
+p_value                                                IN  VARCHAR2,
+                                                           VARCHAR2 DEFAULT NULL,
+p_lov_name                                             IN
+
+p_width                                                IN
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 9 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                             Chapter 38
+                                                                                    POPUP_FROM_LOV Function
+
+p_max_length                                           IN  VARCHAR2 DEFAULT NULL,
+                                                           VARCHAR2 DEFAULT '0',
+p_form_index                                           IN  VARCHAR2 DEFAULT NULL,
+                                                           VARCHAR2 DEFAULT NULL,
+p_escape_html                                          IN  VARCHAR2 DEFAULT NULL,
+                                                           VARCHAR2 DEFAULT 'YES',
+p_max_elements IN                                          VARCHAR2 DEFAULT NULL,
+                                                           VARCHAR2 DEFAULT NULL )
+p_attributes                                           IN
+
+p_ok_to_query                                          IN
+
+p_item_id                                              IN
+
+p_item_label                                           IN
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_idx
+p_value                                                Form element name. For example, 1 equals F01 and 2 equals F02.
+p_lov_name                                             Typically, p_idx is a constant for a given column.
+p_width
+p_max_length                                           Form element current value. This value should be one of the values in
+p_form_index                                           the p_lov_name parameter.
+
+p_escape_html                                          Named LOV used for this popup.
+
+p_max_elements                                         Width of the text box.
+p_attributes
+p_ok_to_query                                          Maximum number of characters that can be entered in the text box.
+p_item_id
+p_item_label                                           HTML form on the page in which an item is contained. Defaults to 0
+                                                       (rarely used).
+                                                       Only use this parameter when it is necessary to embed a custom form in
+                                                       your page template (such as a search field that posts to a different
+                                                       website). If this form comes before the #FORM_OPEN# substitution string,
+                                                       then its index is zero and the form opened automatically by Oracle APEX
+                                                       must be referenced as form 1. This functionality supports the JavaScript
+                                                       used in the popup LOV that passes a value back to a form element.
+
+                                                       Replacements for special characters that require an escaped equivalent:
+                                                       � &lt; for <
+                                                       � &gt; for >
+                                                       � &amp; for &
+                                                       Range of values is YES and NO. If YES, special characters are escaped.
+                                                       This parameter is useful if you know your query returns invalid HTML.
+
+                                                       Limit on the number of rows that can be returned by your query. Limits
+                                                       the performance impact of user searches. By entering a value in this
+                                                       parameter, you force the user to search for a narrower set of results.
+                                                       Additional HTML attributes to use for the form item.
+
+                                                       Range of values is YES and NO. If YES, a popup returns first set of rows
+                                                       for the LOV. If NO, a search is initiated to return rows.
+
+                                                       ID attribute of the form element.
+
+                                                       Invisible label created for the item.
+
+Example
+
+The following example demonstrates a sample query the generates a popup from an LOV
+named DEPT_LOV.
+
+SELECT APEX_ITEM.POPUP_FROM_LOV (1,deptno,'DEPT_LOV') dt
+FROM emp
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 10 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                Chapter 38
+                                                                                   POPUP_FROM_QUERY Function
+
+38.9 POPUP_FROM_QUERY Function
+
+                       Generates an HTML popup select list from a query. This function is designed to generate forms
+                       with F01 to F50 form array elements.
+
+                       Syntax
+
+APEX_ITEM.POPUP_FROM_QUERY (
+
+p_idx                                                  IN NUMBER,
+
+p_value                                                IN VARCHAR2 DEFAULT NULL,
+
+p_lov_query                                            IN VARCHAR2,
+
+p_width                                                IN VARCHAR2 DEFAULT NULL,
+
+p_max_length                                           IN VARCHAR2 DEFAULT NULL,
+
+p_form_index                                           IN VARCHAR2 DEFAULT '0',
+
+p_escape_html                                          IN VARCHAR2 DEFAULT NULL,
+
+p_max_elements IN VARCHAR2 DEFAULT NULL,
+
+p_attributes                                           IN VARCHAR2 DEFAULT NULL,
+
+p_ok_to_query                                          IN VARCHAR2 DEFAULT 'YES',
+
+p_item_id                                              IN VARCHAR2 DEFAULT NULL,
+
+p_item_label                                           IN VARCHAR2 DEFAULT NULL )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_idx
+p_value                                                Form element name. For example, 1 equals F01 and 2 equals F02.
+p_lov_query                                            Typically, p_idx is a constant for a given column.
+                                                       Form element current value. This value should be one of the values in
+                                                       the p_lov_query parameter.
+                                                       SQL query that is expected to select two columns (a display column
+                                                       and a return column). For example:
+
+                                                       SELECT dname, deptno FROM dept
+
+p_width                                                Width of the text box.
+p_max_length
+p_form_index                                           Maximum number of characters that can be entered in the text box.
+
+                                                       HTML form on the page in which an item is contained. Defaults to 0 and
+                                                       rarely used.
+
+                                                       Only use this parameter when it is necessary to embed a custom form
+                                                       in your page template (such as a search field that posts to a different
+                                                       website). If this form comes before the #FORM_OPEN# substitution string,
+                                                       then its index is zero and the form opened automatically by Oracle
+                                                       APEX must be referenced as form 1. This functionality supports the
+                                                       JavaScript used in the popup LOV that passes a value back to a form
+                                                       element.
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 11 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                 Chapter 38
+                                                                                   POPUPKEY_FROM_LOV Function
+
+Parameter                                              Description
+p_escape_html
+                                                       Replacements for special characters that require an escaped
+p_max_elements                                         equivalent.
+p_attributes                                           � &lt; for <
+p_ok_to_query                                          � &gt; for >
+p_item_id                                              � &amp; for &
+p_item_label                                           Range of values is YES and NO. If YES, special characters are escaped.
+                                                       This parameter is useful if you know your query returns invalid HTML.
+
+                                                       Limit on the number of rows that can be returned by your query. Limits
+                                                       the performance impact of user searches. By entering a value in this
+                                                       parameter, you force the user to search for a narrower set of results.
+                                                       Additional HTML attributes to use for the form item.
+
+                                                       Range of values is YES and NO. If YES, a popup returns the first set of
+                                                       rows for the LOV. If NO, a search is initiated to return rows.
+                                                       ID attribute of the form element.
+
+                                                       Invisible label created for the item.
+
+Example
+
+The following example demonstrates a sample query the generates a popup select list from the
+emp table.
+
+SELECT APEX_ITEM.POPUP_FROM_QUERY (1,deptno,'SELECT dname, deptno FROM dept')
+dt
+FROM emp
+
+38.10 POPUPKEY_FROM_LOV Function
+
+                       This function generates a popup key select list from a shared list of values (LOV). Similar to
+                       other available functions in the APEX_ITEM package, the POPUPKEY_FROM_LOV function is
+                       designed to generate forms with F01 to F50 form array elements.
+
+                       Syntax
+
+APEX_ITEM.POPUPKEY_FROM_LOV (
+
+p_idx                                                  IN NUMBER,
+
+p_value                                                IN VARCHAR2 DEFAULT NULL,
+
+p_lov_name                                             IN VARCHAR2,
+
+p_width                                                IN VARCHAR2 DEFAULT NULL,
+
+p_max_length                                           IN VARCHAR2 DEFAULT NULL,
+
+p_form_index                                           IN VARCHAR2 DEFAULT '0',
+
+p_escape_html                                          IN VARCHAR2 DEFAULT NULL,
+
+p_max_elements IN VARCHAR2 DEFAULT NULL,
+
+p_attributes                                           IN VARCHAR2 DEFAULT NULL,
+
+p_ok_to_query                                          IN VARCHAR2 DEFAULT 'YES',
+
+p_item_id                                              IN VARCHAR2 DEFAULT NULL,
+
+p_item_label                                           IN VARCHAR2 DEFAULT NULL )
+
+RETURN VARCHAR2;
+
+Although the text field associated with the popup displays in the first column in the LOV query,
+the actual value is specified in the second column in the query.
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 12 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                       Chapter 38
+                                                         POPUPKEY_FROM_LOV Function
+
+Parameters
+
+Parameter                                              Description
+p_idx
+                                                       Identifies a form element name. For example, 1 equals F01 and 2 equals F02.
+                                                       Typically, p_idx is a constant for a given column
+                                                       Because of the behavior of POPUPKEY_FROM_QUERY, the next index value
+                                                       should be p_idx + 1. For example:
+
+                                                       SELECT APEX_ITEM.POPUPKEY_FROM_LOV (1,deptno,'DEPT') dt,
+                                                             APEX_ITEM.HIDDEN(3,empno) eno
+                                                             FROM emp;
+
+p_value                                                Indicates the current value. This value should be one of the values in the
+p_lov_name                                             P_LOV_NAME parameter.
+p_width
+p_max_length                                           Identifies a named LOV used for this popup.
+p_form_index
+                                                       Width of the text box.
+p_escape_html
+                                                       Maximum number of characters that can be entered in the text box.
+p_max_elements
+p_attributes                                           HTML form on the page in which an item is contained. Defaults to 0 and rarely
+p_ok_to_query                                          used.
+p_item_id                                              Only use this parameter when it is necessary to embed a custom form in your
+p_item_label                                           page template (such as a search field that posts to a different website). If this
+                                                       form comes before the #FORM_OPEN# substitution string, then its index is zero
+                                                       and the form opened automatically by APEX must be referenced as form 1.
+                                                       This functionality supports the JavaScript used in the popup LOV that passes
+                                                       a value back to a form element.
+
+                                                       Replacements for special characters that require an escaped equivalent.
+                                                       � &lt; for <
+                                                       � &gt; for >
+                                                       � &amp; for &
+                                                       This parameter is useful if you know your query returns invalid HTML.
+
+                                                       Limit on the number of rows that can be returned by your query. Limits the
+                                                       performance impact of user searches. By entering a value in this parameter,
+                                                       you force the user to search for a narrower set of results.
+                                                       Additional HTML attributes to use for the form item.
+
+                                                       Range of values is YES and NO. If YES, a popup returns the first set of rows for
+                                                       the LOV. If NO, a search is initiated to return rows.
+
+                                                       HTML attribute ID for the <input> tag.
+
+                                                       Invisible label created for the item.
+
+Example
+
+The following example demonstrates how to generate a popup key select list from a shared list
+of values (LOV).
+
+SELECT APEX_ITEM.POPUPKEY_FROM_LOV (1,deptno,'DEPT') dt
+FROM emp
+
+API Reference                                            July 24, 2026
+G26651-03                                                Page 13 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                      Chapter 38
+                                                                                   POPUPKEY_FROM_QUERY Function
+
+38.11 POPUPKEY_FROM_QUERY Function
+
+                       This function generates a popup key select list from a SQL query. Similar to other available
+                       functions in the APEX_ITEM package, the POPUPKEY_FROM_QUERY function is designed to
+                       generate forms with F01 to F50 form array elements.
+
+                       Syntax
+
+APEX_ITEM.POPUPKEY_FROM_QUERY (
+
+p_idx                                                  IN NUMBER,
+
+p_value                                                IN VARCHAR2 DEFAULT NULL,
+
+p_lov_query                                            IN VARCHAR2,
+
+p_width                                                IN VARCHAR2 DEFAULT NULL,
+
+p_max_length                                           IN VARCHAR2 DEFAULT NULL,
+
+p_form_index                                           IN VARCHAR2 DEFAULT '0',
+
+p_escape_html                                          IN VARCHAR2 DEFAULT NULL,
+
+p_max_elements IN VARCHAR2 DEFAULT NULL,
+
+p_attributes                                           IN VARCHAR2 DEFAULT NULL,
+
+p_ok_to_query                                          IN VARCHAR2 DEFAULT 'YES',
+
+p_item_id                                              IN VARCHAR2 DEFAULT NULL,
+
+p_item_label                                           IN VARCHAR2 DEFAULT NULL )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_idx
+                                                       Form element name. For example, 1 equals F01 and 2 equals F02. Typically,
+                                                       p_idx is a constant for a given column.
+                                                       Because of the behavior of POPUPKEY_FROM_QUERY, the next index value
+                                                       should be p_idx + 1. For example:
+
+                                                       SELECT APEX_ITEM.POPUPKEY_FROM_QUERY (1,deptno,'SELECT
+                                                       dname, deptno FROM dept') dt,
+                                                       APEX_ITEM.HIDDEN(3,empno) eno
+
+p_value                                                Form element current value. This value should be one of the values in the
+                                                       P_LOV_QUERY parameter.
+p_lov_query
+p_width                                                LOV query used for this popup.
+p_max_length
+p_form_index                                           Width of the text box.
+
+                                                       Maximum number of characters that can be entered in the text box.
+
+                                                       HTML form on the page in which an item is contained. Defaults to 0 and
+                                                       rarely used.
+
+                                                       Only use this parameter when it is necessary to embed a custom form in your
+                                                       page template (such as a search field that posts to a different website). If this
+                                                       form comes before the #FORM_OPEN# substitution string, then its index is zero
+                                                       and the form opened automatically by Oracle APEX must be referenced as
+                                                       form 1. This functionality supports the JavaScript used in the popup LOV that
+                                                       passes a value back to a form element.
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 14 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                     Chapter 38
+                                                                                    RADIOGROUP Function
+
+Parameter                                              Description
+p_escape_html
+                                                       Replacements for special characters that require an escaped equivalent.
+p_max_elements                                         � &lt; for <
+                                                       � &gt; for >
+p_attributes                                           � &amp; for &
+p_ok_to_query                                          This parameter is useful if you know your query returns illegal HTML.
+p_item_id
+p_item_label                                           Limit on the number of rows that can be returned by your query. Limits the
+                                                       performance impact of user searches. By entering a value in this parameter,
+                                                       you force the user to search for a narrower set of results.
+                                                       Additional HTML attributes to use for the form item.
+                                                       Range of values is YES and NO. If YES, a popup returns first set of rows for the
+                                                       LOV. If NO, a search is initiated to return rows.
+                                                       ID attribute of the form element.
+                                                       Invisible label created for the item.
+
+Example
+The following example demonstrates how to generate a popup select list from a SQL query.
+
+SELECT APEX_ITEM.POPUPKEY_FROM_QUERY (1,deptno,'SELECT dname, deptno FROM
+dept') dt
+
+               apex_item.hidden(3,empno) eno
+               FROM emp;
+
+38.12 RADIOGROUP Function
+
+                       This function generates a radio group from a SQL query.
+                       Syntax
+
+APEX_ITEM.RADIOGROUP (
+
+p_idx                                                  IN  NUMBER,
+                                                           VARCHAR2 DEFAULT NULL,
+p_value                                                IN  VARCHAR2 DEFAULT NULL,
+                                                           VARCHAR2 DEFAULT NULL,
+p_selected_value IN                                        VARCHAR2 DEFAULT NULL,
+                                                           VARCHAR2 DEFAULT NULL,
+p_display                                              IN  VARCHAR2 DEFAULT NULL,
+                                                           VARCHAR2 DEFAULT NULL,
+p_attributes                                           IN  VARCHAR2 DEFAULT NULL,
+                                                           VARCHAR2 DEFAULT NULL )
+p_onblur                                               IN
+
+p_onchange                                             IN
+
+p_onfocus                                              IN
+
+p_item_id                                              IN
+
+p_item_label                                           IN
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_idx
+                                                       Number that determines which APEX_APPLICATION global variable is
+p_value                                                used. Valid range of values is 1 to 50.For example 1 creates F01 and 2
+                                                       creates F02.
+                                                       Value of the radio group.
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 15 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                          Chapter 38
+                                                                                                         SELECT_LIST Function
+
+Parameter                                                  Description
+p_selected_value
+p_display                                                  Value that should be selected.
+p_attributes                                               Text to display next to the radio option.
+p_onblur                                                   Extra HTML parameters you want to add.
+p_onchange                                                 JavaScript to execute in the onBlur event.
+p_onfocus                                                  JavaScript to execute in the onChange event.
+p_item_id                                                  JavaScript to execute in the onFocus event.
+p_item_label                                               HTML attribute ID for the <input> tag.
+                                                           Invisible label created for the item.
+
+Example
+
+The following example demonstrates how to select department 20 from the dept table as a
+default in a radio group.
+
+SELECT APEX_ITEM.RADIOGROUP (1,deptno,'20',dname) dt
+FROM dept
+ORDER BY 1
+
+38.13 SELECT_LIST Function
+
+                       This function dynamically generates a static select list. This function is designed to generate
+                       forms with F01 to F50 form array elements.
+
+                       Syntax
+
+APEX_ITEM.SELECT_LIST (
+
+p_idx                                                  IN  NUMBER,
+                                                           VARCHAR2 DEFAULT NULL,
+p_value                                                IN  VARCHAR2 DEFAULT NULL,
+                                                           VARCHAR2 DEFAULT NULL,
+p_list_values IN                                           VARCHAR2 DEFAULT 'NO',
+                                                           VARCHAR2 DEFAULT '%NULL%',
+p_attributes IN                                            VARCHAR2 DEFAULT '%',
+                                                           VARCHAR2 DEFAULT NULL,
+p_show_null IN                                             VARCHAR2 DEFAULT NULL,
+                                                           VARCHAR2 DEFAULT 'YES' )
+p_null_value IN
+
+p_null_text IN
+
+p_item_id                                              IN
+
+p_item_label IN
+
+p_show_extra IN
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter         Description
+p_idx
+p_value           Form element name. For example, 1 equals F01 and 2 equals F02. Typically the
+p_list_values     P_IDX parameter is constant for a given column.
+                  Current value. This value should be a value in the P_LIST_VALUES parameter.
+p_attributes      List of static values separated by commas. Displays values and returns values
+                  that are separated by semicolons.
+                  Note that this is only available in the SELECT_LIST function.
+
+                  Extra HTML parameters you want to add.
+
+API Reference                                                                                            July 24, 2026
+G26651-03                                                                                                Page 16 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                            Chapter 38
+                                                                           SELECT_LIST Function
+
+Parameter      Description
+p_show_null
+p_null_value   Extra select option to enable the NULL selection. Range of values is YES and NO.
+               Value to be returned when a user selects the NULL option. Only relevant when
+p_null_text    p_show_null equals YES.
+               Value to be displayed when a user selects the NULL option. Only relevant when
+p_item_id      p_show_null equals YES.
+p_item_label   HTML attribute ID for the <input> tag.
+p_show_extra   Invisible label created for the item.
+               Shows the current value even if the value of p_value is not located in the select
+               list.
+
+Example 1
+
+The following example demonstrates a static select list that displays Yes, returns Y, defaults to
+Y, and generates a F01 form item.
+
+SELECT APEX_ITEM.SELECT_LIST(1,'Y','Yes;Y,No;N')yn
+FROM emp
+
+Example 2
+
+The following example generates a static select list where:
+
+� A form array element F03 is generated (p_idx parameter).
+
+� The initial value for each element is equal to the value for deptno for the row from emp
+     (p_value parameter).
+
+� The select list contains 4 options (p_list_values parameter).
+
+� The text within the select list displays in red (p_attributes parameter).
+
+� A null option is displayed (p_show_null) and this option displays -Select- as the text
+     (p_null_text parameter).
+
+� An HTML ID attribute is generated for each row, where #ROWNUM# is substituted for the
+     current row rownum (p_item_id parameter). (So an ID of 'f03_4' is generated for row 4.)
+
+� A HTML label element is generated for each row (p_item_label parameter).
+
+� The current value for deptno is displayed, even if it is not contained with the list of values
+     passed in the p_list_values parameter (p_show_extra parameter).
+
+SELECT empno "Employee #",
+
+ename "Name",
+
+APEX_ITEM.SELECT_LIST(
+
+p_idx                                                  => 3,
+
+p_value                                                => deptno,
+
+p_list_values =>
+
+'ACCOUNTING;10,RESEARCH;20,SALES;30,OPERATIONS;40',
+
+p_attributes => 'style="color:red;"',
+
+p_show_null => 'YES',
+
+p_null_value => NULL,
+
+p_null_text => '-Select-',
+
+p_item_id                                              => 'f03_#ROWNUM#',
+
+p_item_label => 'Label for f03_#ROWNUM#',
+
+API Reference                                                              July 24, 2026
+G26651-03                                                                  Page 17 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                   Chapter 38
+                                                                                  SELECT_LIST_FROM_LOV Function
+
+      p_show_extra                                     => 'YES') "Department"
+FROM emp;
+
+38.14 SELECT_LIST_FROM_LOV Function
+
+                       This function dynamically generates select lists from a shared list of values (LOV). Similar to
+                       other functions available in the APEX_ITEM package, these select list functions are designed to
+                       generate forms with F01 to F50 form array elements.
+
+                       This function is the same as SELECT_LIST_FROM_LOV_XL, but its return value is VARCHAR2.
+                       Returned values are limited to 32k.
+
+                       Syntax
+
+APEX_ITEM.SELECT_LIST_FROM_LOV (
+
+p_idx                                                  IN NUMBER,
+
+p_value                                                IN VARCHAR2 DEFAULT NULL,
+
+p_lov                                                  IN VARCHAR2,
+
+p_attributes IN VARCHAR2 DEFAULT NULL,
+
+p_show_null IN VARCHAR2 DEFAULT 'YES',
+
+p_null_value IN VARCHAR2 DEFAULT '%NULL%',
+
+p_null_text IN VARCHAR2 DEFAULT '%',
+
+p_item_id                                              IN VARCHAR2 DEFAULT NULL,
+
+p_item_label IN VARCHAR2 DEFAULT NULL,
+
+p_show_extra IN VARCHAR2 DEFAULT 'YES' )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter     Description
+p_idx
+              Form element name. For example, 1 equals F01 and 2 equals F02. Typically, the
+p_value       p_idx parameter is constant for a given column.
+p_lov         Current value. This value should be a value in the p_lov parameter.
+              Text name of an application list of values. This list of values must be defined in
+p_attributes  your application. This parameter is used only by the select_list_from_lov
+p_show_null   function.
+p_null_value  Extra HTML parameters you want to add.
+
+p_null_text   Extra select option to enable the NULL selection. Range of values is YES and NO.
+              Value to be returned when a user selects the NULL option. Only relevant when
+p_item_id     p_show_null equals YES.
+p_item_label  Value to be displayed when a user selects the NULL option. Only relevant when
+p_show_extra  p_show_null equals YES.
+              HTML attribute ID for the <select> tag.
+              Invisible label created for the item.
+
+              Shows the current value even if the value of p_value is not located in the select
+              list.
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 18 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                        Chapter 38
+                                                                                  SELECT_LIST_FROM_LOV_XL Function
+
+Example
+The following example demonstrates a select list based on an LOV defined in the application.
+
+SELECT APEX_ITEM.SELECT_LIST_FROM_LOV(2,job,'JOB_FLOW_LOV')job
+FROM emp
+
+38.15 SELECT_LIST_FROM_LOV_XL Function
+
+                       This function dynamically generates very large select lists (greater than 32K) from a shared list
+                       of values (LOV). Use this function in SQL queries where you need to handle a column value
+                       longer than 4000 characters.
+
+                       Similar to other functions available in the APEX_ITEM package, these select list functions are
+                       designed to generate forms with F01 to F50 form array elements.
+
+                       This function is the same as SELECT_LIST_FROM_LOV, but its return value is CLOB.
+
+                       Syntax
+
+APEX_ITEM.SELECT_LIST_FROM_LOV_XL (
+
+p_idx                                                  IN NUMBER,
+
+p_value                                                IN VARCHAR2 DEFAULT NULL,
+
+p_lov                                                  IN VARCHAR2,
+
+p_attributes IN VARCHAR2 DEFAULT NULL,
+
+p_show_null IN VARCHAR2 DEFAULT 'YES',
+
+p_null_value IN VARCHAR2 DEFAULT '%NULL%',
+
+p_null_text IN VARCHAR2 DEFAULT '%',
+
+p_item_id                                              IN VARCHAR2 DEFAULT NULL,
+
+p_item_label IN VARCHAR2 DEFAULT NULL,
+
+p_show_extra IN VARCHAR2 DEFAULT 'YES' )
+
+RETURN CLOB;
+
+Parameters
+
+Parameter     Description
+p_idx
+              Form element name. For example, 1 equals F01 and 2 equals F02. Typically, the
+p_value       p_idx parameter is constant for a given column.
+p_lov         Current value. This value should be a value in the p_lov parameter.
+              Text name of a list of values. This list of values must be defined in your
+p_attributes  application. This parameter is used only by the select_list_from_lov
+p_show_null   function.
+p_null_value  Extra HTML parameters you want to add.
+
+p_null_text   Extra select option to enable the NULL selection. Range of values is YES and NO.
+              Value to be returned when a user selects the NULL option. Only relevant when
+p_item_id     p_show_null equals YES.
+p_item_label  Value to be displayed when a user selects the NULL option. Only relevant when
+p_show_extra  p_show_null equals YES.
+              HTML attribute ID for the <select> tag.
+              Invisible label created for the item.
+
+              Shows the current value even if the value of p_value is not located in the select
+              list.
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 19 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                        Chapter 38
+                                                                                  SELECT_LIST_FROM_QUERY Function
+
+Example
+
+The following example demonstrates how to create a select list based on an LOV defined in
+the application.
+
+SELECT APEX_ITEM.SELECT_LIST_FROM_LOV_XL(2,job,'JOB_FLOW_LOV')job
+FROM emp
+
+38.16 SELECT_LIST_FROM_QUERY Function
+
+                       This function dynamically generates a select list from a query. Similar to other functions
+                       available in the APEX_ITEM package, these select list functions are designed to generate forms
+                       with F01 to F50 form array elements.
+
+                       Syntax
+
+APEX_ITEM.SELECT_LIST_FROM_QUERY (
+
+p_idx                                                  IN NUMBER,
+
+p_value                                                IN VARCHAR2 DEFAULT NULL,
+
+p_query                                                IN VARCHAR2,
+
+p_attributes IN VARCHAR2 DEFAULT NULL,
+
+p_show_null IN VARCHAR2 DEFAULT 'YES',
+
+p_null_value IN VARCHAR2 DEFAULT '%NULL%',
+
+p_null_text IN VARCHAR2 DEFAULT '%',
+
+p_item_id                                              IN VARCHAR2 DEFAULT NULL,
+
+p_item_label IN VARCHAR2 DEFAULT NULL,
+
+p_show_extra IN VARCHAR2 DEFAULT 'YES' )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter     Description
+p_idx
+p_value       Form element name. For example, 1 equals F01 and 2 equals F02. Typically, the
+p_query       p_idx parameter is constant for a given column.
+              Current value. This value should be a value in the p_query parameter.
+p_attributes  SQL query that is expected to select two columns, a display column, and a return
+p_show_null   column. For example:
+p_null_value
+p_null_text   SELECT dname, deptno FROM dept
+p_item_id
+p_item_label  Note that this is used only by the SELECT_LIST_FROM_QUERY function.
+              Also note, if only one column is specified in the select clause of this query, the
+              value for this column is used for both display and return purposes.
+
+              Extra HTML parameters you want to add.
+              Extra select option to enable the NULL selection. Range of values is YES and NO.
+              Value to be returned when a user selects the NULL option. Only relevant when
+              p_show_null equals YES.
+              Value to be displayed when a user selects the NULL option. Only relevant when
+              p_show_null equals YES.
+              HTML attribute ID for the <select> tag.
+              Invisible label created for the item.
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 20 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                             Chapter 38
+                                                                                  SELECT_LIST_FROM_QUERY_XL Function
+
+Parameter     Description
+p_show_extra
+              Show the current value even if the value of p_value is not located in the select
+              list.
+
+Example
+The following example demonstrates a select list based on a SQL query.
+
+SELECT APEX_ITEM.SELECT_LIST_FROM_QUERY(3,job,'SELECT DISTINCT job FROM
+emp')job
+FROM emp
+
+38.17 SELECT_LIST_FROM_QUERY_XL Function
+
+                       This function is the same as SELECT_LIST_FROM_QUERY, but its return value is a CLOB. This
+                       allows its use in SQL queries where you need to handle a column value longer than 4000
+                       characters. Returned values will be limited to 32K. Similar to other functions available in the
+                       APEX_ITEM package, these select list functions are designed to generate forms with F01 to F50
+                       form array elements.
+
+                       Syntax
+
+APEX_ITEM.SELECT_LIST_FROM_QUERY_XL (
+
+p_idx                                                  IN NUMBER,
+
+p_value                                                IN VARCHAR2 DEFAULT NULL,
+
+p_query                                                IN VARCHAR2,
+
+p_attributes IN VARCHAR2 DEFAULT NULL,
+
+p_show_null IN VARCHAR2 DEFAULT 'YES',
+
+p_null_value IN VARCHAR2 DEFAULT '%NULL%',
+
+p_null_text IN VARCHAR2 DEFAULT '%',
+
+p_item_id                                              IN VARCHAR2 DEFAULT NULL,
+
+p_item_label IN VARCHAR2 DEFAULT NULL,
+
+p_show_extra IN VARCHAR2 DEFAULT 'YES' )
+
+RETURN CLOB;
+
+Parameters
+
+Parameter     Description
+p_idx         Form element name. For example, 1 equals F01 and 2 equals F02. Typically the
+              p_idx parameter is constant for a given column.
+p_value       Current value. This value should be a value in the p_query parameter.
+p_query       SQL query that is expected to select two columns, a display column, and a return
+              column. For example:
+
+              SELECT dname, deptno FROM dept
+
+p_attributes  Note that this is used only by the SELECT_LIST_FROM_QUERY_XL function.
+              Also note, if only one column is specified in the select clause of this query, the
+              value for this column is used for both display and return purposes.
+
+              Extra HTML parameters you want to add.
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 21 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                            Chapter 38
+                                                                                   SWITCH Function
+
+Parameter     Description
+p_show_null
+p_null_value  Extra select option to enable the NULL selection. Range of values is YES and NO.
+              Value to be returned when a user selects the NULL option. Only relevant when
+p_null_text   p_show_null equals YES.
+              Value to be displayed when a user selects the NULL option. Only relevant when
+p_item_id     p_show_null equals YES.
+p_item_label  HTML attribute ID for the <select> tag.
+p_show_extra  Invisible label created for the item.
+              Show the current value even if the value of p_value is not located in the select
+              list.
+
+Example
+The following example demonstrates a select list based on a SQL query.
+
+SELECT APEX_ITEM.SELECT_LIST_FROM_QUERY_XL(3,job,'SELECT DISTINCT job FROM
+emp')job
+FROM emp
+
+38.18 SWITCH Function
+
+                       This function dynamically generates flip toggle item. If On/Off value and label are not passed, it
+                       renders Yes/No toggle. This function is designed to generate forms with F01 to F50 form array
+                       elements.
+
+                       Syntax
+
+APEX_ITEM.SWITCH (
+
+p_idx                                                  IN NUMBER,
+
+p_value                                                IN VARCHAR2,
+
+p_on_value                                             IN VARCHAR2 DEFAULT 'Y',
+
+p_on_label                                             IN VARCHAR2 DEFAULT 'Yes',
+
+p_off_value IN VARCHAR2 DEFAULT 'N',
+
+p_off_label IN VARCHAR2 DEFAULT 'No',
+
+p_item_id                                              IN VARCHAR2 DEFAULT NULL,
+
+p_item_label IN VARCHAR2,
+
+p_attributes IN VARCHAR2 DEFAULT NULL )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_idx
+                                                       Form element name. For example, 1 equals F01 and 2 equals F02.
+p_value                                                Typically the P_IDX parameter is constant for a given column.
+p_on_value                                             Form element current value.
+p_on_label                                             The value of the item if the user picks On option.
+p_off_value                                            The display text for the On option.
+p_off_label                                            The value of the item if the user picks Off option.
+                                                       The display text for the Off option.
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 22 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                               Chapter 38
+                                                                                                         TEXT Function
+
+Parameter                                              Description
+p_item_id
+                                                       HTML attribute ID for the <input> tag. Try concatenating some string
+p_item_label                                           with rownum to make it unique.
+p_attributes                                           Invisible label created for the item.
+                                                       Additional HTML attributes to use for the form item.
+
+Example
+
+The following example demonstrates the use of APEX_ITEM.SWITCH to generate a Yes/No flip
+toggle item where:
+
+� A form array element F01 will be generated (p_idx parameter).
+� The initial value for each element will be equal to N (p_value parameter).
+� A HTML ID attribute will be generated for each row with the current rownum to uniquely
+
+     identify. (p_item_id parameter). An ID of 'IS_MANAGER_2' is generated for row 2).
+� A HTML label element will be generated for each row (p_item_label parameter).
+
+SELECT
+   ename "Name",
+   APEX_ITEM.SWITCH (
+           p_idx => 1,
+           p_value => 'N',
+    p_item_id => 'IS_MANAGER_'||rownum,
+           p_item_label => apex_escape.html(ename)||': Is Manager' )
+
+"Is Manager"
+FROM emp;
+
+38.19 TEXT Function
+
+                       This function generates text fields (or text input form items) from a SQL query.
+                       Syntax
+
+APEX_ITEM.TEXT(
+
+p_idx            IN                                    NUMBER,
+                                                       VARCHAR2 DEFAULT NULL,
+p_value          IN                                    NUMBER DEFAULT NULL,
+                                                       NUMBER DEFAULT NULL,
+p_size           IN                                    VARCHAR2 DEFAULT NULL,
+                                                       VARCHAR2 DEFAULT NULL,
+p_maxlength IN                                         VARCHAR2 DEFAULT NULL)
+
+p_attributes IN
+
+p_item_id IN
+
+p_item_label IN
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_idx
+                                                       Number to identify the item you want to generate. The
+                                                       number determines which G_FXX global is populated.
+                                                       See also APEX_APPLICATION.
+
+API Reference                                                                                            July 24, 2026
+G26651-03                                                                                                Page 23 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                             Chapter 38
+                                                                                TEXTAREA Function
+
+Parameter                                                 Description
+p_value
+p_size                                                    Value of a text field item.
+p_maxlength                                               Controls HTML tag attributes (such as disabled).
+                                                          Maximum number of characters that can be entered in the
+p_attributes                                              text box.
+p_item_id                                                 Extra HTML parameters you want to add.
+p_item_label                                              HTML attribute ID for the <input> tag.
+                                                          Invisible label created for the item.
+
+Example
+
+The following sample query demonstrates how to generate one update field for each row. Note
+that the ename, sal, and comm columns use the APEX_ITEM.TEXT function to generate an HTML
+text field for each row. Note also that each item in the query is passed a unique p_idx
+parameter to ensure that each column is stored in its own array.
+
+SELECT
+   empno,
+   APEX_ITEM.HIDDEN(1,empno)||
+   APEX_ITEM.TEXT(2,ename) ename,
+   APEX_ITEM.TEXT(3,job) job,
+   mgr,
+   APEX_ITEM.DATE_POPUP(4,rownum,hiredate,'dd-mon-yyyy') hiredate,
+   APEX_ITEM.TEXT(5,sal) sal,
+   APEX_ITEM.TEXT(6,comm) comm,
+   deptno
+
+FROM emp
+ORDER BY 1
+
+38.20 TEXTAREA Function
+
+                       This function creates text areas.
+                       Syntax
+
+APEX_ITEM.TEXTAREA (
+
+p_idx         IN                                       NUMBER,
+                                                       VARCHAR2 DEFAULT NULL,
+p_value       IN                                       NUMBER DEFAULT 40,
+                                                       NUMBER DEFAULT 4,
+p_rows        IN                                       VARCHAR2 DEFAULT NULL,
+                                                       VARCHAR2 DEFAULT NULL,
+p_cols        IN                                       VARCHAR2 DEFAULT NULL )
+
+p_attributes IN
+
+p_item_id IN
+
+p_item_label IN
+
+RETURN VARCHAR2;
+
+API Reference                                                                   July 24, 2026
+G26651-03                                                                       Page 24 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                     Chapter 38
+                                                                                               TEXT_FROM_LOV Function
+
+Parameters
+
+Parameter                                              Description
+p_idx
+                                                       Number to identify the item you want to generate. The
+p_value                                                number determines which G_FXX global is populated.
+p_rows                                                 See also APEX_APPLICATION.
+p_cols
+p_attributes                                           Value of the text area item.
+p_item_id                                              Height of the text area (HTML rows attribute).
+p_item_label                                           Width of the text area (HTML column attribute).
+                                                       Extra HTML parameters you want to add.
+                                                       HTML attribute ID for the <textarea> tag.
+                                                       Invisible label created for the item.
+
+Example
+The following example demonstrates how to create a text area based on a SQL query.
+
+SELECT APEX_ITEM.TEXTAREA(3,ename,5,80) a
+FROM emp
+
+38.21 TEXT_FROM_LOV Function
+
+                       Displays an item as text, deriving the display value of the named LOV.
+                       Syntax
+
+APEX_ITEM.TEXT_FROM_LOV (
+
+p_value       IN VARCHAR2 DEFAULT NULL,
+
+p_lov         IN VARCHAR2,
+
+p_null_text IN VARCHAR2 DEFAULT '%' )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_value
+                                                       Value of a field item.
+p_lov                                                  Note that if p_value is not located in the list of values,
+p_null_text                                            p_null_text is displayed.
+
+                                                       Text name of a shared list of values. This list of values must
+                                                       be defined in your application.
+                                                       Value displayed when the value of the field item is NULL.
+
+Example
+
+The following example demonstrates how to derive the display value from a named LOV
+(EMPNO_ENAME_LOV).
+
+SELECT APEX_ITEM.TEXT_FROM_LOV(empno,'EMPNO_ENAME_LOV') c FROM emp
+
+API Reference                                                                                  July 24, 2026
+G26651-03                                                                                      Page 25 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                         Chapter 38
+                                                       TEXT_FROM_LOV_QUERY Function
+
+38.22 TEXT_FROM_LOV_QUERY Function
+
+                       Display an item as text, deriving the display value from a list of values query.
+                       Syntax
+
+APEX_ITEM.TEXT_FROM_LOV_QUERY (
+
+p_value      IN VARCHAR2 DEFAULT NULL,
+
+p_query      IN VARCHAR2,
+
+p_null_text IN VARCHAR2 DEFAULT '%' )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_value                                                Value of a field item.
+p_query                                                SQL query that is expected to select two columns, a display column
+                                                       and a return column. For example:
+
+                                                       SELECT dname, deptno FROM dept
+
+p_null_text                                            Note if only one column is specified in the select clause of this query,
+                                                       the value for this column is used for both display and return purposes.
+
+                                                       Value to be displayed when the value of the field item is NULL or a
+                                                       corresponding entry is not located for the value p_value in the list of
+                                                       values query.
+
+Example
+The following example demonstrates how to derive the display value from a query.
+
+SELECT APEX_ITEM.TEXT_FROM_LOV_QUERY(empno,'SELECT ename, empno FROM emp') c
+from emp
+
+API Reference                                                                                            July 24, 2026
+G26651-03                                                                                                Page 26 of 26
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+39

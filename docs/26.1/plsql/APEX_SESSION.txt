@@ -1,0 +1,2013 @@
+# APEX_SESSION (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 21611-23622)
+
+       APEX_SESSION
+
+25.1 ADD_BLUEPRINT Procedure
+
+                       This procedure creates a blueprint which is a collection of tables with corresponding columns
+                       and data generation attributes.
+
+                       Syntax
+
+APEX_DG_DATA_GEN.ADD_BLUEPRINT (
+
+      p_name                                           IN VARCHAR2,
+
+      p_display_name                                   IN VARCHAR2 DEFAULT NULL,
+
+      p_description                                    IN VARCHAR2 DEFAULT NULL,
+
+      p_lang                                           IN VARCHAR2 DEFAULT 'en',
+
+      p_default_schema                                 IN VARCHAR2 DEFAULT NULL,
+
+      p_blueprint_id                                   OUT NUMBER )
+
+Parameters
+
+ Parameter                                             Description
+p_name
+                                                       Identifier for the blueprint, combination of name and
+p_display_name                                         language is unique. Name is automatically upper cased and
+p_description                                          special characters removed.
+p_lang                                                 Friendly display name.
+                                                       Description of the blueprint.
+p_default_schema                                       Blueprint language determines values from built-in data
+p_blueprint_id                                         sources. If the built-in data source has 0 records in this
+Example                                                language, en is used.
+                                                       The default schema name for the blueprint.
+
+                                                       ID of the added blueprint (OUT).
+
+DECLARE
+
+l_blueprint_id number;
+
+BEGIN
+
+apex_dg_data_gen.add_blueprint(
+
+                  p_name                               => 'Cars',
+
+                  p_display_name => 'My Cars Blueprint',
+
+                  p_description => 'A blueprint to generate car data',
+
+                  p_blueprint_id => l_blueprint_id);
+
+END;
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 2 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                Chapter 25
+                                                                       ADD_BLUEPRINT_FROM_FILE Procedure
+
+25.2 ADD_BLUEPRINT_FROM_FILE Procedure
+
+                       This procedure imports a JSON blueprint from a workspace or application file. The file should
+                       be JSON, containing a correct blueprint definition.
+
+                       Syntax
+
+APEX_DG_DATA_GEN.ADD_BLUEPRINT_FROM_FILE (
+
+      p_filename                                       IN VARCHAR2,               -- name of workspace or
+                                                                                  -- Application ID of an
+application file                                                                  -- Name of blueprint,
+                                                                                  -- return error if
+      p_application_id IN NUMBER DEFAULT NULL,
+
+Application File, or null if a workspace file
+
+      p_override_name IN VARCHAR2 DEFAULT NULL,
+
+overrides the name provided in the file
+
+      p_replace                                        IN BOOLEAN DEFAULT FALSE,
+
+blueprint exist and p_replace=FALSE
+
+      p_blueprint_id                                   OUT NUMBER );
+
+Parameters
+
+ Parameter                                             Description
+p_filename
+p_application_id                                       Name of the file (apex_application_files.filename).
+p_override_name                                        ID of the application, or null for workspace files.
+                                                       Name of blueprint, this will override the name provided in
+p_replace                                              the file.
+                                                       Return error if blueprint exists and p_replace = FALSE. Will
+p_blueprint_id                                         replace the blueprint (or p_override_name if provided).
+Example                                                ID of the imported blueprint (OUT).
+
+DECLARE
+
+l_blueprint number;
+
+BEGIN
+
+apex_dg_data_gen.add_blueprint_from_file
+
+      (p_filename                                      => 'app/example.json',
+
+       p_application_id                                => 145,
+
+       p_override_name                                 => 'My Application Blueprint',
+
+       p_replace                                       => false,
+
+       p_blueprint_id                                  => l_blueprint
+
+      );
+
+END;
+
+DECLARE
+
+l_blueprint number;
+
+BEGIN
+
+apex_dg_data_gen.add_blueprint_from_file
+
+      (p_filename                                      => 'workspace/example.json',
+
+       p_override_name                                 => 'My Workspace Blueprint',
+
+       p_replace                                       => false,
+
+       p_blueprint_id                                  => l_blueprint
+
+API Reference                                                                          July 24, 2026
+G26651-03                                                                              Page 3 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                             Chapter 25
+                                                                                ADD_BLUEPRINT_FROM_TABLES Procedure
+
+       );
+END;
+
+25.3 ADD_BLUEPRINT_FROM_TABLES Procedure
+
+                       This procedure creates a blueprint and adds the tables specified based on the data dictionary.
+
+                       For all the table names specified by the user, the Data Generator retrieves each table from the
+                       current schema, plus its definition, column names, data types, and attributes as they come
+                       from the DB data dictionary.
+
+                       Syntax
+
+APEX_DG_DATA_GEN.ADD_BLUEPRINT_FROM_TABLES (
+
+p_name                                                 IN VARCHAR2,
+
+p_tables                                               IN wwv_flow_t_varchar2,
+
+p_preserve_case IN VARCHAR2 DEFAULT 'N',
+
+p_exclude_columns IN wwv_flow_t_varchar2 DEFAULT c_empty_t_varchar2,
+
+p_description                                          IN VARCHAR2 DEFAULT NULL,
+
+p_lang                                                 IN VARCHAR2 DEFAULT 'en',
+
+p_default_schema IN VARCHAR2 DEFAULT NULL,
+
+p_blueprint_id                                         OUT NUMBER );
+
+Parameters
+
+Parameter                                              Description
+p_name                                                 Name of blueprint, combination of name and language are
+                                                       unique. Name is automatically upper cased.
+p_tables                                               List of tables and the number of records. The format is:
+
+                                                       apex_t_varchar2('<Table name>:[Rows]',...)
+
+p_preserve_case                                        For example:
+p_exclude_columns                                      apex_t_varchar2('PRODUCTS:10','CUSTOMERS:50',
+                                                       'SALES:1000')
+p_description
+p_lang                                                 The ordering of tables should be: master tables before child
+                                                       tables (for FK relationships).
+p_default_schema
+p_blueprint_id                                         Defaults to N which forces table name to uppercase. If Y,
+                                                       preserves table case.
+
+                                                       String array (apex_t_varchar2) of column names to
+                                                       exclude from the auto column generation. The exclude
+                                                       columns parameter applies to all tables in the p_tables
+                                                       parameter.
+
+                                                       Description of blueprint.
+
+                                                       Blueprint language determines values from built-in data
+                                                       sources. If the built-in data source has 0 records in this
+                                                       language, en is used.
+
+                                                       The default schema name for the blueprint.
+
+                                                       ID of the added blueprint (OUT).
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 4 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                         Chapter 25
+                                                                                     ADD_COLUMN Procedure
+
+Example
+
+DECLARE
+
+l_blueprint_id number;
+
+BEGIN
+
+apex_dg_data_gen.add_blueprint_from_tables(
+
+                    p_name                             => 'Product Sales',
+
+                    p_tables                           =>
+
+apex_t_varchar2('PRODUCTS:10','CUSTOMERS:50','SALES:1000'),
+
+                    p_exclude_columns =>
+
+apex_t_varchar2('CREATED_BY','CREATED_DATE'),
+
+                    p_description => 'A blueprint to generate product sales
+
+data',
+
+                    p_lang                             => 'en',
+
+                    p_blueprint_id => l_blueprint_id
+
+                    );
+
+END;
+
+25.4 ADD_COLUMN Procedure
+
+                       This procedure adds a column to the blueprint table.
+                       Syntax
+
+APEX_DG_DATA_GEN.ADD_COLUMN (
+
+      p_blueprint                                      IN VARCHAR2,
+
+      p_sequence                                       IN PLS_INTEGER,
+
+      p_table_name                                     IN VARCHAR2,
+
+      p_column_name                                    IN VARCHAR2,
+
+      p_preserve_case                                  IN VARCHAR2 DEFAULT 'N',
+
+      p_display_name                                   IN VARCHAR2 DEFAULT NULL,
+
+      p_max_length                                     IN NUMBER DEFAULT 4000,
+
+      p_multi_value                                    IN VARCHAR2 DEFAULT 'N',
+
+      p_mv_format                                      IN VARCHAR2 DEFAULT 'JSON',
+
+      p_mv_unique                                      IN VARCHAR2 DEFAULT 'Y',
+
+      p_mv_delimiter                                   IN VARCHAR2 DEFAULT ':',
+
+      p_mv_min_entries                                 IN INTEGER DEFAULT 1,
+
+      p_mv_max_entries                                 IN INTEGER DEFAULT 2,
+
+      p_mv_partition_by                                IN VARCHAR2 DEFAULT NULL,
+
+      p_lang                                           IN VARCHAR2 DEFAULT 'en',
+
+      p_data_source_type                               IN VARCHAR2,
+
+      p_data_source                                    IN VARCHAR2 DEFAULT NULL,
+
+      p_ds_preserve_case                               IN VARCHAR2 DEFAULT 'N',
+
+      p_min_numeric_value IN NUMBER DEFAULT 1,
+
+      p_max_numeric_value IN NUMBER DEFAULT 10,
+
+      p_numeric_precision IN NUMBER DEFAULT 0,
+
+      p_min_date_value                                 IN DATE DEFAULT NULL,
+
+      p_max_date_value                                 IN DATE DEFAULT NULL,
+
+      p_format_mask                                    IN VARCHAR2 DEFAULT c_json_date_format,
+
+      p_sequence_start_with IN NUMBER DEFAULT 1,
+
+      p_sequence_increment IN NUMBER DEFAULT 1,
+
+      p_formula                                        IN VARCHAR2 DEFAULT NULL,
+
+      p_formula_lang                                   IN VARCHAR2 DEFAULT 'PLSQL',
+
+      p_custom_attributes IN VARCHAR2 DEFAULT NULL,
+
+API Reference                                                                                   July 24, 2026
+G26651-03                                                                                       Page 5 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                 Chapter 25
+                                                                             ADD_COLUMN Procedure
+
+      p_percent_blank                                  IN NUMBER DEFAULT 0,
+      p_column_id                                      OUT NUMBER )
+
+Parameters
+
+Parameter     Description
+
+p_blueprint   Identifier for the blueprint.
+
+p_sequence    1 for first column, 2 for second, and so on.
+
+p_table_name  Table name as known to the blueprint. Checks exact case first, then checks upper
+              case.
+
+p_column_name Name of the column.
+
+p_preserve_case Defaults to N which forces column name to uppercase. If Y, preserves casing of
+                            parameter.
+
+p_display_name A friendly name for a given table.
+
+p_max_length When generating data (such as Latin text) substring to this.
+
+p_multi_value Y or N (currently available for BUILTIN table data and INLINE data).
+
+              BUILTIN table data will be distinct.
+
+              INLINE data will be distinct if all values appear once (red,1;blue,1;green,1).
+              Otherwise, permits duplicates (red,3;blue,4;green,8). The number indicates
+              the approximated frequency of each value on the generate data.
+
+p_mv_format   DELIMITED (based upon p_mv_delimiter) or JSON (such as
+              {"p_column_name" : ["sympton1","sympton2"]} ).
+
+p_mv_unique   If Y, values do not repeat within the multi-value column. If N, indicates values may
+              repeat.
+
+p_mv_delimiter Delimiter for a DELIMITED.
+
+p_mv_min_entrie Minimum values in a multi value list.
+s
+
+p_mv_max_entrie Maximum values in a multi value list.
+s
+
+p_mv_partition_ This value must match a column in the same built-in data source. For example, if
+
+by            p_data_source is "car.model", this value may be "make" because "car.make" is
+
+              valid.
+
+p_lang        Language code (for example en, de, es).
+
+p_data_source_t � BLUEPRINT
+
+ype           � BUILTIN
+
+              � DATA_SOURCE
+              � FORMULA (requires p_data_source to be NULL)
+
+              � INLINE
+              � SEQUENCE
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 6 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                    Chapter 25
+                                                                ADD_COLUMN Procedure
+
+Parameter      Description
+p_data_source
+               Can be set to one of the following options:
+               � DATA_SOURCE: DATA_SOURCE_NAME.COLUMN_NAME (column name's case
+
+                    follows p_ds_preserve_case and defaults to upper case).
+               � BUILTIN: see built-in list, must match a built-in exactly.
+               � BLUEPRINT: references table data already generated (table must have lower
+
+                    sequence). For example, Dept.Deptno where add_table with
+                    p_table_name = Dept and add_column with Deptno exist.
+
+                            Note
+
+                              This is case-sensitive. Tables created with p_preserve_case = N
+                              are automatically uppercased. May require DEPT.DEPTNO instead of
+                              dept.deptno).
+
+               � INLINE: PART_TIME,3;FULL_TIME,7
+
+                                                       Note
+
+                                                       Inline format is VALUE,FREQUENCY, separated by a semi-colon. The
+                                                       frequency of the value is an approximation and Oracle best practice
+                                                       is to use the smallest numeric values that provide the desired
+                                                       distribution.
+
+               � SEQUENCE: uses p_sequence_ parameters.
+               � FORMULA: p_data_source must be NULL. Uses p_formula as a PL/SQL
+
+                    formula and {column_name} as substitutions from this table. For example,
+                    p_formula => {first_name}||'.'||{last_name}||'.insum.ca'
+
+p_ds_preserve_c If p_data_source_type in ('DATA_SOURCE'. 'BLUEPRINT') and
+
+ase            p_ds_preserve_case = N, then the data source is upper cased to match an
+
+               upper case table_name.column_name
+
+p_min_numeric_v A positive integer number used as the minimum value (inclusive) to be used in
+
+alue           BUILTIN data sources that return NUMBER values.
+
+p_max_numeric_v A positive integer number used as the maximum value (inclusive) to be used in
+
+alue           BUILTIN data sources that return NUMBER values.
+
+p_numeric_preci 0 = no decimal values
+
+sion           -1 = round to ten
+
+               positive integer = number of decimal places
+
+p_min_date_valu A DATE used as the minimum value (inclusive) to be used in BUILTIN data sources
+
+e              that return DATE type values.
+
+p_max_date_valu A DATE used as the maximum value (inclusive) to be used in BUILTIN data
+
+e              sources that return DATE type values.
+
+p_format_mask Format mask when datatype is a date.
+
+p_sequence_star Only used when p_data_source_type = SEQUENCE.
+t_with
+
+p_sequence_incr Only used when p_data_source_type = SEQUENCE.
+ement
+
+API Reference                                                              July 24, 2026
+G26651-03                                                                  Page 7 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                 Chapter 25
+                                                                     ADD_DATA_SOURCE Procedure
+
+Parameter    Description
+p_formula    Enables referencing columns in this row, PL/SQL expressions that can reference
+             columns defined in this blueprint row. For example:
+
+             {FIRST_NAME}||'.'||{LAST_NAME}||'.insum.ca'
+
+                         Substitutions are case sensitive and must match {column_name} exactly. If
+                         p_preserve_case was set to N, {COLUMN_NAME} must be upper case.
+
+                         Can be used on any DATA_SOURCE_TYPE.
+
+                         Formulas are applied last, after p_percent_blank. If p_percent_blank = 100
+                         but FORMULAR is sysdate, the column value will be sysdate.
+
+p_formula_lang Formulas can be used as a combination of PL/SQL functions performed on this or
+                         other columns using {column_name} notation. String/Char, Date/Time, Numeric/
+                            Math functions are supported.
+
+p_custom_attrib For future expansion.
+utes
+
+p_percent_blank 0 to 100. This is applied prior to all formulas. If this column is referenced in a
+                            formula, the formula contains a blank when appropriate.
+
+                                                       Note
+
+                                                       A formula on this column may cause the column to not
+                                                       be blank.
+
+p_column_id  ID of the added column (OUT).
+Example
+
+DECLARE                                                              => 'Cars',
+    l_column_id number;                                              => 1,
+                                                                     => 'MY_CARS',
+BEGIN                                                                => 'make',
+    apex_dg_data_gen.add_column(                                     => 'BUILTIN',
+                         p_blueprint                                 => 'car.make',
+                         p_sequence                                  => l_column_id);
+                         p_table_name
+                         p_column_name
+                         p_data_source_type
+                         p_data_source
+                         p_column_id
+
+END;
+
+25.5 ADD_DATA_SOURCE Procedure
+
+                       This procedure creates a data source which identifies a table or query from which you can
+                       source data values.
+
+                       Syntax
+
+APEX_DG_DATA_GEN.ADD_DATA_SOURCE (
+
+p_blueprint                                            IN VARCHAR2,
+
+API Reference                                                                          July 24, 2026
+G26651-03                                                                              Page 8 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                         Chapter 25
+                                                                                        ADD_TABLE Procedure
+
+      p_name                                           IN VARCHAR2,
+      p_data_source_type                               IN VARCHAR2,
+      p_table                                          IN VARCHAR2 DEFAULT NULL,
+      p_preserve_case                                  IN VARCHAR2 DEFAULT 'N',
+      p_sql_query                                      IN VARCHAR2 DEFAULT NULL,
+      p_where_clause                                   IN VARCHAR2 DEFAULT NULL,
+      p_inline_data                                    IN CLOB DEFAULT NULL,
+      p_order_by_column                                IN VARCHAR2 DEFAULT NULL,
+      p_data_source_id                                 OUT NUMBER )
+
+Parameters
+
+ Parameter                                             Description
+p_blueprint
+p_name                                                 Identifies the blueprint.
+                                                       Name of a data source. Name is upper cased and must be
+p_data_source_type                                     26 characters or less.
+p_table                                                TABLE or SQL_QUERY.
+                                                       For source type = TABLE. Typically this will match
+p_preserve_case                                        p_name.
+                                                       Defaults to N which forces p_table_name to uppercase, if Y
+p_sql_query                                            preserves casing of p_table.
+p_where_clause                                         For p_data_source_type = SQL_QUERY.
+                                                       For p_data_source_type = TABLE, this adds the where
+p_inline_data                                          clause. Do not include "where" keyword (for example,
+p_order_by_column                                      deptno <= 20).
+p_data_source                                          For p_data_source_type = JSON_DATA.
+Example                                                Not used.
+                                                       The ID of the added data source (OUT).
+
+DECLARE                                                => 'Cars',
+   l_data_source_id number;                            => 'apex_dg_builtin_cars',
+                                                       => 'TABLE',
+BEGIN                                                  => 'apex_dg_builtin_cars',
+      apex_dg_data_gen.add_data_source(                => l_data_source_id );
+                           p_blueprint
+                           p_name
+                           p_data_source_type
+                           p_table
+                           p_data_source_id
+
+END;
+
+25.6 ADD_TABLE Procedure
+
+                       This procedure adds a destination table for the generated data.
+                       Syntax
+
+APEX_DG_DATA_GEN.ADD_TABLE (
+
+p_blueprint                                            IN VARCHAR2,
+
+p_sequence                                             IN PLS_INTEGER,
+
+p_table_name                                           IN VARCHAR2,
+
+API Reference                                                                           July 24, 2026
+G26651-03                                                                               Page 9 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                     Chapter 25
+                                                                                    ADD_TABLE Procedure
+
+      p_preserve_case                                  IN VARCHAR2             DEFAULT 'N',
+      p_display_name                                   IN VARCHAR2             DEFAULT NULL,
+      p_singular_name                                  IN VARCHAR2             DEFAULT NULL,
+      p_plural_name                                    IN VARCHAR2             DEFAULT NULL,
+      p_rows                                           IN NUMBER               DEFAULT 0,
+      p_max_rows                                       IN NUMBER               DEFAULT NULL,
+      p_use_existing_table                             IN VARCHAR2             DEFAULT 'N',
+      p_exclude_columns                                IN wwv_flow_t_varchar2  DEFAULT
+c_empty_t_varchar2,
+      p_table_id                                       OUT NUMBER )
+
+Parameters
+
+ Parameter                                             Description
+p_blueprint
+p_sequence                                             Identifier for the blueprint.
+p_table_name
+p_preserve_case                                        1 for first table, 2 for second, and so forth.
+p_display_name
+p_singular_name                                        Name of table that can exist or not exist.
+p_plural_name
+p_rows                                                 Defaults to N, which forces table name to uppercase. If Y,
+p_max_rows                                             perserves casing of parameter.
+                                                       Friendly display name.
+p_use_existing_table
+                                                       Singluar friendly name.
+p_exclude_columns
+p_table_id                                             Plural friendly name.
+Example
+                                                       Number of rows to generate for this table.
+
+                                                       If null, then p_rows determines the number of rows,
+                                                       otherwise random rows between p_rows and p_max_rows
+                                                       are used when generating output.
+                                                       If Y, uses the data dictionary to auto generate columns.
+
+                                                       The automatic blueprint column creation supports the
+                                                       following data source mapping rules:
+                                                       � Foreign key data generation (populates the column with
+
+                                                             keys from the master table).
+                                                       � Inline data generation based on CHECK constraints
+
+                                                            (simple IN constructs are supported).
+                                                       � Mapping based on existing built-in tables (based on the
+
+                                                             table and column name).
+                                                       � Mapping based on the column name, data type, and
+
+                                                             length.
+                                                       � If the column is nullable, 5% of the values will be NULL.
+
+                                                       String array (apex_t_varchar2) of column names to
+                                                       exclude from the automatic column generation.
+                                                       ID of the added table (OUT).
+
+DECLARE                                                              => 'Cars',
+    l_table_id number;                                               => 1,
+                                                                     => 'my_cars',
+BEGIN                                                                => '50',
+    apex_dg_data_gen.add_table(
+                         p_blueprint
+                         p_sequence
+                         p_table_name
+                         p_rows
+
+API Reference                                                                                 July 24, 2026
+G26651-03                                                                                     Page 10 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                      Chapter 25
+                                                                                           EXPORT_BLUEPRINT Function
+
+                p_table_id                                                => l_table_id);
+
+apex_dg_data_gen.add_table(                                               => 'Cars',
+                    p_blueprint                                           => 1,
+                    p_sequence                                            => 'my_cars',
+                    p_table_name                                          => '50',
+                    p_rows                                                => 'Y',
+                    p_use_existing_table                                  => l_table_id
+                    p_table_id
+
+);
+
+apex_dg_data_gen.add_table(
+
+                p_blueprint                                               => 'Cars',
+
+                p_sequence                                                => 1,
+
+                p_table_name                                              => 'my_cars',
+
+                p_rows                                                    => '50',
+
+                p_use_existing_table                                      => 'Y',
+
+                p_exclude_columns                                         =>
+
+apex_t_varchar2('CREATED_BY','CREATED_DATE'),
+
+                p_table_id                                                => l_table_id
+
+);
+
+END;
+
+25.7 EXPORT_BLUEPRINT Function
+
+                       This function exports a blueprint in JSON format.
+                       Syntax
+
+APEX_DG_DATA_GEN.EXPORT_BLUEPRINT (
+
+      p_name                                           IN VARCHAR2,
+
+      p_pretty                                         IN VARCHAR2 DEFAULT 'Y' )
+
+RETURN CLOB;
+
+Parameters
+
+Parameter                                              Description
+p_name                                                 Name of blueprint to export.
+p_pretty                                               Y to return pretty results, all other values do not.
+
+Returns
+Returns the blueprint as a JSON document in a CLOB.
+
+Example
+
+DECLARE
+      l_json clob;
+
+BEGIN
+      l_json := apex_dg_data_gen.export_blueprint(
+                           p_name => 'Cars');
+
+END;
+
+API Reference                                                                                                July 24, 2026
+G26651-03                                                                                                    Page 11 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                          Chapter 25
+                                                                   GENERATE_DATA Procedure Signature 1
+
+25.8 GENERATE_DATA Procedure Signature 1
+
+                       This procedure creates rows of data based on the blueprint tables and their columns
+                       customizations.
+
+                       This procedure inserts data into tables in the schema when the p_format is set to INSERT INTO
+                       or FAST INSERT INTO. The outputs do not contain data (all are set to NULL).
+
+                       This procedure also generates data in a file. For that file, the three outputs contain the
+                       following data:
+
+                       � p_output (BLOB) with the data output. Contents can be inside a JSON, CSV, ZIP, or SQL
+                             file.
+
+                       � p_file_ext and p_mime_type (VARCHAR2) indicates the file extension and its MIME type.
+
+                       These three output parameters send the file to the user's browser so it can be handled client-
+                       side.
+
+                       In both scenarios, p_errors may have a NULL value or a CLOB with a JSON output that
+                       contains any errors.
+
+                       Syntax
+
+APEX_DG_DATA_GEN.GENERATE_DATA (
+
+p_blueprint                                            IN          VARCHAR2,
+                                                                   VARCHAR2,
+p_format                                               IN          VARCHAR2 DEFAULT NULL,
+                                                                   NUMBER DEFAULT 100,
+p_blueprint_table                                      IN          NUMBER DEFAULT c_max_error_count,
+                                                                   BLOB,
+p_row_scaling                                          IN          VARCHAR2,
+                                                                   VARCHAR2,
+p_stop_after_errors IN                                             CLOB )
+
+p_output                                               OUT NOCOPY
+
+p_file_ext                                             OUT NOCOPY
+
+p_mime_type                                            OUT NOCOPY
+
+p_errors                                               OUT NOCOPY
+
+Parameters
+
+Parameter                                              Description
+p_blueprint
+p_format                                               Name of the blueprint.
+                                                       Can be set to one of the following options:
+p_blueprint_table                                      SQL INSERT outputs a SQL script.
+p_row_scaling                                          CSV outputs a single CSV for one table or a ZIP of CSVs for multiple
+                                                       tables.
+                                                       JSON outputs JSON file.
+                                                       INSERT INTO generates the SQL INSERT script and runs the insert
+                                                       statements in the current schema.
+                                                       FAST INSERT INTO generates the data and does a single INSERT ...
+                                                       into [table] SELECT ... from [temporary table].
+
+                                                       Null for all tables. If not null, generates data only for designated table.
+                                                       If not null, must be table name of a table within the blueprint.
+                                                       This value is case sensitive.
+
+                                                       Scales the number of rows defined into the blueprint by this percentage
+                                                       value.
+
+API Reference                                                      July 24, 2026
+G26651-03                                                          Page 12 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                               Chapter 25
+                                                                        GENERATE_DATA Procedure Signature 2
+
+ Parameter                                             Description
+p_stop_after_errors
+p_output                                               How many errors can happen before the process is stopped. This is only
+p_file_ext                                             applicable for INSERT INTO.
+p_mime_type                                            The blob to hold the output. Null for INSERT INTO and FAST INSERT
+p_errors                                               INTO.
+Example                                                The file extension of the output. Null for INSERT INTO and FAST INSERT
+                                                       INTO.
+                                                       The MIME type of the output. Null for INSERT INTO and FAST INSERT
+                                                       INTO.
+                                                       JSON output of any errors. NULL upon success.
+
+DECLARE
+
+l_output blob;
+
+l_file_ext varchar2(255);
+
+l_mime_type varchar2(255);
+
+l_errors clob;
+
+BEGIN
+
+apex_dg_output.generate_data
+
+         (p_blueprint                                  => 'Cars',
+
+         p_blueprint_table => 'my_cars',
+
+         p_stop_after_errors => 100,
+
+         p_output                                      => l_output
+
+         p_file_ext                                    => l_file_ext,
+
+         p_mime_type                                   => l_mime_type,
+
+         p_errors                                      => l_errors
+
+         );
+
+END;
+
+25.9 GENERATE_DATA Procedure Signature 2
+
+                       This procedure creates rows of data based on the blueprint tables and their columns
+                       customizations.
+
+                       This procedure inserts data into user-specified tables in the schema when the p_format is set
+                       to INSERT INTO or FAST INSERT INTO. The outputs do not contain data (all are set to NULL).
+
+                       This procedure also generates data in a file. For that file, the three outputs contain the
+                       following data:
+
+                       � p_output (BLOB) with the data output. Contents can be inside a JSON, CSV, ZIP, or SQL
+                             file.
+
+                       � p_file_ext and p_mime_type (VARCHAR2) indicates the actual file extension and its
+                             MIME type.
+
+                       These three output parameters send the file to the user's browser so it can be handled client-
+                       side.
+
+                       In both scenarios, p_errors may have a NULL value or a CLOB with a JSON output that
+                       contains any errors.
+
+API Reference                                                           July 24, 2026
+G26651-03                                                               Page 13 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                    Chapter 25
+                                                                             GENERATE_DATA Procedure Signature 2
+
+Syntax
+
+APEX_DG_DATA_GEN.GENERATE_DATA (
+
+p_blueprint                                            IN  VARCHAR2,
+
+p_format                                               IN  VARCHAR2,
+
+p_blueprint_table                                      IN  VARCHAR2 DEFAULT NULL,
+
+p_row_scaling                                          IN  NUMBER DEFAULT 100,
+
+p_stop_after_errors IN                                     NUMBER DEFAULT c_max_error_count,
+
+p_output                                               OUT NOCOPY CLOB,
+
+p_file_ext                                             OUT NOCOPY VARCHAR2,
+
+p_mime_type                                            OUT NOCOPY VARCHAR2,
+
+p_errors                                               OUT NOCOPY CLOB )
+
+Parameters
+
+ Parameter                                                 Description
+p_blueprint
+p_format                                                   Name of the blueprint.
+
+p_blueprint_table                                          Can be set to one of the following options:
+p_row_scaling                                              SQL INSERT outputs a SQL script.
+p_stop_after_errors
+p_output                                                   CSV outputs a single CSV for one table or a ZIP of CSVs for
+p_file_ext                                                 multiple tables.
+p_mime_type                                                JSON outputs JSON file.
+p_errors
+Example                                                    INSERT INTO generates the SQL INSERT script and runs
+                                                           the insert statements in the current schema.
+                                                           FAST INSERT INTO generates the data and does a single
+                                                           INSERT ... into [table] SELECT ... from
+                                                           [temporary table].
+
+                                                           Null for all tables. If not null, will generate data only for
+                                                           designated table. If not null, must be table name of a table
+                                                           within the blueprint. Note: this value is case sensitive.
+                                                           Will scale the number of rows defined into the blueprint by
+                                                           this percentage value.
+                                                           How many errors can happen before the process is stopped.
+                                                           This is only applicable for INSERT INTO
+                                                           The clob to hold the output. Null for INSERT INTO and
+                                                           FAST INSERT INTO.
+                                                           The file extension of the output. Null for INSERT INTO and
+                                                           FAST INSERT INTO.
+                                                           The MIME type of the output. Null for INSERT INTO and
+                                                           FAST INSERT INTO.
+                                                           JSON output of any errors. NULL upon success.
+
+DECLARE
+
+l_output clob;
+
+l_file_ext varchar2(255);
+
+l_mime_type varchar2(255);
+
+l_errors clob;
+
+BEGIN
+
+apex_dg_output.generate_data
+
+         (p_blueprint                                  => 'Cars',
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 14 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                              Chapter 25
+                                                           GENERATE_DATA_INTO_COLLECTION Procedure
+
+          p_blueprint_table                                => 'my_cars',
+          p_stop_after_errors                              => 100,
+          p_output                                         => l_output
+          p_file_ext                                       => l_file_ext,
+          p_mime_type                                      => l_mime_type,
+          p_errors                                         => l_errors
+         );
+
+END;
+
+25.10 GENERATE_DATA_INTO_COLLECTION Procedure
+
+                       This procedure generates the data of the specified blueprint and stores the results in an APEX
+                       collection named APEX$DG$[BLUEPRINT_NAME].
+
+                       Syntax
+
+APEX_DG_DATA_GEN.GENERATE_DATA_INTO_COLLECTION (
+
+p_blueprint                                            IN  VARCHAR2,
+
+p_format                                               IN  VARCHAR2,
+
+p_blueprint_table                                      IN  VARCHAR2 DEFAULT NULL,
+
+p_row_scaling                                          IN  NUMBER DEFAULT 100,
+
+p_stop_after_errors IN                                     NUMBER DEFAULT c_max_error_count,
+
+p_errors                                               OUT NOCOPY CLOB )
+
+Parameters
+
+Parameter                                              Description
+p_blueprint
+p_format                                               Name of the blueprint.
+                                                       SQL INSERT outputs a sql script.
+p_blueprint_table                                      CSV outputs a single CSV for one table or a ZIP of CSVs for multiple tables.
+p_row_scaling                                          JSON outputs JSON file.
+p_stop_after_errors                                    INSERT INTO generates the SQL INSERT script and runs the insert
+p_errors                                               statements in the current schema.
+                                                       FAST INSERT INTO generates the data and does a single INSERT ...
+                                                       into [table] SELECT ... from [temporary table]
+
+                                                       This value is case sensitive.
+                                                       Null for all tables. If not null, generates data only for designated table. If not
+                                                       null, must be table name of a table within the blueprint.
+
+                                                       Scales the number of rows defined into the blueprint by this percentage
+                                                       value.
+                                                       Defines the number of errors that can happen before the process is
+                                                       stopped. Only applies to INSERT INTO.
+                                                       JSON output of any errors. NULL upon success.
+
+Output is stored in the collection. Additionally, a new row within the same collection contains
+the error message if there is none.
+
+Output                                                     Description
+CLOB001
+                                                           The clob to hold the output. Null for INSERT INTO
+                                                           and FAST INSERT INTO.
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 15 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                            Chapter 25
+                                                                                  GET_BLUEPRINT_ID Function
+
+ Output                                                            Description
+BLOB001
+                                                                   The blob to hold the output. Null for INSERT INTO
+C006                                                               and FAST INSERT INTO.
+                                                                   The file extension of the output. Null for INSERT
+C007                                                               INTO and FAST INSERT INTO.
+                                                                   The mime type of the output. Null for INSERT INTO
+C001                                                               and FAST INSERT INTO.
+CLOB001                                                            'ERROR'
+Example
+                                                                   JSON output of any errors. NULL upon success.
+
+DECLARE
+
+l_errors clob;
+
+BEGIN
+
+apex_dg_output.generate_data_into_collection
+
+         (p_blueprint                                  => 'Cars',
+
+           p_blueprint_table => 'my_cars',
+
+           p_stop_after_errors => 100,
+
+           p_errors                                    => l_errors
+
+         );
+
+END;
+
+25.11 GET_BLUEPRINT_ID Function
+
+                       This function returns the blueprint ID from the name.
+                       Syntax
+
+APEX_DG_DATA_GEN.GET_BLUEPRINT_ID (
+      p_name IN VARCHAR2 )
+      RETURN NUMBER;
+
+Parameters
+
+Parameter                                              Description
+p_name                                                 The blueprint identifier.
+
+Returns
+ID of the blueprint.
+
+Example
+The following example demonstrates
+
+DECLARE
+   l_blueprint_id apex_dg_blueprints.id%TYPE;
+
+BEGIN
+   l_blueprint_id := apex_dg_data_gen.get_blueprint_id(p_name => 'MY
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 16 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                   Chapter 25
+                                                                                           GET_BP_TABLE_ID Function
+
+BLUEPRINT');
+END;
+
+25.12 GET_BP_TABLE_ID Function
+
+                       This function returns the table_id for a given blueprint ID and table name (case-sensitive). If
+                       not found, it searches with UPPERCASE p_table_name automatically.
+
+                       Syntax
+
+APEX_DG_DATA_GEN.GET_BP_TABLE_ID (
+
+p_bp_id                                                IN NUMBER,
+
+p_table_name IN VARCHAR2 )
+
+RETURN NUMBER;
+
+Parameters
+
+ Parameter                                                         Description
+p_bp_id                                                            The blueprint ID.
+p_table_name                                                       The name of the table.
+
+Returns
+The table ID.
+Example
+
+DECLARE
+
+v_table_id number;
+
+BEGIN
+
+l_table_id := apex_dg_data_gen.get_bp_table_id
+
+      (p_bp_id                                         => 12345,
+
+       p_table_name => 'DEPT'
+
+      );
+
+END;
+
+25.13 GET_EXAMPLE Function
+
+                       This function generates example data for the friendly name of built-in data. The function
+                       returns a (user-specified) number of examples, showing the data to expect when using this
+                       friendly name.
+
+                       Syntax
+
+APEX_DG_DATA_GEN.GET_EXAMPLE (
+
+p_friendly_name IN VARCHAR2,
+
+p_lang                                                 IN VARCHAR2 DEFAULT 'en',
+
+p_rows                                                 IN NUMBER DEFAULT 5 )
+
+RETURN wwv_flow_t_varchar2;
+
+API Reference                                                                              July 24, 2026
+G26651-03                                                                                  Page 17 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                              Chapter 25
+                                                                                      GET_WEIGHTED_INLINE_DATA Function
+
+Parameters
+
+Parameter                                                        Description
+p_friendly_name                                                  The friendly name.
+p_lang                                                           (Optional) The language.
+p_rows                                                           Number of rows (examples) to return.
+
+Example
+
+The following example returns five rows from the domain of values for the built-in with the
+friendly name animal.family.
+
+select *
+from apex_dg_data_gen.get_example( p_friendly_name => 'animal.family');
+
+25.14 GET_WEIGHTED_INLINE_DATA Function
+
+                       This function returns a list of generated inline rows from a semi colon (;) delimited list of values.
+                       For each value add a comma to define weight (such as F,45;M,30).
+
+                       Syntax
+
+APEX_DG_DATA_GEN.GET_WEIGHTED_INLINE_DATA (
+      p_data IN VARCHAR2 )
+      RETURN wwv_flow_t_varchar2
+
+Parameters
+
+Parameter                                                        Description
+p_data                                                           The list of values.
+
+Example
+The following example returns two rows: F and M.
+
+select *
+from apex_dg_data_gen.get_weighted_inline_data( p_data => 'F;M');
+
+25.15 IMPORT_BLUEPRINT Procedure
+
+                       This procedure imports a JSON blueprint.
+                       Syntax
+
+APEX_DG_DATA_GEN.IMPORT_BLUEPRINT (
+
+p_clob                                                 IN CLOB,
+
+p_override_name IN VARCHAR2 DEFAULT NULL,
+
+p_replace                                              IN BOOLEAN DEFAULT FALSE,
+
+p_blueprint_id                                         OUT NUMBER )
+
+API Reference                                                                                          July 24, 2026
+G26651-03                                                                                              Page 18 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                           Chapter 25
+                                                             PREVIEW_BLUEPRINT Procedure
+
+Parameters
+
+ Parameter                                             Description
+p_clob
+p_override_name                                        Blueprint in JSON format.
+                                                       Name of blueprint. This overrides the name provided in
+p_replace                                              p_clob.
+                                                       Return error if blueprint exists and p_replace is FALSE.
+p_blueprint_id                                         Replaces the blueprint (or p_override_name if provided).
+Example                                                ID of the imported blueprint (OUT).
+
+DECLARE
+    l_json clob;
+    l_blueprint_id number;
+
+BEGIN
+    l_json := apex_dg_data_gen.export_blueprint(
+                         p_name => 'Cars');
+
+    apex_dg_data_gen.import_blueprint(
+                         p_clob => l_json,
+                         p_replace => TRUE,
+                         p_blueprint_id => l_blueprint_id);
+
+END;
+
+25.16 PREVIEW_BLUEPRINT Procedure
+
+                       This procedure creates preview data for a blueprint and stores this in APEX collections. This
+                       procedure can only be used with an active APEX session.
+
+                       Syntax
+
+APEX_DG_DATA_GEN.PREVIEW_BLUEPRINT (
+   parameter_1 IN NUMBER,
+   parameter_2 IN VARCHAR2,
+   parameter_3 IN NUMBER )
+
+Parameters
+
+Parameter                                              Description
+p_blueprint                                            Name of the blueprint.
+p_table_name                                           If null, all tables.
+                                                       If not null, the specified table.
+p_number_of_rows                                       Number of rows to generate (maximum of 50).
+p_data_collection                                      Name of the APEX collection for data.
+p_header_collection                                    Name of the APEX collection for headers.
+
+API Reference                                                                                       July 24, 2026
+G26651-03                                                                                           Page 19 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                   Chapter 25
+                                                                                     REMOVE_BLUEPRINT Procedure
+
+Example
+
+BEGIN
+
+      apex_dg_output.preview_blueprint
+
+         (p_blueprint                                  => 'Cars',
+
+            p_table_name                               => 'my_cars',
+
+            p_data_collection => 'CARS_DATA',
+
+            p_header_collection => 'CARS_HEADERS'
+
+         );
+
+END;
+
+25.17 REMOVE_BLUEPRINT Procedure
+
+                       This procedure removes metadata associated with a blueprint.
+                       Syntax
+
+APEX_DG_DATA_GEN.REMOVE_BLUEPRINT (
+
+      p_name                                           IN VARCHAR2 )
+
+Parameters
+
+ Parameter                                             Description
+p_name                                                 Name of blueprint to be removed.
+
+Example
+
+BEGIN
+
+apex_dg_data_gen.remove_blueprint(
+
+                    p_name                             => 'Cars');
+
+END;
+
+25.18 REMOVE_COLUMN Procedure
+
+                       This procedure removes a column from the blueprint table.
+                       Syntax
+
+APEX_DG_DATA_GEN.REMOVE_COLUMN (
+
+      p_blueprint                                      IN VARCHAR2,
+
+      p_table_name                                     IN VARCHAR2,
+
+      p_column_name                                    IN VARCHAR2 )
+
+Parameters
+
+Parameter                                              Description
+p_blueprint                                            Identifier for the blueprint.
+p_table_name                                           Name of table within blueprint.
+
+API Reference                                                                            July 24, 2026
+G26651-03                                                                                Page 20 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                       Chapter 25
+                                                                                    REMOVE_DATA_SOURCE Procedure
+
+ Parameter                                             Description
+p_column_name                                          Name of column within table.
+
+Example
+
+BEGIN                                                                 => 'Cars',
+    apex_dg_data_gen.remove_column(                                   => 'MY_CARS',
+                         p_blueprint                                  => 'MAKE');
+                         p_table_name
+                         p_column_name
+
+END;
+
+25.19 REMOVE_DATA_SOURCE Procedure
+
+                       This procedure removes metadata associated with the data source for the given blueprint.
+                       Syntax
+
+APEX_DG_DATA_GEN.REMOVE_DATA_SOURCE (
+
+p_blueprint                                            IN VARCHAR2,
+
+p_name                                                 IN VARCHAR2 )
+
+Parameters
+
+ Parameter                                             Description
+p_blueprint                                            Identifies the blueprint.
+p_name                                                 Data source to be removed from blueprint.
+
+Example
+
+BEGIN
+
+apex_dg_data_gen.remove_data_source(
+
+               p_blueprint                             => 'Cars',
+
+               p_name                                  => 'apex_dg_builtin_cars');
+
+END;
+
+25.20 REMOVE_TABLE Procedure
+
+                       This procedure removes a table for the specified blueprint.
+                       Syntax
+
+APEX_DG_DATA_GEN.REMOVE_TABLE (
+
+p_blueprint                                            IN VARCHAR2,
+
+p_table_name                                           IN VARCHAR2 )
+
+API Reference                                                                                     July 24, 2026
+G26651-03                                                                                         Page 21 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                        Chapter 25
+                                                                   RESEQUENCE_BLUEPRINT Procedure
+
+Parameters
+
+ Parameter                                             Description
+p_blueprint                                            Identifier for the blueprint.
+p_table_name                                           Table name to be removed from blueprint.
+
+Example
+
+BEGIN                                                  => 'Cars',
+    apex_dg_data_gen.remove_table(                     => 'MY_CARS');
+                         p_blueprint
+                         p_table_name
+
+END;
+
+25.21 RESEQUENCE_BLUEPRINT Procedure
+
+                       This procedure resequences all tables and columns within tables with gaps of p_offset,
+                       retaining their current order.
+
+                       Syntax
+
+APEX_DG_DATA_GEN.RESEQUENCE_BLUEPRINT (
+      p_blueprint IN VARCHAR2,
+      p_offset IN NUMBER DEFAULT c_default_seq_offset )
+
+Parameters
+
+ Parameter                                             Description
+p_blueprint                                            Identifier for the blueprint.
+p_offset                                               The offset between gaps, such as 10, 100, or 1000.
+
+Example
+
+BEGIN
+
+apex_dg_data_gen.resequence_blueprint(
+
+              p_blueprint                              => 'Cars',
+
+              p_offset                                 => 100);
+
+END;
+
+25.22 STOP_DATA_GENERATION Procedure
+
+                       This procedure stops the current data generation process. This only works within an Oracle
+                       APEX session.
+
+API Reference                                                                                    July 24, 2026
+G26651-03                                                                                        Page 22 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                     Chapter 25
+                                                                                        UPDATE_BLUEPRINT Procedure
+
+This procedure relies on an APEX Collection which tracks progress and reacts to stop
+instructions. The collection is named: APEX$DG$[BLUEPRINT_NAME] and contains the following
+attributes:
+
+d001 => current_timestamp of the process step
+c001 => Blueprint name
+c002 => Requested output format
+c003 => Table name being generated
+c004 => Name of the process step,
+c005 => Description of the process step
+n001 => Numeric identifier of the process step
+
+Syntax
+
+APEX_DG_DATA_GEN.STOP_DATA_GENERATION (
+
+      p_blueprint                                      IN VARCHAR2 )
+
+Parameters
+
+ Parameter                                             Description
+p_blueprint                                            Name of the blueprint.
+
+Example
+
+BEGIN
+
+apex_dg_output.stop_data_generation
+
+        (p_blueprint                                   => 'CARS',
+
+        );
+
+END;
+
+25.23 UPDATE_BLUEPRINT Procedure
+
+                       This procedure updates the attributes of an existing blueprint.
+                       Syntax
+
+APEX_DG_DATA_GEN.UPDATE_BLUEPRINT (
+
+      p_name                                           IN VARCHAR2,
+
+      p_new_name                                       IN VARCHAR2 DEFAULT NULL,
+
+      p_display_name                                   IN VARCHAR2 DEFAULT NULL,
+
+      p_description                                    IN VARCHAR2 DEFAULT NULL,
+
+      p_lang                                           IN VARCHAR2 DEFAULT 'en',
+
+      p_default_schema                                 IN VARCHAR2 DEFAULT NULL )
+
+Parameters
+
+Parameter                                              Description
+p_name
+p_new_name                                             Name of blueprint to update.
+                                                       The new name (rename). The name is upper cased and
+                                                       special characters removed.
+
+API Reference                                                                           July 24, 2026
+G26651-03                                                                               Page 23 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                 Chapter 25
+                                                                                        UPDATE_COLUMN Procedure
+
+ Parameter                                             Description
+p_display_name
+p_description                                          Friendly display name.
+p_lang                                                 Description of the blueprint.
+                                                       Blueprint language determines values from built-in data
+Example                                                sources. If the built-in data source has 0 records in this
+                                                       language, en is used.
+
+BEGIN
+
+apex_dg_data_gen.update_blueprint(
+
+                    p_name                             => 'Cars',
+
+                    p_display_name => 'My Cars',
+
+                    p_description => 'An updated blueprint to generate car
+
+data');
+
+END;
+
+25.24 UPDATE_COLUMN Procedure
+
+                       This procedure updates an existing column in a blueprint table.
+                       Syntax
+
+APEX_DG_DATA_GEN.UPDATE_COLUMN (
+
+      p_blueprint                                      IN VARCHAR2,
+
+      p_table_name                                     IN VARCHAR2,
+
+      p_column_name                                    IN VARCHAR2,
+
+      p_new_column_name                                IN VARCHAR2 DEFAULT NULL,
+
+      p_sequence                                       IN PLS_INTEGER,
+
+      p_preserve_case                                  IN VARCHAR2 DEFAULT 'N',
+
+      p_display_name                                   IN VARCHAR2 DEFAULT NULL,
+
+      p_max_length                                     IN NUMBER        DEFAULT 4000,
+
+      p_multi_value                                    IN VARCHAR2 DEFAULT 'N',
+
+      p_mv_format                                      IN VARCHAR2 DEFAULT 'JSON',
+
+      p_mv_unique                                      IN VARCHAR2 DEFAULT 'Y',
+
+      p_mv_delimiter                                   IN VARCHAR2 DEFAULT ':',
+
+      p_mv_min_entries                                 IN INTEGER       DEFAULT 1,
+
+      p_mv_max_entries                                 IN INTEGER       DEFAULT 2,
+
+      p_mv_partition_by                                IN VARCHAR2 DEFAULT NULL,
+
+      p_lang                                           IN VARCHAR2 DEFAULT 'en',
+
+      p_data_source_type                               IN VARCHAR2,
+
+      p_data_source                                    IN VARCHAR2 DEFAULT NULL,
+
+      p_ds_preserve_case                               IN VARCHAR2 DEFAULT 'N',
+
+      p_min_numeric_value IN NUMBER                                     DEFAULT 1,
+
+      p_max_numeric_value IN NUMBER                                     DEFAULT 10,
+
+      p_numeric_precision IN NUMBER                                     DEFAULT 0,
+
+      p_min_date_value                                 IN DATE          DEFAULT NULL,
+
+      p_max_date_value                                 IN DATE          DEFAULT NULL,
+
+      p_format_mask                                    IN VARCHAR2 DEFAULT c_json_date_format,
+
+      p_sequence_start_with IN NUMBER                                   DEFAULT 1,
+
+      p_sequence_increment IN NUMBER                                    DEFAULT 1,
+
+      p_formula                                        IN VARCHAR2 DEFAULT NULL,
+
+API Reference                                                                           July 24, 2026
+G26651-03                                                                               Page 24 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                             Chapter 25
+                                                                    UPDATE_COLUMN Procedure
+
+      p_formula_lang                                   IN VARCHAR2  DEFAULT 'PLSQL',
+      p_custom_attributes                              IN VARCHAR2  DEFAULT NULL,
+      p_percent_blank                                  IN NUMBER    DEFAULT 0 )
+
+Parameters
+
+Parameter                                              Description
+p_blueprint
+p_table_name                                           Identifier for the blueprint.
+p_column_name                                          Table name as known to the blueprint. Checks exact case first, then
+p_new_column_name                                      checks upper case.
+p_sequence                                             Name of the column.
+p_preserve_case                                        New name of column (rename).
+p_display_name                                         1 for first column, 2 for second, and so on.
+p_max_length                                           Defaults to N which forces column name to uppercase. If Y, preserves
+p_multi_value                                          casing of parameter.
+                                                       A friendly name for a given table.
+p_mv_format                                            When generating data (such as Latin text) substring to this.
+                                                       Y or N (currently available for BUILTIN table data and INLINE data).
+p_mv_unique                                            BUILTIN table data will be distinct.
+p_mv_delimiter                                         INLINE data will be distinct if all values appear once
+p_mv_min_entries                                       (red,1;blue,1;green,1). Otherwise, permits duplicates
+p_mv_max_entries                                       (red,3;blue,4;green,8). The number indicates the approximated
+p_mv_partition_by                                      frequency of each value on the generate data.
+
+p_lang                                                 DELIMITED (based upon p_mv_delimiter) or JSON (such as
+p_data_source_type                                     {"p_column_name" : ["sympton1","sympton2"]} ).
+                                                       If Y, values do not repeat within the multi-value column. If N, indicates
+                                                       values may repeat.
+                                                       Delimiter for a DELIMITED.
+                                                       Minimum values in a multi value list.
+                                                       Maximum values in a multi value list.
+                                                       This value must match a column in the same built-in data source. For
+                                                       example, if p_data_source is "car.model", this value may be "make"
+                                                       because "car.make" is valid.
+                                                       Language code (for example en, de, es).
+                                                       � BLUEPRINT
+                                                       � BUILTIN
+                                                       � DATA_SOURCE
+                                                       � FORMULA (requires p_data_source to be null)
+                                                       � INLINE
+                                                       � SEQUENCE
+
+API Reference                                                                         July 24, 2026
+G26651-03                                                                             Page 25 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                Chapter 25
+                                                       UPDATE_COLUMN Procedure
+
+Parameter                                              Description
+p_data_source
+                                                       When p_data_source_type = DATA_SOURCE then
+                                                       DATA_SOURCE_NAME.COLUMN_NAME (column name'ss case follows
+                                                       p_ds_preserve_case and defaults to upper case).
+
+                                                       Can be set to one of the following options:
+
+                                                       � BUILTIN: see built-in list, must match a built-in exactly.
+                                                       � BLUEPRINT: references table data already generated (table must
+
+                                                            have lower sequence). For example, Dept.Deptno where
+                                                            add_table with p_table_name = Dept and add_column with
+                                                            Deptno exist.
+
+                                                                    Note
+
+                                                                       This is case-sensitive. Tables created with
+                                                                      p_preserve_case = N are automatically uppercased.
+                                                                      May require DEPT.DEPTNO instead of dept.deptno).
+
+                                                       � INLINE: PART_TIME,3;FULL_TIME,7
+
+                                                       Note
+
+                                                       Inline format is VALUE,FREQUENCY, separated by a semi-
+                                                       colon. The frequency of the value is an approximation and
+                                                       Oracle best practice is to use the smallest numeric values
+                                                       that provide the desired distribution.
+
+p_ds_preserve_case                                     � SEQUENCE: uses p_sequence_ parameters.
+                                                       � FORMULA: p_data_source must be null. Uses p_formula as a
+p_min_numeric_value
+p_max_numeric_value                                         PL/SQL formula and {column_name} as substitutions from this
+p_numeric_precision                                         table. For example, p_formula => {first_name}||'.'||
+                                                            {last_name}||'.insum.ca'
+p_min_date_value
+p_max_date_value                                       If p_data_source_type in ('DATA_SOURCE'. 'BLUEPRINT') and
+p_format_mask                                          p_ds_preserve_case = N, then the data source is upper cased to
+p_sequence_start_with                                  match an upper case table_name.column_name
+p_sequence_increment
+                                                       A positive integer number used as the minimum value (inclusive) to be
+                                                       used in BUILTIN data sources that return NUMBER values.
+
+                                                       A positive integer number used as the maximum value (inclusive) to be
+                                                       used in BUILTIN data sources that return NUMBER values.
+
+                                                       0 = no decimal values
+
+                                                       -1 = round to ten
+
+                                                       positive integer = number of decimal places
+
+                                                       A DATE used as the minimum value (inclusive) to be used in BUILTIN
+                                                       data sources that return DATE type values.
+
+                                                       A DATE used as the maximum value (inclusive) to be used in BUILTIN
+                                                       data sources that return DATE type values.
+
+                                                       Format mask when datatype is a date.
+
+                                                       Only used when p_data_source_type = SEQUENCE.
+
+                                                       Only used when p_data_source_type = SEQUENCE.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 26 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                    Chapter 25
+                                                                                  UPDATE_DATA_SOURCE Procedure
+
+Parameter                                              Description
+p_formula                                              Enables referencing columns in this row, PL/SQL expressions that can
+                                                       reference columns defined in this blueprint row. For example:
+
+                                                       {FIRST_NAME}||'.'||{LAST_NAME}||'.insum.ca'
+
+p_formula_lang                                         Substitutions are case sensitive and must match {column_name} exactly.
+                                                       If p_preserve_case was set to N, {COLUMN_NAME} must be upper case.
+p_custom_attributes
+p_percent_blank                                        Can be used on any DATA_SOURCE_TYPE.
+
+                                                       Formulas are applied last, after p_percent_blank. If p_percent_blank
+                                                       = 100 but FORMULAR is sysdate, the column value will be sysdate.
+
+                                                       Formulas can be used as a combination of PL/SQL functions performed
+                                                       on this or other columns using {column_name} notation. String/Char,
+                                                       Date/Time, Numeric/Math functions are supported.
+                                                       For future expansion.
+
+                                                       0 to 100. This is applied prior to all formulas. If this column is referenced
+                                                       in a formula, the formula contains a blank when appropriate.
+
+                                                                     Note
+
+                                                                     A formula on this column may cause the
+                                                                     column to not be blank.
+
+Example
+
+BEGIN                                                                => 'Cars',
+   apex_dg_data_gen.update_column(                                   => 1,
+                       p_blueprint                                   => 'MY_CARS',
+                       p_sequence                                    => 'make',
+                       p_table_name                                  => 'BUILTIN',
+                       p_column_name                                 => 'car.make');
+                       p_data_source_type
+                       p_data_source
+
+END;
+
+25.25 UPDATE_DATA_SOURCE Procedure
+
+                       This procedure updates an existing data source which identifies a table or query from which
+                       you can source data values.
+
+                       Syntax
+
+APEX_DG_DATA_GEN.UPDATE_DATA_SOURCE (
+
+p_blueprint                                            IN VARCHAR2,
+
+p_name                                                 IN VARCHAR2,
+
+p_new_name                                             IN VARCHAR2 DEFAULT NULL,
+
+p_data_source_type                                     IN VARCHAR2,
+
+p_table                                                IN VARCHAR2 DEFAULT NULL,
+
+p_preserve_case                                        IN VARCHAR2 DEFAULT 'N',
+
+API Reference                                                                         July 24, 2026
+G26651-03                                                                             Page 27 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                          Chapter 25
+                                                                                    UPDATE_TABLE Procedure
+
+      p_sql_query                                      IN VARCHAR2 DEFAULT NULL,
+      p_where_clause                                   IN VARCHAR2 DEFAULT NULL,
+      p_inline_data                                    IN CLOB DEFAULT NULL,
+      p_order_by_column                                IN VARCHAR2 DEFAULT NULL )
+
+Parameters
+
+ Parameter                                             Description
+p_blueprint
+p_name                                                 Identifies the blueprint.
+                                                       Name of a data source. Name is upper cased and must be
+p_new_name                                             26 characters or less.
+                                                       New name of a data source (rename). Name is upper cased
+p_data_source_type                                     and must be 26 characters or less.
+p_table                                                TABLE, SQL_QUERY.
+
+p_preserve_case                                        For source type = TABLE. Typically this matches
+                                                       p_name.
+p_sql_query                                            Defaults to N which forces p_table_name to uppercase. If
+p_where_clause                                         Y, perserves casing of p_table.
+                                                       For p_data_source_type = SQL_QUERY.
+p_inline_data                                          For p_data_source_type = TABLE, this adds the where
+p_order_by_column                                      clause. Do not include "where" keyword (for example
+Example                                                deptno <= 20).
+                                                       Used for p_data_source_type = JSON_DATA.
+                                                       Not used.
+
+BEGIN
+
+apex_dg_data_gen.update_data_source(
+
+               p_blueprint                                              => 'Cars',
+
+               p_name                                                   => 'apex_dg_builtin_cars',
+
+               p_data_source_type => 'TABLE',
+
+               p_table                                                  => 'apex_dg_builtin_cars');
+
+END;
+
+25.26 UPDATE_TABLE Procedure
+
+                       This procedure updates the attributes for a blueprint table. The logical key is p_blueprint and
+                       p_table_name.
+
+                       Syntax
+
+APEX_DG_DATA_GEN.UPDATE_TABLE (
+
+p_blueprint                                            IN VARCHAR2,
+
+p_table_name                                           IN VARCHAR2,
+
+p_new_table_name IN VARCHAR2 DEFAULT NULL,
+
+p_sequence                                             IN PLS_INTEGER,
+
+p_preserve_case IN VARCHAR2 DEFAULT 'N',
+
+p_display_name                                         IN VARCHAR2 DEFAULT NULL,
+
+p_singular_name IN VARCHAR2 DEFAULT NULL,
+
+p_plural_name                                          IN VARCHAR2 DEFAULT NULL,
+
+API Reference                                                                                        July 24, 2026
+G26651-03                                                                                            Page 28 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                   Chapter 25
+                                                                                    VALIDATE_BLUEPRINT Procedure
+
+      p_rows                                           IN NUMBER    DEFAULT 0,
+      p_max_rows                                       IN VARCHAR2  DEFAULT NULL )
+
+Parameters
+
+ Parameter                                             Description
+p_blueprint
+p_table_name                                           Identifier for the blueprint.
+p_new_table_name                                       Name of table that can exist or not exist.
+p_sequence                                             New table name (rename).
+p_preserve_case                                        1 for first table, 2 for second, and so forth.
+                                                       Defaults to N which forces p_new_table_name to
+p_display_name                                         uppercase. If Y, preserves casing of p_new_table_name.
+p_singular_name                                        Friendly display name.
+p_plural_name                                          Singluar friendly name.
+p_rows                                                 Plural friendly name.
+p_max_rows                                             Number of rows to generate for this table.
+                                                       If NULL, then p_rows determines the number of rows,
+Example                                                otherwise random rows between p_rows and p_max_rows
+                                                       are used when generating output.
+
+BEGIN                                                               => 'Cars',
+      apex_dg_data_gen.update_table(                                => 'MY_CARS',
+                         p_blueprint                                => 20,
+                         p_table_name                               => 'MY_NEW_CARS',
+                         p_sequence                                 => 'My great cars 2',
+                         p_new_table_name                           => 'My car',
+                         p_display_name                             => 'My Cars',
+                         p_singular_name                            => '50',
+                         p_plural_name
+                         p_rows                                     => 'Cars',
+      );                                                            => 'my_cars',
+                                                                    => 10,
+END;                                                                => '50',
+                                                                    => 'Y',
+BEGIN
+    apex_dg_data_gen.update_table(
+                         p_blueprint
+                         p_table_name
+                         p_sequence
+                         p_rows
+                         p_use_existing_table
+      );
+
+END;
+
+25.27 VALIDATE_BLUEPRINT Procedure
+
+                       This procedure validates the blueprint by checking the validity of the generated SQL.
+
+API Reference                                                                              July 24, 2026
+G26651-03                                                                                  Page 29 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                               Chapter 25
+                                                                     VALIDATE_INSTANCE_SETTING Procedure
+
+Syntax
+
+APEX_DG_DATA_GEN.VALIDATE_BLUEPRINT (
+
+      p_blueprint                                      IN VARCHAR2,
+
+      p_format                                         IN VARCHAR2,
+
+      p_errors                                         OUT CLOB )
+
+Parameters
+
+ Parameter                                                    Description
+p_blueprint
+p_format                                                      Name of the blueprint.
+                                                              CSV, SQL INSERT, JSON, PRETTY JSON, INSERT INTO, or
+p_errors                                                      FAST INSERT INTO.
+Example                                                       Clob holds error output.
+
+DECLARE
+
+l_errors clob;
+
+BEGIN
+
+apex_dg_output.validate_blueprint
+
+        (p_blueprint                                   => 'Cars',
+
+         p_format                                      => 'JSON',
+
+         p_errors                                      => l_errors
+
+        );
+
+END;
+
+25.28 VALIDATE_INSTANCE_SETTING Procedure
+
+                       This procedure validates appropriate instance settings (table, column, generation level).
+                       Syntax
+
+APEX_DG_DATA_GEN.VALIDATE_INSTANCE_SETTING (
+
+p_json             IN                                  CLOB,
+
+p_valid OUT NOCOPY VARCHAR2,
+
+p_message OUT NOCOPY CLOB )
+
+Parameters
+
+ Parameter                                                    Description
+p_json                                                        JSON Document.
+p_valid                                                       Out parameter to identify whether settings are valid.
+p_result                                                      Out parameter with a detailed message.
+
+Example
+
+DECLARE
+      l_is_valid varchar2(30);
+
+API Reference                                                        July 24, 2026
+G26651-03                                                            Page 30 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                 Chapter 25
+                                                       VALIDATE_INSTANCE_SETTING Procedure
+
+l_message clob;
+
+BEGIN
+
+apex_dg_data_gen.validate_instance_setting(
+
+       p_json                                          => '<json_doc>',
+
+       p_valid                                         => l_is_valid,
+
+       p_message                                       => l_message);
+
+END;
+
+API Reference                                                            July 24, 2026
+G26651-03                                                                Page 31 of 31
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+26

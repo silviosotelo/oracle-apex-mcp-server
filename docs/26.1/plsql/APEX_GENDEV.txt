@@ -1,0 +1,76 @@
+# APEX_GENDEV (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 33691-33765)
+
+APEX_GENDEV
+
+                       The APEX_GENDEV package provides APIs to work with blueprints.
+                       � PROCESS_BLUEPRINT Procedure
+
+31.1 PROCESS_BLUEPRINT Procedure
+
+                       This procedure parses a blueprint and returns the APEXlang files needed to import and install
+                       an APEX application.
+
+                       Syntax
+
+APEX_GENDEV.PROCESS_BLUEPRINT (
+
+p_blueprint                                            in clob,
+
+p_parsing_log out clob,
+
+p_apexlang_zip out blob );
+
+Parameters
+
+Parameter                                                        Description
+p_blueprint
+p_parsing_log                                                    The blueprint content to be parsed.
+
+p_apexlang_zip                                                   If the parsing has issues, it contains a JSON
+                                                                 document listing all errors.
+                                                                 The APEXlang zip file containing all files to install
+                                                                 an APEX app.
+
+Example
+The following example processes a blueprint and checks the outcome:
+
+declare
+      l_blueprint clob;
+      l_apexlang_blob blob;
+      l_parsing_log clob;
+
+begin
+
+      apex_gendev.process_blueprint (
+            p_blueprint => l_blueprint,
+            p_parsing_log => l_parsing_log,
+            p_apexlang_zip => l_apexlang_blob );
+
+      if l_parsing_log is not null then
+            -- blueprint is invalid, we have to check the log
+            sys.dbms_output.put_line ('Error: '||l_parsing_log);
+
+      else
+            -- blueprint is valid, we can download the files
+            apex_http.download (
+
+API Reference                                                        July 24, 2026
+G26651-03                                                              Page 1 of 2
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                           Chapter 31
+                                                                            PROCESS_BLUEPRINT Procedure
+
+         p_blob                                        => l_apexlang_blob,
+
+         p_content_type => 'application/zip',
+
+         p_filename => 'app.zip' );
+
+end if;
+
+end;
+
+API Reference                                                               July 24, 2026
+G26651-03                                                                     Page 2 of 2
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+32

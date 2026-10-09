@@ -1,0 +1,57 @@
+# APEX_DATA_INSTALL (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 18651-18706)
+
+APEX_DATA_INSTALL
+
+                       This package contains the API for data migration in Oracle APEX.
+                       � LOAD_SUPPORTING_OBJECT_DATA Procedure
+
+21.1 LOAD_SUPPORTING_OBJECT_DATA Procedure
+
+                       This procedure loads the supporting object data and installs the data in the specified
+                       application.
+
+                       Syntax
+
+APEX_DATA_INSTALL.LOAD_SUPPORTING_OBJECT_DATA (
+
+      p_table_name                                     IN VARCHAR2,
+
+      p_delete_after_install IN BOOLEAN,
+
+      p_app_id                                         IN NUMBER DEFAULT NULL );
+
+Parameters
+
+ Parameter                                             Description
+p_table_name
+p_delete_after_install                                 Name of the table where the data will be deposited.
+p_app_id
+                                                       Indicates if files are removed after installing supporting
+Example                                                objects.
+                                                       Default TRUE.
+
+                                                       APEX application ID of the application that contains the
+                                                       static files associated with a data migration export.
+                                                       This can be used from SQL workshop outside the context of
+                                                       installing supporting objects, enabling a developer to
+                                                       reinstall migrated data without reinstalling all supporting
+                                                       objects.
+
+DECLARE
+
+l_table_name varchar2(400);
+
+BEGIN
+
+apex_data_install.load_supporting_object_data(
+
+         p_table_name                                  => l_table_name,
+
+         p_delete_after_install => true);
+
+END;
+
+API Reference                                                                                                  July 24, 2026
+G26651-03                                                                                                        Page 1 of 1
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+22

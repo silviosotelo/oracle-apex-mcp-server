@@ -1,0 +1,1060 @@
+# APEX_DATA_PARSER (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 18707-19765)
+
+APEX_DATA_PARSER
+
+                       This package contains the implementation for the file parser in Oracle APEX.
+                       APEX_DATA_PARSER supports XML, JSON, CSV and XLSX files. The most important function in
+                       this package is the PARSE function, which is implemented as a table function returning rows of
+                       the APEX_T_PARSER_ROW type. The parser supports up to 300 columns.
+
+                       � Global Constants
+                       � Data Types
+                       � ASSERT_FILE_TYPE Function
+                       � DISCOVER Function
+                       � GET_COLUMNS Function
+                       � GET_FILE_PROFILE Function
+                       � GET_FILE_TYPE Function
+                       � GET_XLSX_WORKSHEETS Function
+                       � JSON_TO_PROFILE Function
+                       � PARSE Function
+                       � SET_PARSER_FLAGS Procedure
+
+22.1 Global Constants
+
+                       The APEX_DATA_PARSER package uses the following constants.
+
+subtype t_file_type is pls_integer range 1..5;
+
+c_file_type_xlsx                                       constant t_file_type := 1; -- File Type Constant
+
+c_file_type_csv                                        constant t_file_type := 2; -- File Type Constant
+
+c_file_type_xml                                        constant t_file_type := 3; -- File Type Constant
+
+c_file_type_json                                       constant t_file_type := 4; -- File Type Constant
+
+c_file_type_ics                                        constant t_file_type := 5; -- File Type Constant
+
+22.2 Data Types
+
+                       The APEX_DATA_PARSER package uses the following data types.
+                       Generic
+
+type t_file_profile is record(
+
+file_type                                              t_file_type,
+
+file_charset                                           VARCHAR2(128),
+
+row_selector                                           VARCHAR2(32767),
+
+is_single_row                                          BOOLEAN,
+
+first_row_headings                                     BOOLEAN,
+
+xlsx_worksheet                                         VARCHAR2(128),
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 1 of 16
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                Chapter 22
+                                                                                                      ASSERT_FILE_TYPE Function
+
+      xml_namespaces                                   VARCHAR2(4000),
+      csv_delimiter                                    VARCHAR2(4),
+      csv_enclosed                                     VARCHAR2(4),
+      null_if                                          VARCHAR2(20),
+      force_trim_whitespace                            BOOLEAN,
+      skip_rows                                        PLS_INTEGER,
+      file_columns                                     t_file_columns
+);
+
+type t_file_columns is table of t_file_column index by pls_integer;
+
+type t_file_column is record(
+
+    col_seq                                            PLS_INTEGER,
+
+    name                                               VARCHAR2(128),
+
+    data_type                                          apex_exec_api.t_data_type,
+
+    data_type_len PLS_INTEGER,
+
+    is_json                                            BOOLEAN,
+
+    selector                                           VARCHAR2(32767),
+
+    decimal_char VARCHAR2(4),
+
+    group_char                                         VARCHAR2(4),
+
+    format_mask VARCHAR2(128),
+
+    clob_column PLS_INTEGER
+
+);
+
+22.3 ASSERT_FILE_TYPE Function
+
+                       This function checks whether the extension of the file name matches the specified file type.
+                       Syntax
+
+APEX_DATA_PARSER.ASSERT_FILE_TYPE (
+      p_file_name IN VARCHAR2,
+      p_file_type IN t_file_type )
+
+RETURN BOOLEAN;
+
+Parameters
+
+Parameter                                                            Description
+p_file_name                                                          File name to get the file type.
+p_file_type                                                          File type as t_file_type.
+
+Returns
+TRUE, if the file name matches the specified extension. FALSE otherwise.
+
+Example
+The following example checks if the passed-in file name is the CSV file type.
+
+DECLARE
+      is_valid_file_type boolean;
+
+BEGIN
+      is_valid_file_type := apex_data_parser.assert_file_type(
+
+API Reference                                                                                         July 24, 2026
+G26651-03                                                                                             Page 2 of 16
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                  Chapter 22
+                                                                                     DISCOVER Function
+
+      p_file_name => 'test.csv',
+      p_file_type => apex_data_parser.c_file_type_csv );
+
+END;
+
+22.4 DISCOVER Function
+
+                       This is a function to discover the column profile of a file. This function calls parse() and then
+                       returns the generated file profile. This function is a shortcut which can be used instead of first
+                       calling parse() and then get_file_profile().
+
+                       Syntax
+
+APEX_DATA_PARSER.DISCOVER (                            IN BLOB,
+      p_content                                        IN VARCHAR2,
+      p_file_name
+      --                                               IN VARCHAR2 DEFAULT NULL,
+      p_decimal_char
+      --                                               IN VARCHAR2 DEFAULT NULL,
+      p_xlsx_sheet_name
+      --                                               IN VARCHAR2 DEFAULT NULL,
+      p_row_selector
+      --                                               IN VARCHAR2   DEFAULT LF,
+      p_csv_row_delimiter                              IN VARCHAR2   DEFAULT NULL,
+      p_csv_col_delimiter                              IN VARCHAR2   DEFAULT '"',
+      p_csv_enclosed
+      --                                               IN PLS_INTEGER DEFAULT NULL,
+      p_skip_rows
+      --                                               IN VARCHAR2   DEFAULT NULL,
+      p_nullif                                         IN VARCHAR2   DEFAULT 'Y',
+      p_force_trim_whitespace
+      --                                               IN VARCHAR2   DEFAULT 'AL32UTF8',
+      p_file_charset                                   IN NUMBER     DEFAULT 200,
+      p_max_rows
+      --                                               IN VARCHAR2 DEFAULT NULL )
+      p_xml_namespaces
+      RETURN CLOB;
+
+Parameter
+
+Parameter                                              Description
+p_content
+p_file_name                                            The file content to be parsed as a BLOB.
+p_decimal_char
+                                                       The name of the file used to derive the file type.
+p_xlsx_sheet_name
+                                                       Use this decimal character when trying to detect NUMBER data
+                                                       types. If not specified, the procedure will auto-detect the decimal
+                                                       character.
+                                                       For XLSX workbooks. The name of the worksheet to parse. If
+                                                       omitted, the function uses the first worksheet found.
+
+API Reference                                                                             July 24, 2026
+G26651-03                                                                                 Page 3 of 16
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                 Chapter 22
+                                                                                    DISCOVER Function
+
+Parameter                Description
+p_row_selector
+                         Row selector to use for XML or JSON files. Pointer to the array/list
+p_csv_row_delimiter      of rows within the JSON or XML file.
+p_csv_col_delimiter      If omitted, the function will:
+p_csv_enclosed           � For XML files: Use /*/* (first tag under the root tag) as the
+p_skip_rows
+p_nullif                       row selector.
+p_force_trim_whitespace  � For JSON files: Look for a JSON array and use the first array
+p_file_charset
+p_max_rows                     found.
+p_xml_namespaces         Override the default row delimiter for CSV parsing.
+
+                         Use a specific CSV column delimiter. If omitted, the function
+                         detects the column delimiter based on the first row contents.
+                         Override the default enclosure character for CSV parsing.
+
+                         The amount of rows to skip before parsing. For XML and JSON
+                         parsing to get the same behavior as for CSV and XLSX parsing.
+                         Similar to SQL NULLIF function: If the column has this value,
+                         return NULL.
+                         Whether to force trim enquoted whitespace from parsed values.
+
+                         File encoding, if not UTF-8 (AL32UTF8).
+
+                         Stop discovery after P_MAX_ROWS rows have been processed.
+                         XML namespaces to use when parsing XML files.
+
+Returns
+CLOB containing the file profile in JSON format.
+
+Example
+
+select apex_data_parser.discover(
+                 p_content => {BLOB containing XLSX file},
+                 p_file_name=>'large.xlsx' ) as profile_json
+
+from dual;
+
+                       PROFILE_JSON                                                 July 24, 2026
+                       -----------------------------------------------------------  Page 4 of 16
+                       {
+
+                             "file-encoding" : "AL32UTF8",
+                             "single-row" : false,
+                             "file-type" : 1,
+                             "parsed-rows" : 2189,
+                             "columns" : [
+
+                                  {
+                                       "name" : "C0",
+                                       "format-mask" : "",
+                                       "selector" : "",
+                                       "data-type" : 2
+
+                                  },
+                                  {
+
+                                       "selector" : "",
+                                       "format-mask" : "",
+                                       "data-type" : 1,
+                                       "name" : "FIRST_NAME"
+                                  },
+
+API Reference
+G26651-03
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                          Chapter 22
+                                                                      GET_COLUMNS Function
+
+         {
+              "name" : "LAST_NAME",
+              "format-mask" : "",
+              "selector" : "",
+              "data-type" : 1
+
+         },
+
+         :
+
+         {
+              "name" : "DATE_",
+              "format-mask" : "DD\"/\"MM\"/\"YYYY",
+              "data-type" : 3,
+              "selector" : ""
+
+         },
+         {
+
+              "format-mask" : "",
+              "selector" : "",
+              "data-type" : 2,
+              "name" : "ID"
+         }
+    ],
+    "row-selector" : "",
+    "headings-in-first-row" : true,
+    "xslx-worksheet" : "sheet1.xml",
+    "csv-delimiter" : ""
+}
+
+22.5 GET_COLUMNS Function
+
+                       This function returns the columns of a parser profile as a table in order to be consumed by
+                       Oracle APEX components.
+
+                       Syntax
+
+APEX_DATA_PARSER.GET_COLUMNS (
+
+p_profile                                              IN CLOB )
+
+RETURN apex_t_parser_columns PIPELINED;
+
+Parameter
+
+Parameter                                              Description
+p_profile
+                                                       File profile to be used for parsing. The file profile might have been
+                                                       computed in a previous parse() or discover() invocation.
+
+Returns
+Returns profile column information as rows of apex_t_parser_columns.
+
+API Reference                                                         July 24, 2026
+G26651-03                                                             Page 5 of 16
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                              Chapter 22
+                                                                     GET_FILE_PROFILE Function
+
+Example
+
+The following example uses discover() to compute a file profile and then get_columns() to
+return the list of columns.
+
+select *
+         from table(
+                            apex_data_parser.get_columns(
+                                   apex_data_parser.discover(
+                                         p_content => {BLOB containing XLSX file},
+                                         p_file_name=>'large.xlsx' )));
+
+COLUMN_POSITION COLUMN_NAME DATA_TYPE FORMAT_MASK
+
+--------------- ------------- ----------- ------------------
+
+1 C0                                                   NUMBER
+
+2 FIRST_NAME VARCHAR2
+
+3 LAST_NAME VARCHAR2
+
+4 GENDER                                               VARCHAR2
+
+5 COUNTRY                                              VARCHAR2
+
+6 AGE                                                  NUMBER
+
+7 DATE_                                                DATE      DD"/"MM"/"YYYY
+
+8 ID                                                   NUMBER
+
+22.6 GET_FILE_PROFILE Function
+
+                       This function returns the current file profile in JSON format. A file profile is generated when the
+                       parse() table function runs and no file profile is passed in. The file profile contains metadata
+                       about the parsed files such as the CSV delimiter, the XLSX worksheet name, and the columns
+                       found during parsing and their data types.
+
+                       The typical call sequence is as follows:
+
+                       1. Invoke PARSE - Use this table function to parse the files and get rows and columns in order
+                             to display a data preview. While the function runs, it computes the file parser profile which
+                             can be used in subsequent calls in order to further process the data.
+
+                       2. Invoke GET_FILE_PROFILE - Retrieve file profile information in JSON format. The
+                             GET_COLUMNS function can be used to display file profile information in a structured way.
+
+                       3. Process the data.
+
+                       Syntax
+
+APEX_DATA_PARSER.GET_FILE_PROFILE RETURN CLOB;
+
+Parameter
+None.
+Returns
+Returns file profile of the last PARSE() invocation in JSON format.
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 6 of 16
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                Chapter 22
+                                                                                       GET_FILE_PROFILE Function
+
+Example
+
+select line_number, col001,col002,col003,col004,col005,col006,col007,col008
+
+    from table(
+
+               apex_data_parser.parse(
+
+                    p_content                                      => {BLOB containing XLSX file},
+
+                    p_file_name                                    => 'test.xlsx',
+
+                    p_xlsx_sheet_name => 'sheet1.xml') ) ;
+
+LINE_NUMBER COL001 COL002                                       COL003   COL004 COL005
+
+COL006 COL007                                          COL008
+
+----------- -------- ------------ ------------ -------- ---------------
+
+-------- ------------ ---------
+
+         10                                            First Name Last Name Gender Country
+
+Age      Date                                          Id
+
+         21                                            Dulce    Abril    Female United States
+
+32       15/10/2017 1562
+
+         32                                            Mara     Hashimoto Female Great Britain
+
+25       16/08/2016 1582
+
+         43                                            Philip   Gent     Male France
+
+36       21/05/2015 2587
+
+         54                                            Kathleen Hanner   Female United States
+
+25       15/10/2017 3549
+
+         65                                            Nereida  Magwood  Female United States
+
+58       16/08/2016 2468
+
+         76                                            Gaston   Brumm    Male United States
+
+24       21/05/2015 2554
+
+         87                                            Etta     Hurn     Female Great Britain
+
+56       15/10/2017 3598
+
+         98                                            Earlean  Melgar   Female United States
+
+27       16/08/2016 2456
+
+         10 9                                          Vincenza Weiland  Female United States
+
+40       21/05/2015 6548
+
+         ::                                            :        :        :          :               :
+
+    :            :
+
+select apex_data_parser.get_file_profile from dual;
+
+{
+      "file-type" : 1,
+      "csv-delimiter" : "",
+      "xlsx-worksheet" : "sheet1.xml",
+      "headings-in-first-row" : true,
+      "file-encoding" : "AL32UTF8",
+      "single-row" : false,
+      "parsed-rows" : 2378,
+      "columns" : [
+           {
+               "format-mask" : "",
+               "name" : "C0",
+               "data-type" : 2,
+               "selector" : ""
+           },
+           {
+               "name" : "FIRST_NAME",
+
+API Reference                                                                                       July 24, 2026
+G26651-03                                                                                           Page 7 of 16
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                               Chapter 22
+                                                                                           GET_FILE_TYPE Function
+
+                                       "data-type" : 1,
+                                       "selector" : "",
+                                       "format-mask" : ""
+                                  },
+                                  {
+                                       "selector" : "",
+                                       "data-type" : 1,
+                                       "name" : "LAST_NAME",
+                                       "format-mask" : ""
+                                  },
+                                  {
+                                       "format-mask" : "",
+                                       "data-type" : 1,
+                                       "name" : "GENDER",
+                                       "selector" : ""
+                                  },
+                                  {
+                                       "name" : "COUNTRY",
+                                       "data-type" : 1,
+                                       "selector" : "",
+                                       "format-mask" : ""
+                                  },
+                                  {
+                                       "data-type" : 2,
+                                       "name" : "AGE",
+                                       "selector" : "",
+                                       "format-mask" : ""
+                                  },
+                                  {
+                                       "format-mask" : "DD\"/\"MM\"/\"YYYY",
+                                       "selector" : "",
+                                       "data-type" : 3,
+                                       "name" : "DATE_"
+                                  },
+                                  {
+                                       "name" : "ID",
+                                       "data-type" : 2,
+                                       "selector" : "",
+                                       "format-mask" : ""
+                                  }
+                              ],
+                              "row-selector" : ""
+                       }
+
+22.7 GET_FILE_TYPE Function
+
+                       This function returns a file type, based on a file name extension.
+
+                       Syntax
+
+                       APEX_DATA_PARSER.GET_FILE_TYPE (
+                              p_file_name IN VARCHAR2 )
+
+                       RETURN t_file_type;
+
+API Reference                                                                              July 24, 2026
+G26651-03                                                                                  Page 8 of 16
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                          Chapter 22
+                                                                                        GET_XLSX_WORKSHEETS Function
+
+Parameter
+
+Parameter                                              Description
+p_file_name                                            File name to get the file type.
+
+Returns
+Returns the file type as t_file_type.
+
+Example
+
+DECLARE
+    l_file_type apex_data_parser.t_file_type;
+
+BEGIN
+      l_file_type := apex_data_parser.get_file_type( 'test.xlsx' );
+
+END;
+
+22.8 GET_XLSX_WORKSHEETS Function
+
+                       This function returns information on worksheets within an XLSX workbook as a list of
+                       apex_t_parser_worksheet instances.
+
+                       Syntax
+
+APEX_DATA_PARSER.GET_XLSX_WORKSHEETS (
+      p_content IN BLOB )
+
+RETURN apex_t_parser_worksheets;
+
+Parameter
+
+Parameter                                              Description
+p_content                                              XLSX worksheet as a BLOB.
+
+Returns
+Returns table with worksheet information.
+
+Example
+
+select * from table(
+      apex_data_parser.get_xlsx_worksheets(
+            p_content =>{BLOB containing XLSX file}
+
+SHEET_SEQUENCE SHEET_DISPLAY_NAME SHEET_FILE_NAME SHEET_PATH
+
+1            Sheet1                                    sheet1.xml                       worksheets/sheet1.xml
+
+API Reference                                                                           July 24, 2026
+G26651-03                                                                               Page 9 of 16
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                  Chapter 22
+                                                                                         JSON_TO_PROFILE Function
+
+22.9 JSON_TO_PROFILE Function
+
+                       This function converts a file profile in JSON format to an instance of the t_file_profile
+                       record type.
+
+                       Syntax
+
+                       APEX_DATA_PARSER.JSON_TO_PROFILE (
+                              p_json IN CLOB )
+                              RETURN t_file_profile;
+
+                       Parameter
+
+Parameter                                              Description
+p_json                                                 The data profile in JSON format.
+
+Returns
+Returns the file profile as an instance of the t_file_profile record type.
+
+Example
+
+DECLARE
+      l_profile t_file_profile;
+
+BEGIN
+      l_profile := apex_data_parser.json_to_profile('{"file-type": 2, "csv-
+
+delimiter": ","}');
+END;
+
+22.10 PARSE Function
+
+                       This function enables you to parse XML, XLSX, CSV, or JSON files and returns a generic table
+                       of the following structure:
+
+LINE_NUMBER COL001 COL002 COL003 COL004 ... COL300
+
+Values are generally returned in VARCHAR2 format. A returned table row can have a maximum
+of 300 columns. The maximum length for a VARCHAR2 table column is 4000 bytes; there is no
+line length maximum. 20 out of the 300 supported columns can be handled as a CLOB.
+
+File parsing happens on-the-fly as this function is invoked. Data does not write to a collection
+nor to a temporary table.
+
+About Parsing File Profiles
+
+If the p_file_profile parameter is not passed, the function computes a file profile with column
+information during parsing.
+
+If p_detect_data_types is passed as Y (default), the function also detects column data types
+during parsing. Retrieve the computed file profile using GET_FILE_PROFILE after the function
+finishes:
+
+API Reference                                                                            July 24, 2026
+G26651-03                                                                                Page 10 of 16
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                 Chapter 22
+                                                                                                            PARSE Function
+
+1. Invoke PARSE - Use this table function to parse the files and get rows and columns in order
+     to display a data preview.
+
+2. Invoke GET_FILE_PROFILE - Retrieve file profile information in JSON format.
+3. Process the data - Generate a SQL query based on the data profile to perform custom
+
+     processing.
+
+        Note
+         XLSX parsing occurs in phases:
+         1. First, APEX_ZIP extracts individual XML files from the XLSX archive.
+         2. Then, the XMLTABLE SQL function parses the actual XLSX.
+
+About CLOB Support
+
+Starting with APEX release 19.2, this package supports string values larger than 4,000 bytes.
+20 out of the 300 supported columns can be handled as a CLOB. The level of CLOB support
+depends upon the file type being parsed.
+
+CSV and XLSX
+
+� CLOB values are supported up to 32K.
+� CLOB columns can be detected during discovery.
+� When the data profile is discovered, values below 4000 bytes are normally returned as
+
+     COLNNN. CLOB values are returned in the CLOBNN column and the first 1000 characters are
+     returned as COLNNN. If a data profile is passed in and that has CLOB column defined, all
+     values are returned in the CLOBNN column only.
+XML
+
+� CLOB values with more than 32K are supported.
+� CLOB columns can be detected during discovery.
+� When the data profile is discovered, values below 4000 bytes are normally returned as
+
+     COLNNN. CLOB values are returned in the CLOBNN column and the first 1000 characters are
+     returned as COLNNN. If a data profile is passed in and that has CLOB column defined, all
+     values are returned in the CLOBNN column only.
+JSON
+
+� CLOB values with more than 32K are supported.
+� CLOB columns are not detected during discovery; CLOB support is only active if a file profile
+
+     containing CLOB column is passed in as the p_file_profile parameter.
+� Since JSON_TABLE does not support CLOBs on 12c databases, the parser uses XMLTYPE-
+
+     based processing if a file profile with CLOB columns is passed in. Processing will be
+     significantly slower.
+
+About Large CSV Files
+
+If the BLOB passed to APEX_DATA_PARSER.PARSE is less than 50 MB, Oracle APEX copies the
+BLOB to an internal, cached temporary LOB. Thus all CSV parsing is done in memory. For
+larger BLOBs, APEX does CSV parsing on the original BLOB locator. If it is selected from a
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 11 of 16
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                 Chapter 22
+                                                                                                            PARSE Function
+
+table, CSV parsing can happen on disk but might be significantly slower. Note that a
+performance degradation may occur when parsed CSV files grow beyond 50 MB.
+
+However, developers can also use the DBMS_LOB.CREATETEMPORARY (passing CACHE => TRUE )
+and DBMS_LOB.COPY procedures in order to explicitly create a cached temporary LOB, even for
+a larger file. Instead of the original BLOB, the cached temporary LOB can be passed to
+APEX_DATA_PARSER.PARSE. This approach also enables in-memory parsing for files larger than
+50 MB.
+
+    See Also
+
+    CREATETEMPORARY Procedures and COPY Procedures in Oracle AI Database
+    PL/SQL Packages and Types Reference.
+
+Syntax
+
+APEX_DATA_PARSER.PARSE (
+
+p_content                                              IN BLOB,
+
+p_file_name                                            IN VARCHAR2     DEFAULT NULL,
+                                                                       DEFAULT NULL,
+p_file_type                                            in t_file_type  DEFAULT NULL,
+
+p_file_profile                                         IN CLOB         DEFAULT 'Y',
+                                                                       DEFAULT NULL,
+--
+                                                                       DEFAULT NULL,
+p_detect_data_types                                    IN VARCHAR2
+                                                                       DEFAULT NULL,
+p_decimal_char                                         IN VARCHAR2
+                                                                       DEFAULT LF,
+--                                                                     DEFAULT NULL,
+                                                                       DEFAULT '"',
+p_xlsx_sheet_name                                      IN VARCHAR2
+                                                                       DEFAULT NULL,
+--                                                                     DEFAULT 'N',
+
+p_row_selector                                         IN VARCHAR2     DEFAULT NULL,
+                                                                       DEFAULT 'N',
+--
+                                                                       DEFAULT 'AL32UTF8',
+p_csv_row_delimiter                                    IN VARCHAR2     DEFAULT NULL,
+                                                                       DEFAULT NULL,
+p_csv_col_delimiter                                    IN VARCHAR2
+                                                                       DEFAULT NULL,
+p_csv_enclosed                                         IN VARCHAR2     DEFAULT NULL,
+
+--                                                                     DEFAULT 'N' )
+
+p_skip_rows                                            IN PLS_INTEGER
+
+p_add_headers_row                                      IN VARCHAR2
+
+--
+
+p_nullif                                               IN VARCHAR2
+
+p_force_trim_whitespace                                IN VARCHAR2
+
+--
+
+p_file_charset                                         IN VARCHAR2
+
+p_max_rows                                             IN NUMBER
+
+p_return_rows                                          IN NUMBER
+
+--
+
+p_store_profile_to_collection IN VARCHAR2
+
+p_xml_namespaces                                       IN VARCHAR2
+
+--
+
+p_fix_excel_precision                                  IN VARCHAR2
+
+RETURN apex_t_parser_table pipelined;
+
+Parameters
+
+Parameter                                              Description
+p_content                                              The file content to be parsed as a BLOB.
+
+API Reference                                                                                    July 24, 2026
+G26651-03                                                                                        Page 12 of 16
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                  Chapter 22
+                                                                                                          PARSE Function
+
+Parameter                                              Description
+
+p_file_name                                            The name of the file; only used to derive the file type. Either
+p_file_type                                            p_file_name, p_file_type or p_file_profile must be passed
+p_file_profile                                         in.
+p_detect_data_types
+                                                       The type of the file to be parsed. Use this to explicitly pass the file
+                                                       type in. Either p_file_name, p_file_type or p_file_profile
+                                                       must be passed in.
+
+                                                       File profile to be used for parsing. The file profile might have been
+                                                       computed in a previous parse() or discover() invocation. If
+                                                       passed in again, the function skips some profile detection logic and
+                                                       use the passed in profile in order to improve performance.
+
+                                                       Whether to detect data types (NUMBER, DATE, TIMESTAMP) during
+                                                       parsing.
+
+                                                       If Y (default), the function computes the file profile and also add
+                                                       data type information to it.
+
+                                                       If N, all columns are VARCHAR2.
+
+                                                       When no data types are detected, all columns are reported as
+                                                       VARCHAR2(4000).
+
+p_decimal_char                                         Use this decimal character when trying to detect NUMBER data
+                                                       types. If not specified,the procedure will auto-detect the decimal
+                                                       character.
+
+p_xlsx_sheet_name                                      For XLSX workbooks. The name of the worksheet to parse. If
+                                                       omitted, the function uses the first worksheet found.
+
+p_row_selector                                         For JSON and XML files. Pointer to the array / list of rows within the
+                                                       JSON or XML file. If omitted, the function will:
+
+                                                       � For XML files: Use /*/* (first tag under the root tag) as the row
+                                                             selector.
+
+                                                       � For JSON files: Look for a JSON array and use the first array
+                                                             found.
+
+p_csv_row_delimiter                                    Override the default row delimiter for CSV parsing. Limited to one
+                                                       character and defaults to Linefeed (LF). Note that the Linefeed row
+                                                       delimiter also handles "Carriage Return/Linefeed" (CRLF).
+
+p_csv_col_delimiter                                    Use a specific CSV column delimiter. If omitted, the function will
+                                                       detect the column delimiter based on the first row contents.
+
+p_csv_enclosed                                         Override the default enclosure character for CSV parsing.
+
+p_skip_rows                                            Skip the first N rows when parsing.
+
+p_add_headers_row                                      For XML, JSON: Emit the column headers (tag, attr names) as the
+                                                       first row.
+
+p_nullif                                               Similar to SQL NULLIF function. If the column has this value, return
+                                                       NULL.
+
+p_force_trim_whitespace                                Whether to force trim enquoted whitespace from parsed values.
+
+p_file_charset                                         Encoding of the file to parse. Defaults to AL32UTF8 if omitted or
+                                                       NULL is explicitly passed in.
+
+p_max_rows                                             Stop parsing after p_max_rows have been returned.
+
+p_return_rows                                          Amount of rows to return. This is useful when the parser parses
+                                                       more rows (for data type detection) than it is supposed to return.
+                                                       When the specified amount of rows have been emitted, the function
+                                                       will continue parsing (and refining the detected data types) until
+                                                       p_max_rows has been reached, or until the rownum < x clause of
+                                                       the SQL query kicks in and stops execution.
+
+p_store_profile_to_collecti Store the File profile which has been computed during parse into a
+
+on                                                     collection. The collection will be cleared, if it exists. Only be used for
+
+                                                       computed profiles.
+
+API Reference                                                                                             July 24, 2026
+G26651-03                                                                                                 Page 13 of 16
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                    Chapter 22
+                                                                                            PARSE Function
+
+Parameter                                                       Description
+p_xml_namespaces
+p_fix_excel_precision                                           XML namespaces to use when parsing XML files.
+
+                                                                Whether to round numbers in XLSX files to 15 significant digits.
+                                                                This is useful for XLSX files generated by Microsoft Excel. Excel
+                                                                stores numeric values as floating point numbers with a maximum of
+                                                                15 significant digits. For calculation results, this can lead to
+                                                                rounding issues, which are fixed using this parameter.
+                                                                See also: Floating-point arithmetic may give inaccurate results in
+                                                                Excel at Microsoft 365.
+
+Returns
+Returns rows of the apex_t_parser_row type.
+
+LINE_NUMBER COL001 COL002 COL003 COL004 ... COL300
+
+Example
+
+select line_number, col001,col002,col003,col004,col005,col006,col007,col008
+
+    from table(
+
+               apex_data_parser.parse(
+
+                    p_content                                      => {BLOB containing XLSX spreadsheet},
+
+                    p_file_name                                    => 'test.xlsx',
+
+                    p_xlsx_sheet_name => 'sheet1.xml') ) ;
+
+LINE_NUMBER COL001 COL002                                       COL003   COL004 COL005
+
+COL006 COL007                                          COL008
+
+----------- -------- ------------ ------------ -------- ---------------
+
+-------- ------------ --------
+
+         10                                            First Name Last Name Gender Country
+
+Age      Date                                          Id
+
+         21                                            Dulce    Abril    Female United States
+
+32       15/10/2017 1562
+
+         32                                            Mara     Hashimoto Female Great Britain
+
+25       16/08/2016 1582
+
+         43                                            Philip   Gent     Male France
+
+36       21/05/2015 2587
+
+         54                                            Kathleen Hanner   Female United States
+
+25       15/10/2017 3549
+
+         65                                            Nereida  Magwood  Female United States
+
+58       16/08/2016 2468
+
+         76                                            Gaston   Brumm    Male United States
+
+24       21/05/2015 2554
+
+         87                                            Etta     Hurn     Female Great Britain
+
+56       15/10/2017 3598
+
+         98                                            Earlean  Melgar   Female United States
+
+27       16/08/2016 2456
+
+         10 9                                          Vincenza Weiland  Female United States
+
+40       21/05/2015 6548
+
+         ::                                            :        :        :          :           :
+
+     :           :
+
+select line_number, col001,col002,col003,col004,col005,col006,col007,col008
+
+API Reference                                                                                   July 24, 2026
+G26651-03                                                                                       Page 14 of 16
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                         Chapter 22
+                                                                            SET_PARSER_FLAGS Procedure
+
+from table(
+
+        apex_data_parser.parse(
+
+             p_content                                 => {BLOB containing JSON file},
+
+             p_file_name                               => 'test.json') ) ;
+
+LINE_NUMBER COL001 COL002 COL003
+
+COL004       COL005
+
+----------- --------- ----------------------------------------------
+
+--------------- --------------
+
+        1 Feature 1.5                                  41km E of Cape Yakataga, Alaska
+
+1536513727239 1536514117117
+
+        2 Feature 0.21 11km ENE of Aguanga, CA
+
+1536513299520 1536513521231
+
+        3 Feature 1.84 5km SSW of Pahala, Hawaii
+
+1536513262940 1536513459610
+
+        4 Feature 2.55 9km W of Volcano, Hawaii
+
+1536513100890 1536513446680
+
+        5 Feature 1.3                                  62km ESE of Cape Yakataga, Alaska
+
+1536512917361 1536513322236
+
+        6 Feature 1.79 7km SW of Tiptonville, Tennessee
+
+1536512379690 1536512668010
+
+        7 Feature 1.9                                  126km NNW of Arctic Village, Alaska
+
+1536512346186 1536512846567
+
+        8 Feature 1.4                                  105km NW of Arctic Village, Alaska
+
+1536512140162 1536512846334
+
+                              See Also
+                                 � CREATETEMPORARY Procedures in Oracle AI Database PL/SQL Packages and
+
+                                      Types Reference
+                                 � COPY Procedures in Oracle AI Database PL/SQL Packages and Types Reference
+                                 � Floating-point arithmetic may give inaccurate results in Excel at Microsoft 365
+
+22.11 SET_PARSER_FLAGS Procedure
+
+                       This procedure sets flags to control parser behavior. Existing flags include:
+                       � CSV_BACKSLASH_ESCAPING - If Y, the parser treats the backslash character as an additional
+
+                             escape for the the enclosed character. Defaults to Y for backwards compatibility.
+
+                       Syntax
+
+                       APEX_DATA_PARSER.SET_PARSER_FLAGS (
+                             p_name IN VARCHAR2,
+                             p_value IN VARCHAR2 )
+
+API Reference                                                                               July 24, 2026
+G26651-03                                                                                   Page 15 of 16
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+Parameters                                                                                                                  Chapter 22
+                                                                                          SET_PARSER_FLAGS Procedure
+ Parameter
+p_name                                                 Description
+p_value                                                Name of the flag to set.
+                                                       Value to set.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 16 of 16
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+23

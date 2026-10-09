@@ -1,0 +1,4474 @@
+# APEX_APPLICATION_INSTALL (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 6078-10550)
+
+APEX_APPLICATION_INSTALL
+
+The APEX_APPLICATION_INSTALL package provides many methods to modify application
+attributes during the Oracle APEX application installation process.
+
+� About the APEX_APPLICATION_INSTALL API
+� Attributes Manipulated by APEX_APPLICATION_INSTALL
+� Import Data Types
+� Import Script Examples
+� ADD_DATA_REPORTER_REMAP Procedure
+� CLEAR_ALL Procedure
+� CLEAR_DATASET_IMPORT_MODES Procedure
+� CLEAR_DATA_REPORTER_REMAP Procedure
+� GENERATE_APPLICATION_ID Procedure
+� GENERATE_OFFSET Procedure
+� GET_APPLICATION_ALIAS Function
+� GET_APPLICATION_ID Function
+� GET_APPLICATION_NAME Function
+� GET_AUTHENTICATION_SCHEME Function
+� GET_AUTO_INSTALL_SUP_OBJ Function
+� GET_BUILD_STATUS Function
+� GET_DATA_REPORTER_REMAP Function
+� GET_DATASET_IMPORT_MODE Function
+� GET_IMAGE_PREFIX Function
+� GET_INFO Function
+� GET_KEEP_BACKGROUND_EXECS Function
+� GET_KEEP_SESSIONS Function
+� GET_MAX_SCHEDULER_JOBS Function
+� GET_NO_PROXY_DOMAINS Function
+� GET_OFFSET Function
+� GET_PASS_ECID Function
+� GET_PROXY Function
+� GET_REMOTE_SERVER_AI_ATTRS Function
+� GET_REMOTE_SERVER_AI_HEADERS Function
+� GET_REMOTE_SERVER_AI_MAXTOKENS Function
+� GET_REMOTE_SERVER_AI_MODEL Function
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 1 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                       � GET_REMOTE_SERVER_BASE_URL Function           Chapter 8
+                       � GET_REMOTE_SERVER_DEFAULT_DB Function
+                       � GET_REMOTE_SERVER_HTTPS_HOST Function    July 24, 2026
+                       � GET_REMOTE_SERVER_SQL_MODE Function      Page 2 of 48
+                       � GET_REST_SOURCE_CATALOG_GROUP Function
+                       � GET_SCHEMA Function
+                       � GET_SUBSCRIPTION_MAPPING Function
+                       � GET_SUBSCRIPTION_MODE Function
+                       � GET_THEME_ID Function
+                       � GET_WORKSPACE_ID Function
+                       � INSTALL Procedure
+                       � REMOVE_APPLICATION Procedure
+                       � SET_APPLICATION_ALIAS Procedure
+                       � SET_APPLICATION_ID Procedure
+                       � SET_APPLICATION_NAME Procedure
+                       � SET_AUTHENTICATION_SCHEME Procedure
+                       � SET_AUTO_INSTALL_SUP_OBJ Procedure
+                       � SET_BUILD_STATUS Function
+                       � SET_DATASET_IMPORT_MODE Procedure
+                       � SET_IMAGE_PREFIX Procedure
+                       � SET_KEEP_BACKGROUND_EXECS Procedure
+                       � SET_KEEP_SESSIONS Procedure
+                       � SET_MAX_SCHEDULER_JOBS Procedure
+                       � SET_OFFSET Procedure
+                       � SET_PASS_ECID Procedure
+                       � SET_PROXY Procedure
+                       � SET_REMOTE_SERVER Procedure
+                       � SET_REST_SOURCE_CATALOG_GROUP Procedure
+                       � SET_SCHEMA Procedure
+                       � SET_SUBSCRIPTION_MAPPING Procedure
+                       � SET_SUBSCRIPTION_MODE Procedure
+                       � SET_THEME_ID Procedure
+                       � SET_WORKSPACE_ID Procedure
+                       � SET_WORKSPACE Procedure
+                       � SUSPEND_BACKGROUND_EXECS Procedure
+
+API Reference
+G26651-03
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                     Chapter 8
+                                                       About the APEX_APPLICATION_INSTALL API
+
+8.1 About the APEX_APPLICATION_INSTALL API
+
+                       Oracle APEX provides two ways to import an application into an APEX instance:
+
+                       1. Uploading an application export file by using the web interface of APEX.
+
+                       2. Execution of the application export file as a SQL script, typically in the command-line utility
+                             SQLcl.
+
+                       Using the file upload capability of the web interface of APEX, developers can import an
+                       application with a different application ID, different workspace ID and different parsing schema.
+                       But when importing an application by using a command-line tool like SQLcl, none of these
+                       attributes (application ID, workspace ID, parsing schema) can be changed without directly
+                       modifying the application export file.
+
+                       To view the install log, enter the following from the command-line tool, so the server outputs
+                       are displayed:
+
+                       set serveroutput on unlimited
+
+                       As more and more APEX customers create applications which are meant to be deployed by
+                       using command-line utilities or by using a non-web-based installer, they are faced with this
+                       challenge of how to import their application into an arbitrary workspace on any APEX instance.
+
+                       Another common scenario is in a training class when installing an application into 50 different
+                       workspaces that all use the same application export file. Today, customers work around this by
+                       adding their own global variables to an application export file and then varying the values of
+                       these globals at installation time. However, this manual modification of the application export
+                       file (usually done with a post-export sed or awk script) should not be necessary.
+
+                       Application Express 4.0 and higher includes the APEX_APPLICATION_INSTALL API. This
+                       PL/SQL API provides many methods to set application attributes during the APEX application
+                       installation process. All export files in Application Express 4.0 and higher contain references to
+                       the values set by the APEX_APPLICATION_INSTALL API. However, the methods in this API
+                       are only used to override the default application installation behavior.
+
+8.2 Attributes Manipulated by APEX_APPLICATION_INSTALL
+
+                       The table below lists the attributes that can be set by functions in this API.
+
+Attribute                                              Description
+Workspace ID
+Application ID                                         Workspace ID of the application to be imported. See
+                                                       GET_WORKSPACE_ID Function, SET_WORKSPACE_ID Procedure.
+Offset
+Schema                                                 Application ID of the application to be imported. See
+Name                                                   GENERATE_APPLICATION_ID Procedure, GET_APPLICATION_ID
+                                                       Function, SET_APPLICATION_ID Procedure.
+
+                                                       Offset value used during application import. See GENERATE_OFFSET
+                                                       Procedure, GET_OFFSET Function, SET_OFFSET Procedure.
+
+                                                       The parsing schema ("owner") of the application to be imported. See
+                                                       GET_SCHEMA Function, SET_SCHEMA Procedure.
+
+                                                       Application name of the application to be imported. See
+                                                       GET_APPLICATION_NAME Function, SET_APPLICATION_NAME
+                                                       Procedure.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 3 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                              Chapter 8
+                                                                                   Import Data Types
+
+                           Attribute                   Description
+                        Alias
+                                                       Application alias of the application to be imported. See
+                        Image Prefix                   GET_APPLICATION_ALIAS Function, SET_APPLICATION_ALIAS
+                        Proxy                          Procedure.
+
+8.3 Import Data Types                                  The image prefix of the application to be imported. See
+                                                       GET_IMAGE_PREFIX Function, SET_IMAGE_PREFIX Procedure.
+
+                                                       The proxy server attributes of the application to be imported. See
+                                                       GET_PROXY Function, SET_PROXY Procedure.
+
+The section describes import data types used by the APEX_APPLICATION_INSTALL package.
+
+t_file_type
+t_file_type data types define the kinds of install files.
+
+subtype t_file_type is pls_integer range 1 .. 6;
+
+c_file_type_workspace                                  constant t_file_type := 1;
+
+c_file_type_app                                        constant t_file_type := 2;
+
+c_file_type_websheet                                   constant t_file_type := 3;
+
+c_file_type_plugin                                     constant t_file_type := 4;
+
+c_file_type_css                                        constant t_file_type := 5;
+
+c_file_type_apexlang_app                               constant t_file_type := 6;
+
+Note
+The constant c_file_type_websheet is no longer used in APEX.
+
+t_app_usage
+t_app_usage data types define the kinds of application usage.
+
+subtype t_app_usage is pls_integer range 1..3;
+
+c_app_usage_not_used                                   constant t_app_usage := 1;
+
+c_app_usage_current_workspace constant t_app_usage := 2;
+
+c_app_usage_other_workspace constant t_app_usage := 3;
+
+t_dataset_import_mode
+
+t_dataset_import_mode data types define how Data Reporter datasets should be handled
+during application installation.
+
+subtype t_dataset_import_mode is pls_integer range 1..2;
+
+c_dataset_keep                                         constant t_app_usage := 1;
+
+c_dataset_overwrite                                    constant t_app_usage := 2;
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 4 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                          Chapter 8
+                                                                               Import Data Types
+
+t_file_info
+
+t_file_info data types specify information in a source file that can be used to configure the
+installation.
+
+type t_file_info is record (                                  t_file_type,
+       file_type                                              number,
+       workspace_id                                           varchar2(4000),
+       workspace_name                                         varchar2(10),
+       version                                                number,
+       app_id                                                 varchar2(4000),
+       app_name                                               varchar2(4000),
+       app_alias                                              varchar2(4000),
+       app_owner                                              varchar2(4000),
+       build_status                                           boolean,
+       has_install_script                                     t_app_usage,
+       app_id_usage                                           t_app_usage,
+       app_alias_usage                                        t_number );
+       master_app_ids
+
+t_subscription_mode
+
+t_subscription_mode data types specify how subscriptions are handled during the application
+installation.
+
+subtype t_subscription_mode is pls_integer range 1..4;
+
+Name                                                   Value                   Description
+c_subscription_strict                                  1
+                                                                               Use this option to include the
+c_subscription_ignore_erro 2                                                   subscriptions during the
+rs                                                                             installation. If installation process
+                                                                               can't resolve a component based
+c_subscription_remove                                  3                       on component static id, it raises
+                                                                               an error. This is the default
+c_subscription_legacy                                  4                       installation option.
+
+                                                                               Use this option to include the
+                                                                               subscriptions during the
+                                                                               installation. If installation process
+                                                                               can't resolve a component based
+                                                                               on component static id, it is
+                                                                               ignored.
+
+                                                                               Use this option to remove the
+                                                                               subscriptions during the
+                                                                               installation.
+
+                                                                               Use this option to install the
+                                                                               application in legacy mode. With
+                                                                               this subscription mode,
+                                                                               installation process uses
+                                                                               Subscription ID from the import
+                                                                               file as it is. It does not try to
+                                                                               resolve a component based on
+                                                                               App ID and Component Static ID,
+
+API Reference                                                                  July 24, 2026
+G26651-03                                                                      Page 5 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                        Chapter 8
+                                                       Import Script Examples
+
+8.4 Import Script Examples
+
+                       Using the workspace FRED_DEV on the development instance, you generate an application
+                       export of application 645 and save it as file f645.sql. All examples in this section assume you
+                       are connected to SQLcl.
+
+                       Import Application without Modification
+                       To import this application back into the FRED_DEV workspace on the same development
+                       instance using the same application ID:
+
+                       @f645.sql
+
+                       Import Application with Specified Application ID
+                       To import this application back into the FRED_DEV workspace on the same development
+                       instance, but using application ID 702:
+
+                       BEGIN
+                          apex_application_install.set_application_id( 702);
+                          apex_application_install.generate_offset;
+                          apex_application_install.set_application_alias( 'F' ||
+
+                       apex_application_install.get_application_id );
+                       END;
+                       /
+
+                       @645.sql
+
+                       Import Application with Generated Application ID
+                       To import this application back into the FRED_DEV workspace on the same development
+                       instance, but using an available application ID generated by Oracle APEX:
+
+                       BEGIN
+                          apex_application_install.generate_application_id;
+                          apex_application_install.generate_offset;
+                          apex_application_install.set_application_alias( 'F' ||
+
+                       apex_application_install.get_application_id );
+                       END;
+                       /
+
+                       @f645.sql
+
+                       Import Application into Different Workspace using Different Schema
+                       To import this application into the FRED_PROD workspace on the production instance, using
+                       schema FREDDY, and the workspace ID of FRED_DEV and FRED_PROD are different:
+
+                       BEGIN
+                              apex_application_install.set_workspace('FRED_PROD');
+                              apex_application_install.generate_offset;
+                              apex_application_install.set_schema( 'FREDDY' );
+                              apex_application_install.set_application_alias( 'FREDPROD_APP' );
+
+                       END;
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 6 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                    Chapter 8
+                                                                       ADD_DATA_REPORTER_REMAP Procedure
+
+/
+@f645.sql
+
+Import into Training Instance for Three Different Workspaces
+To import this application into the Training instance for 3 different workspaces:
+
+BEGIN
+      apex_application_install.set_workspace('TRAINING1');
+      apex_application_install.generate_application_id;
+      apex_application_install.generate_offset;
+      apex_application_install.set_schema( 'STUDENT1' );
+      apex_application_install.set_application_alias( 'F' ||
+
+apex_application_install.get_application_id );
+END;
+/
+
+@f645.sql
+
+BEGIN
+      apex_application_install.set_workspace('TRAINING2');
+      apex_application_install.generate_application_id;
+      apex_application_install.generate_offset;
+      apex_application_install.set_schema( 'STUDENT2' );
+      apex_application_install.set_application_alias( 'F' ||
+
+apex_application_install.get_application_id );
+END;
+/
+
+@f645.sql
+
+BEGIN
+      apex_application_install.set_workspace('TRAINING3');
+      apex_application_install.generate_application_id;
+      apex_application_install.generate_offset;
+      apex_application_install.set_schema( 'STUDENT3' );
+      apex_application_install.set_application_alias( 'F' ||
+
+apex_application_install.get_application_id );
+      END;
+
+/
+
+@f645.sql
+
+8.5 ADD_DATA_REPORTER_REMAP Procedure
+
+                       This procedure remaps a data reporter object owner when importing a dataset or reporting
+                       app.
+
+                       Syntax
+
+PROCEDURE apex_application_install.add_data_reporter_remap (
+
+p_schema_from IN VARCHAR2,
+
+p_schema_to                                            IN VARCHAR2 );
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 7 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                      Chapter 8
+                                                                                                    CLEAR_ALL Procedure
+
+Parameters
+
+Parameter                                              Description
+p_schema_from                                          The source schema to map from.
+p_schema_to                                            The target schema we are mapping to.
+
+Example
+
+The following example demonstrates how to remap data reporter objects owned by HR to the
+DEMO scheme and objects owned by SALES to the PROJECTS schema.
+
+begin
+      apex_application_install.set_workspace('EXAMPLE');
+      apex_application_install.add_data_reporter_remap ( 'HR', 'DEMO' );
+      apex_application_install.add_data_reporter_remap ( 'SALES', 'PROJECTS' );
+
+end;
+@dr_dataset_example.sql
+
+8.6 CLEAR_ALL Procedure
+
+                       This procedure clears all values currently maintained in the APEX_APPLICATION_INSTALL
+                       package.
+
+                       Syntax
+
+APEX_APPLICATION_INSTALL.CLEAR_ALL;
+
+Parameters
+None.
+
+Example
+The following example clears all values currently set by the APEX_APPLICATION_INSTALL
+package.
+
+begin
+      apex_application_install.clear_all;
+
+end;
+
+8.7 CLEAR_DATASET_IMPORT_MODES Procedure
+
+                       This procedure clears all dataset import mode settings configured using the
+                       APEX_APPLICATION_INSTALL package.
+
+                       Syntax
+
+PROCEDURE apex_application_install.clear_dataset_import_modes;
+
+API Reference                                                                                       July 24, 2026
+G26651-03                                                                                           Page 8 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                            Chapter 8
+                                                                                                 CLEAR_DATA_REPORTER_REMAP Procedure
+
+                       Parameters
+                       This procedure has no parameters.
+                       Example
+                       The following example clears all dataset import mode settings currently set in the
+                       APEX_APPLICATION_INSTALL package.
+
+                       begin
+                              apex_application_install.clear_dataset_import_modes;
+
+                       end;
+
+8.8 CLEAR_DATA_REPORTER_REMAP Procedure
+
+                       This procedure clears all values for remapped data reporter schemas in the
+                       APEX_APPLICATION_INSTALL package.
+                       Syntax
+
+                       PROCEDURE apex_application_install.clear_data_reporter_remap;
+
+                       Parameters
+                       This procedure has no parameters.
+                       Example
+                       The following example clears all data reporter remap schema values currently set in the
+                       APEX_APPLICATION_INSTALL package.
+
+                       begin
+                              apex_application_install.clear_data_reporter_remap;
+
+                       end;
+
+8.9 GENERATE_APPLICATION_ID Procedure
+
+                       This procedure generates an available application ID on the instance and sets the application
+                       ID in APEX_APPLICATION_INSTALL.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GENERATE_APPLICATION_ID;
+
+                       Parameters
+                       None.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 9 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                            Chapter 8
+                                                                                                                  GENERATE_OFFSET Procedure
+
+                              See Also
+                                 � GET_APPLICATION_ID Function
+                                 � Import Script Examples
+                                 � SET_APPLICATION_ID Procedure
+
+8.10 GENERATE_OFFSET Procedure
+
+                       This procedure generates the offset value used during application import. Use the offset value
+                       to ensure that the metadata for the Oracle APEX application definition does not collide with
+                       other metadata on the instance. For a new application installation, it is usually sufficient to call
+                       this procedure to have APEX generate this offset value for you.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GENERATE_OFFSET;
+
+                       Parameters
+                       None.
+
+                              See Also
+                                 � GET_OFFSET Function
+                                 � Import Script Examples
+                                 � SET_OFFSET Procedure
+
+8.11 GET_APPLICATION_ALIAS Function
+
+                       This function gets the application alias for the application to be imported. This is only used if
+                       the application to be imported has an alias specified. An application alias must be unique
+                       within a workspace and it is recommended to be unique within an instance.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GET_APPLICATION_ALIAS
+                       RETURN VARCHAR2;
+
+                       Parameters
+                       None.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 10 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                            Chapter 8
+                                                                                                                  GET_APPLICATION_ID Function
+
+                       Example
+                       The following example returns the value of the application alias value in the
+                       APEX_APPLICATION_INSTALL package. The application alias must be 255 characters or less.
+
+                       DECLARE
+                              l_alias varchar2(255);
+
+                       BEGIN
+                              l_alias := apex_application_install.get_application_alias;
+
+                       END;
+
+                              See Also
+                                 SET_APPLICATION_ALIAS Procedure
+
+8.12 GET_APPLICATION_ID Function
+
+                       Use this function to get the application ID of the application to be imported. The application ID
+                       should either not exist in the instance or, if it does exist, must be in the workspace where the
+                       application is being imported to.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GET_APPLICATION_ID
+                       RETURN NUMBER;
+
+                       Parameters
+                       None.
+                       Example
+                       The following example returns the value of the application ID value in the
+                       APEX_APPLICATION_INSTALL package.
+
+                       DECLARE
+                              l_id number;
+
+                       BEGIN
+                              l_id := apex_application_install.get_application_id;
+
+                       END;
+
+                              See Also
+                                 � SET_APPLICATION_ID Procedure
+                                 � GENERATE_APPLICATION_ID Procedure
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 11 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                            Chapter 8
+                                                                                                             GET_APPLICATION_NAME Function
+
+8.13 GET_APPLICATION_NAME Function
+
+                       This function gets the application name of the import application.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GET_APPLICATION_NAME
+                       RETURN VARCHAR2;
+
+                       Parameters
+                       None.
+                       Example
+                       The following example returns the value of the application name value in the
+                       APEX_APPLICATION_INSTALL package.
+
+                       DECLARE
+                             l_application_name varchar2(255);
+
+                       BEGIN
+                             l_application_name := apex_application_install.get_application_name;
+
+                       END;
+
+                              See Also
+                                 SET_APPLICATION_NAME Procedure
+
+8.14 GET_AUTHENTICATION_SCHEME Function
+
+                       Use this function to retrieve the authentication scheme name that should override the default.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GET_AUTHENTICATION_SCHEME
+                              RETURN VARCHAR2
+
+                       Example
+                       Print the authentication scheme override.
+
+                       select apex_application_install.get_authentication_scheme
+                              from sys.dual;
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 12 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                            Chapter 8
+                                                                                                       GET_AUTO_INSTALL_SUP_OBJ Function
+
+                              See Also
+                                 SET_AUTHENTICATION_SCHEME Procedure
+
+8.15 GET_AUTO_INSTALL_SUP_OBJ Function
+
+                       This function retrieves the automatic install of supporting objects settings used during the
+                       import of an application. This setting is valid only for command line installs. If the setting is set
+                       to TRUE and the application export contains supporting objects, it automatically installs or
+                       upgrades the supporting objects when an application is imported from the command line.
+
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GET_AUTO_INSTALL_SUP_OBJ
+                       RETURN BOOLEAN;
+
+                       Parameters
+                       None.
+
+                       Example
+                       The following example returns the value of automatic install of supporting objects setting in the
+                       APEX_APPLICATION_INSTALL package.
+
+                       DECLARE
+                             l_auto_install_sup_obj boolean;
+
+                       BEGIN
+                             l_auto_install_sup_obj :=
+
+                       apex_application_install.get_auto_install_sup_obj;
+                       END;
+
+                              See Also
+                                 SET_AUTO_INSTALL_SUP_OBJ Procedure
+
+8.16 GET_BUILD_STATUS Function
+
+                       This function retrieves the build status that overrides the default.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GET_BUILD_STATUS
+                              RETURN VARCHAR2;
+
+                       Parameters
+                       None.
+
+API Reference                                                                                July 24, 2026
+G26651-03                                                                                    Page 13 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                  Chapter 8
+                                                                               GET_DATA_REPORTER_REMAP Function
+
+Example
+The following example prints the build status override.
+
+select apex_application_install.get_build_status
+      from sys.dual;
+
+See Also
+SET_BUILD_STATUS Function
+
+8.17 GET_DATA_REPORTER_REMAP Function
+
+                       This function gets the remapped schema (owner) for the supplied schema.
+                       Syntax
+
+                       FUNCTION apex_application_install.get_data_reporter_remap (
+                             p_schema_from IN VARCHAR2 )
+                             RETURN VARCHAR2;
+
+                       Parameters
+
+Parameter                                              Description
+p_schema_from                                          The source schema to map from.
+
+Example
+
+The following example returns the remapped schema for the supplied schema name from the
+APEX_APPLICATION_INSTALL package, set via a call to
+apex_application_install.add_data_reporter_remap. If no mapping exists then the
+supplied schema is returned.
+
+declare
+      l_schema varchar2(30);
+
+begin
+      l_schema := apex_application_install.get_data_reporter_remap( 'HR' );
+
+end;
+
+8.18 GET_DATASET_IMPORT_MODE Function
+
+                       This function returns the dataset import mode for the supplied dataset. If no import mode has
+                       been set, this function returns null.
+
+API Reference                                                                                   July 24, 2026
+G26651-03                                                                                       Page 14 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                   Chapter 8
+                                                       GET_IMAGE_PREFIX Function
+
+Syntax
+
+FUNCTION apex_application_install.get_dataset_import_mode (
+      p_static_id IN VARCHAR2 )
+      RETURN t_dataset_import_mode;
+
+Parameters
+
+Parameter                                              Description
+p_static_id                                            Static ID used to reference the dataset.
+
+Example
+The following example returns the dataset import mode setting for the supplied dataset.
+
+declare
+      l_import_mode t_dataset_import_mode;
+
+begin
+      l_import_mode := apex_application_install.get_dataset_import_mode('HR');
+
+end;
+
+8.19 GET_IMAGE_PREFIX Function
+
+                       This function gets the image prefix of the import application. Most Oracle APEX instances use
+                       the default image prefix of /i/.
+
+                       Syntax
+
+APEX_APPLICATION_INSTALL.GET_IMAGE_PREFIX
+RETURN VARCHAR2;
+
+Parameters
+
+None.
+
+Example
+
+The following example returns the value of the application image prefix in the
+APEX_APPLICATION_INSTALL package. The application image prefix cannot be more than 255
+characters.
+
+DECLARE
+      l_image_prefix varchar2(255);
+
+BEGIN
+      l_image_prefix := apex_application_install.get_image_prefix;
+
+END;
+
+API Reference                                                                                    July 24, 2026
+G26651-03                                                                                        Page 15 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                            Chapter 8
+                                                                                              GET_INFO Function
+
+       See Also
+       SET_IMAGE_PREFIX Procedure
+
+8.20 GET_INFO Function
+
+                       Use this function to retrieve install information from a source file.
+                       Syntax
+
+                       FUNCTION GET_INFO (
+                             p_source IN apex_t_export_files )
+                             RETURN t_file_info;
+
+                       Parameters
+
+Parameter                                              Description
+p_source
+                                                       The source code, a table of (name, contents) with a single record for
+                                                       normal APEX applications or multiple records for applications that were
+                                                       split when exporting.
+                                                       Note that passing multiple applications is not supported.
+
+Returns
+
+This function returns information about the application that can be used to configure the
+installation.
+
+Raises
+
+This function may raise the folllowing: WWV_FLOW_IMP_PARSER.RUN_STMT_ERROR: The source
+contains invalid statements.
+
+Example
+
+The following example fetches an application from a remote URL and prints its install
+information.
+
+DECLARE
+
+l_source apex_t_export_files;
+
+l_info apex_application_install.t_file_info;
+
+BEGIN
+
+l_source := apex_t_export_files (
+
+                                                       apex_t_export_file (
+
+                                                       name => 'f100.sql',
+
+                                                       contents => apex_web_service.make_rest_request (
+
+                                                                 p_url           => 'https://
+
+www.example.com/apps/f100.sql',
+
+                                                                 p_http_method => 'GET' )));
+
+l_info := apex_application_install.get_info (
+
+                                                       p_source  => l_source );
+
+sys.dbms_output.put_line (apex_string.format (
+
+           p_message => q'!Type ................. %0
+
+API Reference                                                                                  July 24, 2026
+G26651-03                                                                                      Page 16 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                      Chapter 8
+                                                       GET_KEEP_BACKGROUND_EXECS Function
+
+      p0               !Workspace ............ %1
+      p1               !Version .............. %2
+      p2               !App ID ............... %3
+      p3               !App Name ............. %4
+      p4               !Alias ................ %5
+      p5               !Owner ................ %6
+      p6               !Build Status ......... %7
+      p7               !Has Install Script ... %8
+      p8               !App ID Usage ......... %9
+      p9               !App Alias Usage ...... %10!',
+      p10       => l_info.file_type,
+      p_prefix  => l_info.workspace_id,
+                => l_info.version,
+                => l_info.app_id,
+                => l_info.app_name,
+                => l_info.app_alias,
+                => l_info.app_owner,
+                => l_info.build_status,
+                => apex_debug.tochar(l_info.has_install_script),
+                => l_info.app_id_usage,
+                => l_info.app_alias_usage,
+                => '!' ));
+
+END;
+
+      See Also
+      � INSTALL Procedure
+      � GET_APPLICATION Function
+
+8.21 GET_KEEP_BACKGROUND_EXECS Function
+
+                       This function checks if background executions are preserved or deleted during upgrades.
+                       Defaults to FALSE, so all background executions are aborted and deleted on application
+                       upgrade.
+
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GET_KEEP_BACKGROUND_EXECS
+                              RETURN BOOLEAN;
+
+                       Parameters
+                       None.
+
+                       Example
+                       The following example shows whether background executions are preserved or deleted.
+
+                       BEGIN
+                              dbms_output.put_line (
+                                    CASE WHEN apex_application_install.get_keep_background_execs
+
+API Reference                                                     July 24, 2026
+G26651-03                                                         Page 17 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                      Chapter 8
+                                                        GET_KEEP_SESSIONS Function
+
+             THEN 'background executions will be kept'
+      ELSE 'background executions will be deleted'
+      END );
+
+END;
+
+                              See Also
+                                 � SET_KEEP_BACKGROUND_EXECS Procedure
+
+8.22 GET_KEEP_SESSIONS Function
+
+                       This function finds out if sessions and session state will be preserved or deleted on upgrades.
+                       Syntax
+
+                       function GET_KEEP_SESSIONS
+                             RETURN BOOLEAN
+
+                       Example
+                       The following example shows whether print sessions will be kept or deleted.
+
+                       dbms_output.put_line (
+                             case when apex_application_install.get_keep_sessions then 'sessions will
+
+                       be kept'
+                             else 'sessions will be deleted'
+                             end );
+
+                              See Also
+                                 SET_KEEP_SESSIONS Procedure
+
+8.23 GET_MAX_SCHEDULER_JOBS Function
+
+                       This function fetches the maximum background processing jobs attribute during application
+                       import.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GET_MAX_SCHEDULER_JOBS
+                              RETURN NUMBER;
+
+                       Parameters
+                       None.
+
+API Reference                                           July 24, 2026
+G26651-03                                               Page 18 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                  Chapter 8
+                                                                                   GET_NO_PROXY_DOMAINS Function
+
+Example
+
+DECLARE
+      l_max_scheduler_jobs number;
+
+BEGIN
+      l_max_scheduler_jobs := apex_application_install.get_max_scheduler_jobs;
+
+END;
+
+                              See Also
+                                 � SET_MAX_SCHEDULER_JOBS Procedure
+
+8.24 GET_NO_PROXY_DOMAINS Function
+
+                       Use this function to get the No Proxy Domains attribute of an application to be imported.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GET_PROXY
+                       RETURN VARCHAR2;
+
+                       Parameters
+                       None.
+                       Example
+
+                       DECLARE
+                             l_no_proxy_domains varchar2(255);
+
+                       BEGIN
+                             l_no_proxy_domains := apex_application_install.get_no_proxy_domains;
+
+                       END;
+
+See Also
+SET_PROXY Procedure
+
+8.25 GET_OFFSET Function                                                                               July 24, 2026
+                                                                                                       Page 19 of 48
+                       Use function to get the offset value used during the import of an application.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GET_OFFSET
+                       RETURN NUMBER;
+
+API Reference
+G26651-03
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                            Chapter 8
+                                                                                                                        GET_PASS_ECID Function
+
+                       Parameters
+                       None.
+                       Example
+                       The following example returns the value of the application offset value in the
+                       APEX_APPLICATION_INSTALL package.
+
+                       DECLARE
+                              l_offset number;
+
+                       BEGIN
+                              l_offset := apex_application_install.get_offset;
+
+                       END;
+
+                              See Also
+                                 � SET_OFFSET Procedure
+                                 � GENERATE_OFFSET Procedure
+
+8.26 GET_PASS_ECID Function
+
+                       This function retrieves the pass ECID attribute value that overrides the default.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GET_PASS_ECID
+                              RETURN BOOLEAN;
+
+                       Parameters
+                       None.
+
+                              See Also
+                                 SET_PASS_ECID Procedure
+
+8.27 GET_PROXY Function
+
+                       Use this function to get the proxy server attribute of an application to be imported.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GET_PROXY
+                       RETURN VARCHAR2;
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 20 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                  Chapter 8
+                                                                           GET_REMOTE_SERVER_AI_ATTRS Function
+
+Parameters
+None.
+
+Example
+The following example returns the value of the proxy server attribute in the
+APEX_APPLICATION_INSTALL package. The proxy server attribute must be 255 characters or
+less.
+
+DECLARE
+      l_proxy varchar2(255);
+
+BEGIN
+      l_proxy := apex_application_install.get_proxy;
+
+END;
+
+See Also
+SET_PROXY Procedure
+
+8.28 GET_REMOTE_SERVER_AI_ATTRS Function
+
+                       This function gets the AI attributes property to be used for a given remote server during
+                       application import.
+
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GET_REMOTE_SERVER_AI_ATTRS (
+                              p_static_id IN VARCHAR2 )
+                              RETURN CLOB;
+
+                       Parameters
+
+ Parameter                                             Description
+p_static_id                                            Static ID to reference the remote server object.
+
+Example
+
+DECLARE
+      l_ai_attributes clob;
+
+BEGIN
+      l_ai_attributes :=
+
+apex_application_install.get_remote_server_ai_attrs( 'MY_REMOTE_SERVER' );
+END
+
+API Reference                                                                                            July 24, 2026
+G26651-03                                                                                                Page 21 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                          Chapter 8
+                                                       GET_REMOTE_SERVER_AI_HEADERS Function
+
+See Also
+SET_REMOTE_SERVER Procedure
+
+8.29 GET_REMOTE_SERVER_AI_HEADERS Function
+
+                       This function gets the AI HTTP Headers property to be used for a given remote server during
+                       application import.
+
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GET_REMOTE_SERVER_AI_HEADERS (
+                              p_static_id IN VARCHAR2 )
+                              RETURN CLOB;
+
+                       Parameters
+
+ Parameter                                             Description
+p_static_id                                            Static ID to reference the remote server object.
+
+Example
+
+DECLARE
+      l_ai_http_headers clob;
+
+BEGIN
+      l_ai_http_headers :=
+
+apex_application_install.get_remote_server_ai_headers( 'MY_REMOTE_SERVER' );
+END;
+
+                              See Also
+                                 SET_REMOTE_SERVER Procedure
+
+8.30 GET_REMOTE_SERVER_AI_MAXTOKENS Function
+
+                       Use this function to get the Maximum number of tokens property to be used for a given
+                       Generative AI or Vector Provider server during application import.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GET_REMOTE_SERVER_AI_MAXTOKENS (
+                             p_static_id IN VARCHAR2 )
+                             RETURN NUMBER;
+
+API Reference                                                                                            July 24, 2026
+G26651-03                                                                                                Page 22 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                      Chapter 8
+                                                       GET_REMOTE_SERVER_AI_MODEL Function
+
+Parameters
+
+ Parameter                                             Description
+p_static_id                                            Static ID to reference the remote server object.
+
+Example
+
+DECLARE
+      l_ai_max_tokens number;
+
+BEGIN
+      l_ai_max_tokens :=
+
+apex_application_install.get_remote_server_ai_maxtokens( 'MY_REMOTE_SERVER' );
+END;
+
+See Also
+SET_REMOTE_SERVER Procedure
+
+8.31 GET_REMOTE_SERVER_AI_MODEL Function
+
+                       This function gets the AI model name property to be used for a given remote server during
+                       application import.
+
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GET_REMOTE_SERVER_AI_MODEL (
+                             p_static_id IN VARCHAR2 )
+                             RETURN VARCHAR2;
+
+                       Parameters
+
+ Parameter                                             Description
+p_static_id                                            Static ID to reference the remote server object.
+
+Example
+
+DECLARE
+      l_ai_model varchar2(255);
+
+BEGIN
+      l_ai_model :=
+
+apex_application_install.get_remote_server_ai_model( 'MY_REMOTE_SERVER' );
+END;
+
+API Reference                                                                                            July 24, 2026
+G26651-03                                                                                                Page 23 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                       Chapter 8
+                                                       GET_REMOTE_SERVER_BASE_URL Function
+
+See Also
+SET_REMOTE_SERVER Procedure
+
+8.32 GET_REMOTE_SERVER_BASE_URL Function
+
+                       Use this function to get the Base URL property to be used for a given remote server during
+                       application import.
+
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GET_REMOTE_SERVER_BASE_URL (
+                              p_static_id IN VARCHAR2 )
+
+                       RETURN VARCHAR2;
+
+                       Parameters
+
+ Parameter                                             Description
+p_static_id                                            Static ID to reference the remote server object.
+
+Example
+
+DECLARE
+      l_base_url varchar2(255);
+
+BEGIN
+      l_base_url :=
+
+apex_application_install.get_remote_server_base_url( 'MY_REMOTE_SERVER' );
+END;
+
+                              See Also
+                                 SET_REMOTE_SERVER Procedure
+
+8.33 GET_REMOTE_SERVER_DEFAULT_DB Function
+
+                       This function gets the default database to be used for a given remote server during application
+                       import.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GET_REMOTE_SERVER_DEFAULT_DB (
+                             p_static_id IN VARCHAR2 )
+                             RETURN VARCHAR2;
+
+API Reference                                                                                            July 24, 2026
+G26651-03                                                                                                Page 24 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                           Chapter 8
+                                                       GET_REMOTE_SERVER_HTTPS_HOST Function
+
+Parameters
+
+ Parameter                                             Description
+p_static_id                                            Static ID to reference the remote server object.
+
+Example
+
+DECLARE
+      l_default_database varchar2(255);
+
+BEGIN
+      l_default_database :=
+
+apex_application_install.get_remote_server_default_db( 'MY_REMOTE_SERVER' );
+END;
+
+Note
+SET_REMOTE_SERVER Procedure
+
+8.34 GET_REMOTE_SERVER_HTTPS_HOST Function
+
+                       Use this function to get the HTTPS Host property to be used for a given remote server during
+                       application import.
+
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GET_REMOTE_SERVER_HTTPS_HOST(
+                             p_static_id IN VARCHAR2)
+
+                       RETURN VARCHAR2;
+
+                       Parameters
+
+ Parameter                                             Description
+p_static_id                                            Static ID to reference the remote server object.
+
+Example
+
+DECLARE
+      l_https_host varchar2(255);
+
+BEGIN
+      l_https_host :=
+
+apex_application_install.get_remote_server_https_host( 'MY_REMOTE_SERVER' );
+END;
+
+API Reference                                                                                            July 24, 2026
+G26651-03                                                                                                Page 25 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                        Chapter 8
+                                                       GET_REMOTE_SERVER_SQL_MODE Function
+
+See Also
+SET_REMOTE_SERVER Procedure
+
+8.35 GET_REMOTE_SERVER_SQL_MODE Function
+
+                       This function gets the SQL mode to be used for a given remote MySQL server during
+                       application import.
+
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GET_REMOTE_SERVER_SQL_MODE (
+                              p_static_id IN VARCHAR2 )
+                              RETURN VARCHAR2;
+
+                       Parameters
+
+ Parameter                                             Description
+p_static_id                                            Static ID to reference the remote server object..
+
+Example
+
+DECLARE
+      l_default_database varchar2(255);
+
+BEGIN
+      l_default_database :=
+
+apex_application_install.get_remote_server_sql_mode( 'MY_REMOTE_SERVER' );
+END;
+
+                              Note
+                                 SET_REMOTE_SERVER Procedure
+
+8.36 GET_REST_SOURCE_CATALOG_GROUP Function
+
+                       This function retrieves the name of REST Source Catalog Group which new catalogs are
+                       imported into.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GET_REST_SOURCE_CATALOG_GROUP
+                             RETURN VARCHAR2;
+
+                       Parameters
+                       None.
+
+API Reference                                                                                             July 24, 2026
+G26651-03                                                                                                 Page 26 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                            Chapter 8
+                                                                                                                           GET_SCHEMA Function
+
+                       Example
+                       The following example prints the REST Source Catalog Group override.
+
+                       select apex_application_install.get_rest_source_catalog_group
+                          from sys.dual;
+
+                              Note
+                                 SET_REST_SOURCE_CATALOG_GROUP Procedure
+
+8.37 GET_SCHEMA Function
+
+                       Use this function to get the parsing schema (owner) of the APEX application.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GET_SCHEMA
+                       RETURN VARCHAR2;
+
+                       Parameters
+                       None.
+                       Example
+                       The following example returns the value of the application schema in the
+                       APEX_APPLICATION_INSTALL package.
+
+                       DECLARE
+                              l_schema varchar2(30);
+
+                       BEGIN
+                              l_schema := apex_application_install.get_schema;
+
+                       END;
+
+                              See Also
+                                 SET_SCHEMA Procedure
+
+8.38 GET_SUBSCRIPTION_MAPPING Function
+
+                       Use this function to get the Application ID of the new subscription source. If there is no
+                       mapping found, the function returns the input Application ID.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 27 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                        Chapter 8
+                                                                                  GET_SUBSCRIPTION_MODE Function
+
+Syntax
+
+APEX_APPLICATION_INSTALL.GET_SUBSCRIPTION_MAPPING (
+
+p_from_application_id IN                               NUMBER)
+
+RETURN NUMBER;
+
+Parameters
+
+ Parameter                                             Description
+p_from_application_id
+                                                       The Application ID of the current subscription
+Example                                                source.
+
+declare
+      l_app_id number;
+
+begin
+      l_app_id := apex_application_install.get_subscription_mapping(100);
+
+end;
+
+8.39 GET_SUBSCRIPTION_MODE Function
+
+                       Use this function to get Subscription Mode setting value.
+                       Syntax
+
+APEX_APPLICATION_INSTALL.GET_SUBSCRIPTION_MODE
+      RETURN t_subscription_mode;
+
+Example
+
+declare
+      l_subscription_mode apex_application_install.t_subscription_mode;
+
+begin
+      l_subscription_mode := apex_application_install.get_subscription_mode;
+
+end;
+
+8.40 GET_THEME_ID Function
+
+                       This function retrieves the Theme ID value that overrides the default.
+                       Syntax
+
+APEX_APPLICATION_INSTALL.GET_THEME_ID
+      RETURN NUMBER
+
+Parameters
+None.
+
+API Reference                                                                                  July 24, 2026
+G26651-03                                                                                      Page 28 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                  Chapter 8
+                                                                                          GET_WORKSPACE_ID Function
+
+Returns
+This function returns the Theme ID value.
+Example
+The following example prints the theme ID override.
+
+select apex_application_install.get_theme_id from sys.dual
+
+                              See Also
+                                 SET_THEME_ID Procedure
+
+8.41 GET_WORKSPACE_ID Function
+
+                       Use this function to get the workspace ID for the application to be imported.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.GET_WORKSPACE_ID
+                       RETURN NUMBER;
+
+                       Parameters
+                       None.
+                       Example
+                       The following example returns the value of the workspace ID value in the
+                       APEX_APPLICATION_INSTALL package.
+
+                       DECLARE
+                             l_workspace_id number;
+
+                       BEGIN
+                             l_workspace_id := apex_application_install.get_workspace_id;
+
+                       END;
+
+                              See Also
+                                 SET_WORKSPACE_ID Procedure
+
+8.42 INSTALL Procedure
+
+                       This procedure installs an application. Use the APEX_APPLICATION_INSTALL.SET% procedures
+                       to configure installation parameters.
+
+API Reference                                                                                         July 24, 2026
+G26651-03                                                                                             Page 29 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                 Chapter 8
+                                                                                    INSTALL Procedure
+
+Syntax
+
+PROCEDURE INSTALL (
+
+p_source                                               IN apex_t_export_files       DEFAULT NULL,
+                                                                                    DEFAULT FALSE );
+p_overwrite_existing IN BOOLEAN
+
+Parameters
+
+Parameter                                              Description
+p_source
+                                                       The source code, a table of (name, contents) with a single
+p_overwrite_existing                                   record for normal Oracle APEX applications or multiple
+                                                       records for applications that were split when exporting.
+                                                       Passing multiple applications is not supported.
+                                                       If null (default), imports the source that was previously
+                                                       passed to GET_INFO.
+
+                                                       If FALSE (default), raises an error instead of overwriting an
+                                                       existing application.
+
+Raises
+
+� WWV_FLOW_IMP_PARSER.RUN_STMT_ERROR: The source contains invalid statements.
+
+� SECURITY_GROUP_ID_INVALID: The current workspace conflicts with the install workspace.
+
+� WWV_FLOW_API.FLOW_ID_RESERVED_FOR_OTHER_WORKSPACE: The application ID is used in
+     another workspace.
+
+� WWV_FLOW_API.FLOW_ID_RANGE_RESERVED: The application ID is reserved for internal use.
+
+� WWV_FLOW_API.FLOW_ID_OUT_OF_RANGE: The application ID used for installing is not in a
+     valid range.
+
+� APPLICATION_ID_RESERVED: The application ID is in use in the current workspace and
+     p_overwrite_existing was set to false.
+
+Example
+
+Fetch an application from a remote URL, then install it with a new ID and new component ID
+offsets in workspace EXAMPLE.
+
+DECLARE
+
+l_source apex_t_export_files;
+
+l_info apex_application_install.t_file_info;
+
+BEGIN
+
+l_source := apex_t_export_files (
+
+                                                       apex_t_export_file (
+
+                                                       name => 'f100.sql',
+
+                                                       contents => apex_web_service.make_rest_request (
+
+                                                                             p_url  => 'https://
+
+www.example.com/apps/f100.sql',
+
+                                                                             p_http_method => 'GET' )));
+
+apex_util.set_workspace('EXAMPLE');
+apex_application_install.generate_application_id;
+apex_application_install.generate_offset;
+apex_application_install.install (
+
+API Reference                                                                                             July 24, 2026
+G26651-03                                                                                                 Page 30 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                     Chapter 8
+                                                                                   REMOVE_APPLICATION Procedure
+
+      p_source => l_source );
+
+END;
+
+8.43 REMOVE_APPLICATION Procedure
+
+                       This procedure removes an application from a workspace. Use the
+                       APEX_APPLICATION_INSTALL.SET_% procedures to configure parameters.
+
+                       Syntax
+
+APEX_APPLICATION_INSTALL.REMOVE_APPLICATION (
+      p_application_id IN NUMBER )
+
+Parameters
+
+Parameter                                              Description
+p_application_id                                       The ID of the application.
+
+Raises
+
+This procedure may raise the following:
+
+� WWV_FLOW_API.DELETE_APP_IN_DIFFERENT_WORKSPACE: The application is not in this
+     workspace.
+
+� WWV_FLOW_API.FLOW_NOT_DELETED: The application was not deleted.
+� WWV_FLOW.APP_NOT_FOUND_ERR: The application ID was not found.
+
+Example
+
+The following example demonstrates how to use the REMOVE_APPLICATION procedure to
+remove an application with an ID of 100 from a workspace.
+
+BEGIN
+      apex_application_install.set_workspace('EXAMPLE');
+      apex_application_install.set_keep_sessions(false);
+      apex_application_install.remove_application(100);
+
+END;
+
+8.44 SET_APPLICATION_ALIAS Procedure
+
+                       This procedure sets the application alias for the application to be imported. This is only used if
+                       the application to be imported has an alias specified. An application alias must be unique
+                       within a workspace and it is recommended to be unique within an instance.
+
+                       Syntax
+
+APEX_APPLICATION_INSTALL.SET_APPLICATION_ALIAS (
+      p_application_alias IN VARCHAR2 )
+
+API Reference                                                                              July 24, 2026
+G26651-03                                                                                  Page 31 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+Parameters                                                                                                                               Chapter 8
+                                                                                                    SET_APPLICATION_ID Procedure
+ Parameter
+p_application_alias                                    Description
+                                                       The application alias. The application alias is an alphanumeric
+                                                       identifier.
+                                                       Must be fewer than 255 characters and unique within a workspace.
+                                                       (Optional) Oracle recommends that the alias be unique within an
+                                                       entire instance.
+
+See Also
+� GET_APPLICATION_ALIAS Function
+� Import Script Examples
+
+8.45 SET_APPLICATION_ID Procedure
+
+                       Use this procedure to set the application ID of the application to be imported. The application
+                       ID should either not exist in the instance or, if it does exist, must be in the workspace where the
+                       application is being imported to. This number must be a positive integer and must not be from
+                       the reserved range of Oracle APEX application IDs.
+
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.SET_APPLICATION_ID (
+                             p_application_id IN NUMBER);
+
+                       Parameters
+
+Parameter                                              Description
+p_application_id
+                                                       This is the application ID. The application ID must be a positive
+                                                       integer, and cannot be in the reserved range of application IDs (3000
+                                                       - 8999). It must be less than 3000 or greater than or equal to 9000.
+
+                              See Also
+                                 � SET_APPLICATION_ID Procedure
+                                 � Import Script Examples
+                                 � GENERATE_APPLICATION_ID Procedure
+
+8.46 SET_APPLICATION_NAME Procedure
+
+                       This procedure sets the application name of the application to be imported.
+
+API Reference                                                                                       July 24, 2026
+G26651-03                                                                                           Page 32 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                     Chapter 8
+                                                       SET_AUTHENTICATION_SCHEME Procedure
+
+Syntax
+
+APEX_APPLICATION_INSTALL.SET_APPLICATION_NAME (
+      p_application_name IN VARCHAR2 )
+
+Parameters
+
+Parameter                                              Description
+p_application_name
+                                                       This is the application name. The application name cannot be null
+                                                       and must be 255 characters or less.
+
+Example
+The following example sets the application name for app 100 to "Executive Dashboard".
+
+BEGIN
+   apex_application_install.set_application_name( p_application_name =>
+
+'Executive Dashboard' );
+END;
+/
+@f100.sql
+
+See Also
+GET_APPLICATION_NAME Function
+
+8.47 SET_AUTHENTICATION_SCHEME Procedure
+
+                       Use this procedure to override the active authentication scheme for the applications that are
+                       about to be installed.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.SET_AUTHENTICATION_SCHEME (
+                                 p_name IN VARCHAR2 )
+
+                       Parameters
+
+Parameter                                              Description
+p_name
+                                                       The name of the authentication scheme to be activated. This new
+                                                       authentication scheme must exist in the application. If NULL, the
+                                                       active authentication scheme will remain unchanged.
+
+API Reference                                                            July 24, 2026
+G26651-03                                                                Page 33 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                  Chapter 8
+                                                                              SET_AUTO_INSTALL_SUP_OBJ Procedure
+
+Example
+
+The following example activates authentication scheme "SSO-Production" and installs
+application f100.sql, then resets the override for f101.sql to keep its active scheme.
+
+BEGIN
+   apex_application_install.set_authentication_scheme (
+         p_name => 'SSO-Production' );
+
+END;
+/
+@f100.sql
+BEGIN
+
+   apex_application_install.set_authentication_scheme (
+         p_name => null );
+
+END;
+/
+@f101.sql
+
+See Also
+GET_AUTHENTICATION_SCHEME Function
+
+8.48 SET_AUTO_INSTALL_SUP_OBJ Procedure
+
+                       This procedure sets the automatic install of supporting objects value used during application
+                       import. This setting is valid only for command line installs. If the value is set to TRUE and the
+                       application export contains supporting objects, it automatically installs or upgrades the
+                       supporting objects when an application is imported from the command line.
+
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.SET_AUTO_INSTALL_SUP_OBJ (
+                             p_auto_install_sup_obj IN BOOLEAN )
+
+                       Parameters
+
+Parameter                                              Description
+p_auto_install_sup_obj                                 Boolean value for the automatic install of supporting objects.
+
+Example
+The following example enables the automatic installation of supporting objects for app 100.
+
+BEGIN
+   apex_application_install.set_auto_install_sup_obj( p_auto_install_sup_obj
+
+=> true );
+END;
+/
+@f100.sql
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 34 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                             Chapter 8
+                                                                  SET_BUILD_STATUS Function
+
+See Also
+GET_AUTO_INSTALL_SUP_OBJ Function
+
+8.49 SET_BUILD_STATUS Function
+
+                       Use this function to override the build status for applications that are about to be installed.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.SET_BUILD_STATUS (
+                             p_build_status IN wwv_flow_application_admin_api.t_build_status )
+
+                       Parameters
+
+Parameter                                              Description
+p_build_status
+                                                       New build status to set the application to. Values include:
+
+                                                       � apex_application_admin.c_build_status_run_a
+                                                            nd_build - Developers and users can both run and
+                                                             develop the application.
+
+                                                       � apex_application_admin.c_build_status_run_o
+                                                            nly - Only users can run the application. Developers
+                                                             cannot edit the application.
+
+Example
+The following example sets build status for app 100 to RUN_ONLY.
+
+BEGIN
+      apex_application_install.set_build_status (
+            p_build_status => 'RUN_ONLY' );
+
+END;
+/
+@f100.sql
+
+                              See Also
+                                 GET_BUILD_STATUS Function
+
+8.50 SET_DATASET_IMPORT_MODE Procedure
+
+                       This procedure sets the dataset import mode for a supplied dataset that is used to determine
+                       whether the dataset is kept or overwritten during import. By default a dataset is retained on
+                       import unless explicitly set to be overwritten.
+
+API Reference                                                     July 24, 2026
+G26651-03                                                         Page 35 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                    Chapter 8
+                                                       SET_IMAGE_PREFIX Procedure
+
+Syntax
+
+PROCEDURE apex_application_install.set_dataset_import_mode (
+
+p_static_id IN VARCHAR2,
+
+p_mode          IN t_dataset_import_mode );
+
+Parameters
+
+Parameter                                              Description
+p_static_id
+p_mode                                                 Static ID used to reference the dataset.
+                                                       Dataset import mode, see
+                                                       t_dataset_import_mode constants
+
+Example
+
+The following example sets the import mode for the supplied dataset in the
+APEX_APPLICATION_INSTALL package.
+
+begin
+
+apex_application_install.set_dataset_import_mode(
+
+        p_static_id => 'HR',
+
+        p_mode  => apex_application_install.c_dataset_keep );
+
+apex_application_install.set_dataset_import_mode(
+
+        p_static_id => 'SALES',
+
+        p_mode  => apex_application_install.c_dataset_overwrite );
+
+end;
+
+8.51 SET_IMAGE_PREFIX Procedure
+
+                       This procedure sets the image prefix of the import application. Most Oracle APEX instances
+                       use the default image prefix of /i/.
+
+                       Syntax
+
+APEX_APPLICATION_INSTALL.SET_IMAGE_PREFIX(
+      p_image_prefix IN VARCHAR2);
+
+Parameters
+
+Parameter                                              Description
+p_image_prefix
+                                                       The image prefix. It can be a fully qualified domain, like a CDN or
+                                                       another web server, or just a path.
+
+Example
+The following example sets the value of the image prefix attribute for app 100 to /i/
+
+begin
+   apex_application_install.set_image_prefix( p_image_prefix => '/i/' );
+
+API Reference                                                                                    July 24, 2026
+G26651-03                                                                                        Page 36 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                        Chapter 8
+                                                       SET_KEEP_BACKGROUND_EXECS Procedure
+
+end;
+/
+@f100.sql
+
+See Also
+GET_IMAGE_PREFIX Function
+
+8.52 SET_KEEP_BACKGROUND_EXECS Procedure
+
+                       This procedure preserves background executions associated with the application during
+                       upgrades.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.SET_KEEP_BACKGROUND_EXECS (
+                             p_keep_background_execs IN BOOLEAN )
+
+                       Parameters
+
+Parameter                                              Description
+p_keep_background_execs
+                                                       TRUE to preserve background executions. FALSE to delete
+                                                       them.
+
+Example
+
+The following example installs application 100 in workspace FRED_PROD and preserves
+background executions.
+
+BEGIN
+    apex_application_install.set_workspace(p_workspace => 'FRED_PROD');
+    apex_application_install.set_keep_background_execs(p_keep_background_execs
+
+=> true);
+END;
+/
+@f100.sql
+
+                              See Also
+                                 � GET_KEEP_BACKGROUND_EXECS Function
+
+8.53 SET_KEEP_SESSIONS Procedure
+
+                       This procedure preserves sessions associated with the application on upgrades.
+
+API Reference                                                                                          July 24, 2026
+G26651-03                                                                                              Page 37 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                 Chapter 8
+                                                       SET_MAX_SCHEDULER_JOBS Procedure
+
+Syntax
+
+procedure SET_KEEP_SESSIONS (
+      p_keep_sessions IN BOOLEAN );
+
+Parameters
+
+Parameter        Description
+p_keep_sessions
+                 Default FALSE. If FALSE, sessions are deleted.
+                 If TRUE, sessions are preserved.
+                 KEEP_SESSIONS_ON_UPGRADE controls the default behavior. If N (default),
+                 sessions are deleted. KEEP_SESSIONS_ON_UPGRADE is an instance parameter.
+
+Example
+
+The following example installs application 100 in workspace FRED_PROD and keeps session
+state.
+
+BEGIN
+   apex_application_install.set_workspace(p_workspace => 'FRED_PROD');
+   apex_application_install.set_keep_sessions(p_keep_sessions => true);
+
+END;
+/
+@f100.sql
+
+See Also
+GET_KEEP_SESSIONS Function
+
+8.54 SET_MAX_SCHEDULER_JOBS Procedure
+
+                       This procedure sets the maximum background processing jobs attribute of the application to be
+                       imported.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.SET_MAX_SCHEDULER_JOBS (
+                              p_max_scheduler_jobs IN NUMBER )
+
+                       Parameters
+
+Parameter                                              Description
+p_max_scheduler_jobs
+                                                       Maximum number of background processing jobs for the
+                                                       application to be imported.
+
+API Reference                                                            July 24, 2026
+G26651-03                                                                Page 38 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                  Chapter 8
+                                                                                                   SET_OFFSET Procedure
+
+Example
+The following example sets the maximum number of background processing jobs for app 100
+to 5.
+
+BEGIN
+   apex_application_install.set_max_scheduler_jobs(
+      p_max_scheduler_jobs => 5 );
+
+END;
+/
+@f100.sql
+
+See Also
+� GET_MAX_SCHEDULER_JOBS Function
+
+8.55 SET_OFFSET Procedure
+
+                       This procedure sets the offset value used during application import. Use the offset value to
+                       ensure that the metadata for the Oracle APEX application definition does not collide with other
+                       metadata on the instance.
+                       For a new application installation, it is usually sufficient to call the generate_offset procedure
+                       to use APEX to automatically generate this offset value for you.
+
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.SET_OFFSET (
+                              p_offset IN NUMBER )
+
+                       Parameters
+
+Parameter                                              Description
+p_offset
+                                                       The offset value. The offset must be a positive integer. In most cases you do
+                                                       not need to specify the offset; instead, call
+                                                       APEX_APPLICATION_INSTALL.GENERATE_OFFSET to generate a large
+                                                       random value and then set it in the APEX_APPLICATION_INSTALL package.
+
+Example
+
+The following example generates a random number from the database and uses this as the
+offset value for app 100.
+
+DECLARE
+   l_offset number;
+
+BEGIN
+   l_offset := dbms_random.value(100000000000, 999999999999);
+   apex_application_install.set_offset( p_offset => l_offset );
+
+END;
+
+API Reference                                                    July 24, 2026
+G26651-03                                                        Page 39 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                               Chapter 8
+                                                       SET_PASS_ECID Procedure
+
+/
+@f100.sql
+
+See Also
+� GET_OFFSET Function
+� GENERATE_OFFSET Procedure
+
+8.56 SET_PASS_ECID Procedure
+
+                       This procedure overrides the pass Execution Context ID (ECID) attribute for applications that
+                       are being installed.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.SET_PASS_ECID (
+                             p_pass_ecid IN BOOLEAN )
+
+                       Parameters
+
+Parameter                                              Description
+p_pass_ecid
+                                                       New pass ECID value to set application to. Values include:
+                                                       � TRUE: Pass the ECID to the external web services for
+
+                                                             end-to-end tracing.
+                                                       � FALSE: Deny the ECID.
+
+Example
+The following example sets Pass ECID to true.
+
+BEGIN
+    apex_application_install.set_pass_ecid (
+           p_pass_ecid => true );
+
+END;
+/
+@f100.sql
+
+                              See Also
+                                 GET_PASS_ECID Function
+
+8.57 SET_PROXY Procedure
+
+                       This procedure sets the proxy server attributes of an imported application.
+
+API Reference                                                                                       July 24, 2026
+G26651-03                                                                                           Page 40 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                    Chapter 8
+                                                                                  SET_REMOTE_SERVER Procedure
+
+Syntax
+
+APEX_APPLICATION_INSTALL.SET_PROXY (
+
+p_proxy                                                IN VARCHAR2,
+
+p_no_proxy_domains IN VARCHAR2 DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_proxy
+                                                       The proxy server. There is no default value. The proxy server must
+p_no_proxy_domains                                     be fewer than 255 characters and must exclude any protocol prefix
+                                                       (such as http://).
+                                                       The following is a valid example: www-proxy.example.com
+
+                                                       Default null. The list of domains for which the proxy server can not be
+                                                       used.
+
+Example
+
+The following example sets the value of the proxy attribute for app 100 to www-
+proxy.example.com.
+
+BEGIN
+   apex_application_install.set_proxy( p_proxy => 'www-proxy.example.com' );
+
+END;
+/
+@f100.sql
+
+    See Also
+    GET_PROXY Function
+    GET_NO_PROXY_DOMAINS Function
+
+8.58 SET_REMOTE_SERVER Procedure
+
+                       This procedure sets the Base URL and the HTTPS Host attributes for remote servers of the
+                       imported application. Remote Servers are identified by their Static ID.
+
+                       Syntax
+
+APEX_APPLICATION_INSTALL.SET_REMOTE_SERVER (
+
+p_static_id                                            IN VARCHAR2,
+
+p_base_url                                             IN VARCHAR2,
+
+p_https_host                                           IN VARCHAR2 DEFAULT NULL,
+
+--
+
+p_default_database IN VARCHAR2 DEFAULT NULL,
+
+p_mysql_sql_modes IN VARCHAR2 DEFAULT NULL,
+
+--
+
+p_ords_timezone IN VARCHAR2 DEFAULT NULL,
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 41 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                    Chapter 8
+                                                                                  SET_REMOTE_SERVER Procedure
+
+--                                                     IN VARCHAR2 DEFAULT NULL,
+p_ai_model_name                                        IN CLOB DEFAULT NULL,
+p_ai_http_headers                                      IN CLOB DEFAULT NULL,
+p_ai_attributes                                        IN NUMBER DEFAULT NULL );
+p_ai_max_tokens
+
+Parameters
+
+Parameter                                              Description
+p_static_id
+p_base_url                                             Static ID to reference the remote server object.
+p_https_host
+                                                       New Base URL to use for this remote server object.
+p_default_database
+p_mysql_sql_modes                                      New HTTPS Host Property to use for this remote server object.
+p_ords_timezone                                        Only relevant when the base URL is https:// and the Oracle AI
+p_ai_model_name                                        Database version is 12.2 or greater.
+p_ai_http_headers                                      Default database to use when connecting. Currently only
+p_ai_attributes                                        supported for MySQL databases.
+p_ai_max_tokens                                        SQL modes to use when connecting to a MySQL database.
+
+                                                       Time zone in which the ORDS server of a REST-enabled SQL
+                                                       reference used by the application runs.
+                                                       The AI model to use when requesting a response from a
+                                                       Generative AI Service.
+                                                       HTTP headers to use when making a request to a Generative AI
+                                                       Service.
+                                                       Attributes in JSON format to use when making a request to a
+                                                       Generative AI Service.
+                                                       Maximum number of tokens in a rolling 24-hour window APEX is
+                                                       allowed to make to this Generative AI Service.
+
+Example
+
+The following example sets the Base URL attribute of the remote server MY_REMOTE_SERVER for
+app 100.
+
+BEGIN
+      apex_application_install.set_remote_server(
+            p_static_id => 'MY_REMOTE_SERVER',
+            p_base_url => 'http://production.example.com' );
+
+END;
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 42 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                               Chapter 8
+                                                       SET_REST_SOURCE_CATALOG_GROUP Procedure
+
+See Also
+� GET_REMOTE_SERVER_BASE_URL Function
+� GET_REMOTE_SERVER_HTTPS_HOST Function
+� GET_REMOTE_SERVER_DEFAULT_DB Function
+� GET_REMOTE_SERVER_SQL_MODE Function
+� GET_REMOTE_SERVER_AI_MODEL Function
+� GET_REMOTE_SERVER_AI_HEADERS Function
+� GET_REMOTE_SERVER_AI_ATTRS Function
+� GET_REMOTE_SERVER_AI_MAXTOKENS Function
+
+8.59 SET_REST_SOURCE_CATALOG_GROUP Procedure
+
+                       This procedure sets the REST Source Catalog group to import a new REST Source Catalog.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.SET_REST_SOURCE_CATALOG_GROUP (
+                             p_name IN VARCHAR2 )
+
+                       Parameters
+
+Parameter                                              Description
+p_name
+                                                       The name of the REST Source Catalog Group. That Group
+                                                       must exist in the workspace.
+
+Example
+
+The following example sets the catalog group to Financial Services Catalogs. REST Source
+Catalogs are imported into this group.
+
+BEGIN
+      apex_application_install.set_rest_source_catalog_group (
+            p_name => 'Financial Services Catalogs' );
+
+END;
+/
+@rest-service-catalog-financial.sql
+
+Note
+GET_REST_SOURCE_CATALOG_GROUP Function
+
+API Reference                                                   July 24, 2026
+G26651-03                                                       Page 43 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                        Chapter 8
+                                                                                   SET_SCHEMA Procedure
+
+8.60 SET_SCHEMA Procedure
+
+                       Use this function to set the parsing schema (owner) of the Oracle APEX application. The
+                       database user of this schema must already exist, and this schema name must already be
+                       mapped to the workspace used to import the application.
+
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.SET_SCHEMA (
+                              p_schema IN VARCHAR2 )
+
+                       Parameters
+
+Parameter                                              Description
+p_schema                                               The schema name.
+
+See Also
+� GET_SCHEMA Function
+� Import Script Examples
+
+8.61 SET_SUBSCRIPTION_MAPPING Procedure
+
+                       Use this procedure to update subscriptions from one application to another during the
+                       application installation process. You can invoke the procedure multiple times, accommodating
+                       scenarios where components are subscribed from various Component Library Apps or Theme
+                       Apps.
+
+Note
+
+You cannot use this API to switch a theme subscription from the built-in Universal
+Theme to other local themes or vice versa.
+
+Syntax
+
+APEX_APPLICATION_INSTALL.SET_SUBSCRIPTION_MAPPING (
+
+p_from_application_id IN                                                 NUMBER,
+
+p_to_application_id                                    IN                NUMBER);
+
+Parameters
+
+Parameter                                                  Description
+p_from_application_id
+                                                           The Application ID of the current subscription
+                                                           source.
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 44 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                   Chapter 8
+                                                           SET_SUBSCRIPTION_MODE Procedure
+
+Parameter                                                  Description
+p_to_application_id
+                                                           The Application ID of the new target application to
+                                                           which the subscription is remapped. This
+                                                           application must exist within the target workspace.
+
+Example
+
+The following example demonstrates installing an application and changing subscription
+source from 100 to 200 and from 110 to 210.
+
+begin
+      apex_application_install.clear_all;
+      apex_application_install.set_workspace('TARGET_WORKSPACE');
+
+      apex_application_install.set_subscription_mapping(
+            p_from_application_id => 100,
+            p_to_application_id => 200 );
+
+      apex_application_install.set_subscription_mapping(
+            p_from_application_id => 110,
+            p_to_application_id => 210 );
+
+end;
+
+8.62 SET_SUBSCRIPTION_MODE Procedure
+
+                       Use this procedure to instruct how subscriptions should be handled during the application
+                       installation process. By default, Oracle APEX uses
+                       apex_application_install.c_subscription_strict as subscription mode. This default value
+                       can be overwritten using instance level parameter IMP_DEFAULT_SUBSCRIPTION_MODE.
+
+                       Syntax
+
+APEX_APPLICATION_INSTALL.SET_SUBSCRIPTION_MODE (
+
+p_mode                                                 IN  t_subscription_mode);
+
+Parameters
+
+Parameter                                                  Description
+p_mode
+                                                           Subscription installation mode, see
+                                                           t_subscription_mode constants.
+
+Example
+
+The following example demonstrates installing an application and changing subscription mode
+to ignore subscriptions
+
+begin
+      apex_application_install.clear_all;
+      apex_application_install.set_workspace('TARGET_WORKSPACE');
+
+      apex_application_install.set_subscription_mode(
+
+API Reference                                                                                   July 24, 2026
+G26651-03                                                                                       Page 45 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                 Chapter 8
+                                                                          SET_THEME_ID Procedure
+
+      p_mode => apex_application_install.c_subscription_remove );
+
+end;
+
+8.63 SET_THEME_ID Procedure
+
+                       This procedure overrides the Theme ID attribute for Template Components that are about to be
+                       installed.
+
+                       Syntax
+
+APEX_APPLICATION_INSTALL.SET_THEME_ID (
+      p_theme_id IN NUMBER )
+
+Parameters
+
+Parameter                                              Description
+p_theme_id                                             New Theme ID value to install the Template Component.
+
+Example
+The following example sets "Theme ID" to 42.
+
+BEGIN
+      apex_application_install.set_theme_id (
+      p_theme_id => 42 );
+
+END;
+/
+@plugin.sql
+
+      See Also
+      GET_THEME_ID Function
+
+8.64 SET_WORKSPACE_ID Procedure
+
+                       Use this function to set the workspace ID for the application to be imported.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.SET_WORKSPACE_ID (
+                             p_workspace_id IN NUMBER )
+
+                       Parameters
+
+Parameter                                              Description
+p_workspace_id                                         The workspace ID.
+
+API Reference                                                                                         July 24, 2026
+G26651-03                                                                                             Page 46 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                       Chapter 8
+                                                                            SET_WORKSPACE Procedure
+
+See Also
+� SET_WORKSPACE_ID Procedure
+� Import Script Examples
+
+8.65 SET_WORKSPACE Procedure
+
+                       This procedure sets the workspace ID for an application to be imported.
+                       Syntax
+
+                       APEX_APPLICATION_INSTALL.SET_WORKSPACE (
+                            p_workspace IN VARCHAR2 );
+
+                       Parameters
+
+Parameters                                             Description
+p_workspace                                            The workspace name.
+
+Example
+The following example sets the workspace ID for app 100 to workspace "FRED_PROD".
+
+BEGIN
+   apex_application_install.set_workspace (
+         p_workspace => 'FRED_PROD' );
+
+END;
+/
+@f100.sql
+
+                              See Also
+                                 � GET_WORKSPACE_ID Function
+                                 � SET_WORKSPACE_ID Procedure
+
+8.66 SUSPEND_BACKGROUND_EXECS Procedure
+
+                       This procedure suspends background page processing for an application. This procedure is
+                       intended for use before upgrades.
+                       This procedure enables orderly application upgrades by waiting for all SCHEDULED or EXECUTING
+                       background executions to complete then locking out subsequent processes until after the
+                       upgrade. During the time when background executions are suspended for an application, new
+                       executions can be enqueued, but are not executed, until the lock releases.
+                       The lock releases when the transaction ends with a COMMIT or ROLLBACK operation.
+
+API Reference                                                                                   July 24, 2026
+G26651-03                                                                                       Page 47 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                       Chapter 8
+                                                       SUSPEND_BACKGROUND_EXECS Procedure
+
+Syntax
+
+APEX_APPLICATION_INSTALL.SUSPEND_BACKGROUND_EXECS (
+      p_application_id IN NUMBER )
+
+Parameters
+
+ Parameter                                             Description
+p_application_id                                       The application ID.
+
+Example
+
+BEGIN
+      apex_application_install.suspend_background_execs(
+           p_application_id => 100 );
+
+END;
+
+API Reference                                                               July 24, 2026
+G26651-03                                                                   Page 48 of 48
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+9
+
+APEX_APPROVAL (Deprecated)
+
+Caution
+This API is deprecated and will be removed in a future release.
+Use APEX_HUMAN_TASK instead.
+
+The APEX_APPROVAL package provides APIs for the management of approvals and Human
+Tasks. This package includes functionality to create new Human Tasks for a user to approve as
+well as operations dealing with the lifecycle management and state handling of Human Tasks.
+This package is part of the Oracle APEX Workflow functionality.
+
+� Constants and Data Types
+� ADD_TASK_COMMENT Procedure
+� ADD_TASK_POTENTIAL_OWNER Procedure
+� ADD_TO_HISTORY Procedure
+� APPROVE_TASK Procedure
+� CANCEL_TASK Procedure
+� CLAIM_TASK Procedure
+� COMPLETE_TASK Procedure
+� CREATE_TASK Function
+� DELEGATE_TASK Procedure
+� GET_LOV_PRIORITY Function
+� GET_LOV_STATE Function
+� GET_NEXT_PURGE_TIMESTAMP Function
+� GET_TASK_DELEGATES Function
+� GET_TASK_HISTORY Function
+� GET_TASK_PARAMETER_OLD_VALUE Function
+� GET_TASK_PARAMETER_VALUE Function
+� GET_TASK_PRIORITIES Function
+� GET_TASKS Function
+� HANDLE_TASK_DEADLINES Procedure
+� HAS_TASK_PARAM_CHANGED Function
+� IS_ALLOWED Function
+� IS_BUSINESS_ADMIN Function
+� IS_OF_PARTICIPANT_TYPE Function
+
+API Reference                                                    July 24, 2026
+G26651-03                                                        Page 1 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                      Chapter 9
+                                                                 Constants and Data Types
+
+                       � REJECT_TASK Procedure
+                       � RELEASE_TASK Procedure
+                       � REMOVE_POTENTIAL_OWNER Procedure
+                       � RENEW_TASK Function
+                       � REQUEST_MORE_INFORMATION Procedure
+                       � SET_INITIATOR_CAN_COMPLETE Procedure
+                       � SET_TASK_DUE Procedure
+                       � SET_TASK_PARAMETER_VALUES Procedure
+                       � SET_TASK_PRIORITY Procedure
+                       � SUBMIT_INFORMATION Procedure
+
+9.1 Constants and Data Types
+
+Caution
+This API is deprecated and will be removed in a future release.
+Use APEX_HUMAN_TASK instead.
+
+The APEX_APPROVAL package uses the following constants and data types.
+Task Types
+
+c_task_type_approval                                   constant t_task_type := 'APPROVAL';
+c_task_type_action                                     constant t_task_type := 'ACTION';
+
+Task List Context Types
+
+c_context_my_tasks                                     constant t_task_list_context := 'MY_TASKS';
+c_context_admin_tasks                                  constant t_task_list_context := 'ADMIN_TASKS';
+c_context_initiated_by_me                              constant t_task_list_context :=
+'INITIATED_BY_ME';
+c_context_single_task                                  constant t_task_list_context := 'SINGLE_TASK';
+
+Task Definition Participant Types
+
+c_task_potential_owner                                 constant t_task_participant_type :=
+'POTENTIAL_OWNER';                                     constant t_task_participant_type :=
+c_task_business_admin
+'BUSINESS_ADMIN';
+
+Task Definition Participant Identity Types
+
+c_task_identity_type_user constant t_task_identity_type := 'USER';
+
+API Reference                                                                               July 24, 2026
+G26651-03                                                                                   Page 2 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                    Chapter 9
+                                                                               Constants and Data Types
+
+Task (Instance) Priority Constants
+
+c_task_priority_lowest                                 constant integer := 5;
+c_task_priority_low                                    constant integer := 4;
+c_task_priority_medium                                 constant integer := 3;
+c_task_priority_high                                   constant integer := 2;
+c_task_priority_urgent                                 constant integer := 1;
+
+Task (Instance) States
+
+c_task_state_unassigned                                constant t_task_state := 'UNASSIGNED';
+c_task_state_assigned                                  constant t_task_state := 'ASSIGNED';
+c_task_state_completed                                 constant t_task_state := 'COMPLETED';
+c_task_state_cancelled                                 constant t_task_state := 'CANCELLED';
+c_task_state_failed                                    constant t_task_state := 'FAILED';
+c_task_state_errored                                   constant t_task_state := 'ERRORED';
+c_task_state_expired                                   constant t_task_state := 'EXPIRED';
+c_task_state_info_requested                            constant t_task_state := 'INFO_REQUESTED';
+
+Task (Instance) Outcomes
+
+c_task_outcome_approved                                constant t_task_outcome := 'APPROVED';
+c_task_outcome_rejected                                constant t_task_outcome := 'REJECTED';
+
+Task (Instance) Operations
+
+c_task_op_approve                                      constant t_task_operation := 'APPROVE_TASK';
+c_task_op_reject                                       constant t_task_operation := 'REJECT_TASK';
+c_task_op_complete                                     constant t_task_operation := 'COMPLETE_TASK';
+c_task_op_claim                                        constant t_task_operation := 'CLAIM_TASK';
+c_task_op_delegate                                     constant t_task_operation := 'DELEGATE_TASK';
+c_task_op_renew                                        constant t_task_operation := 'RENEW_TASK';
+c_task_op_release                                      constant t_task_operation := 'RELEASE_TASK';
+c_task_op_cancel                                       constant t_task_operation := 'CANCEL_TASK';
+c_task_op_set_priority                                 constant t_task_operation := 'SET_TASK_PRIORITY';
+c_task_op_add_comment                                  constant t_task_operation := 'ADD_TASK_COMMENT';
+c_task_op_add_owner                                    constant t_task_operation :=
+'ADD_TASK_POTENTIAL_OWNER';
+c_task_op_request_info                                 constant t_task_operation := 'REQUEST_INFO';
+c_task_op_submit_info                                  constant t_task_operation := 'SUBMIT_INFO';
+c_task_op_set_due_date                                 constant t_task_operation := 'SET_DUE_DATE';
+c_task_op_remove_owner                                 constant t_task_operation :=
+'REMOVE_POTENTIAL_OWNER';
+c_task_op_set_params                                   constant t_task_operation := 'SET_TASK_PARAMS';
+
+Task (Instance) date formats
+
+c_canonical_date_format                                constant varchar2(16) := 'YYYYMMDDHH24MISS';
+
+API Reference                                                                                      July 24, 2026
+G26651-03                                                                                          Page 3 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                       Chapter 9
+                                                                                  Constants and Data Types
+
+Task Parameters Default
+
+c_empty_task_parameters t_task_parameters;
+
+Global Data Types
+
+subtype t_task_participant_type is varchar2(15);
+
+subtype t_task_identity_type is varchar2(32);
+
+subtype t_task_type                                    is varchar2(32);
+
+subtype t_task_outcome                                 is varchar2(32);
+
+subtype t_task_state                                   is varchar2(15);
+
+subtype t_task_operation                               is varchar2(30);
+
+subtype t_task_list_context is varchar2(15);
+
+Data Types
+Task Parameter (Value)
+
+type t_task_parameter is record (
+
+    static_id                                          varchar2(32767),
+
+    string_value                                       varchar2(32767)
+
+);
+
+ Attribute                                                      Description
+static_id
+                                                                The static ID of the parameter. This ID must match
+string_value                                                    the static ID of the corresponding parameter in the
+Task Vacation Rules Input Record                                task definition.
+
+                                                                The value of the parameter as a string.
+
+type t_vacation_rule_input is record (
+
+    task_def_static_id varchar2(255),
+
+    task_id                                            number,
+
+    priority                                           number,
+
+    --
+
+    -- pass in one or more participants for whom the vacation rules are
+
+defined.
+
+    original_participants t_task_participants,
+
+    parameters                                         t_task_parameters default c_empty_task_parameters,
+
+    due_date                                           timestamp with time zone,
+
+    detail_pk                                          varchar2(4000) );
+
+--
+
+-- define a new array with "participant change" information.
+
+type t_task_participant_change is record(
+
+    old_participant                                    t_task_participant,
+
+    new_participant                                    t_task_participant,
+
+    change_reason                                      varchar2(4000) );
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 4 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                       Chapter 9
+                                                       ADD_TASK_COMMENT Procedure
+
+ Attribute                                             Description
+task_def_static_id
+task_id                                                The Static ID of the task definition.
+priority                                               The ID of the task instance.
+original_participant                                   The task priority.
+                                                       The original participant(s) of the task for whom the
+parameters                                             vacation rule is defined.
+due_date                                               The parameters of the task instance.
+detail_pk                                              The due date of the task instance.
+                                                       The Primary Key value of the system of records
+Task Vacation Rules Output Record                      associated with this task instance.
+
+type t_vacation_rule_result is record (
+
+has_participant_changes boolean default false,
+
+participant_changes                                    t_task_participant_changes );
+
+Attribute                                              Description
+has_participant_changes
+                                                       TRUE if alternate participant(s) exist for at least one
+participant_changes                                    of the original task participants, FALSE otherwise.
+                                                       An array of the task participant change information.
+
+Collection of Task Participant Change Information
+
+type t_task_participant_changes is table of t_task_participant_change index
+by pls_integer;
+
+Collection of Task Parameter Values
+
+type t_task_parameters is table of t_task_parameter index by pls_integer;
+
+Collection of Task Participant Types
+
+type t_task_participant_types is table of t_task_participant_type
+      index by pls_integer;
+
+9.2 ADD_TASK_COMMENT Procedure
+
+Caution
+This API is deprecated and will be removed in a future release.
+Use APEX_HUMAN_TASK instead.
+
+This procedure adds a comment to a task. Any potential owner or business administrator of a
+Task can add comments to a Task. Comments are useful as additional information regarding a
+
+API Reference                                                                         July 24, 2026
+G26651-03                                                                             Page 5 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                    Chapter 9
+                                                                       ADD_TASK_POTENTIAL_OWNER Procedure
+
+Task. For example, a manager may add her notes to a Task she is working on before
+delegating the Task.
+
+Syntax
+
+APEX_APPROVAL.ADD_TASK_COMMENT (
+
+p_task_id                                              IN NUMBER,
+
+p_text                                                 IN VARCHAR2 );
+
+Parameters
+
+ Parameter                                             Description
+p_task_id                                              The Task ID.
+p_text                                                 The comment text.
+
+Example
+
+BEGIN
+       add_task_comment(
+              p_task_id => 1234,
+              p_text => 'Please review and approve');
+
+END;
+
+9.3 ADD_TASK_POTENTIAL_OWNER Procedure
+
+Caution
+This API is deprecated and will be removed in a future release.
+Use APEX_HUMAN_TASK instead.
+
+This procedure adds a new potential owner to a task. Only a Business Administrator for the
+task can invoke this procedure. The procedure throws an error if the task is in Completed or
+Errored state.
+
+Syntax
+
+APEX_APPROVAL.ADD_TASK_POTENTIAL_OWNER (
+
+p_task_id                                              IN NUMBER,
+
+p_potential_owner                                      IN VARCHAR2,
+
+p_identity_type                                        IN t_task_identity_type default
+
+c_task_identity_type_user );
+
+Parameters
+
+Parameter                                              Description
+p_task_id                                              The Task ID.
+p_potential_owner                                      The potential owner.
+
+API Reference                                                                           July 24, 2026
+G26651-03                                                                               Page 6 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                            Chapter 9
+                                                                 ADD_TO_HISTORY Procedure
+
+Parameter                                              Description
+p_identity_type                                        The identity type of the potential owner. Default is USER.
+
+                                                                                    Note
+
+                                                                                          As of this release, the only
+                                                                                       supported identity type is USER.
+                                                                                          Additional options will be added
+                                                                                          in a future release.
+
+Example
+The following example adds user STIGER as potential owner for Task ID 1234.
+
+BEGIN
+
+      apex_approval.add_task_potential_owner(
+
+          p_task_id                                    => 1234,
+
+          p_potential_owner => 'STIGER'
+
+      );
+
+END;
+
+9.4 ADD_TO_HISTORY Procedure
+
+       Caution
+       This API is deprecated and will be removed in a future release.
+       Use APEX_HUMAN_TASK instead.
+
+This procedure adds a log entry into the task history and is to be used within task action code.
+Syntax
+
+APEX_APPROVAL.ADD_TO_HISTORY (
+      p_message IN VARCHAR2 )
+
+Parameters
+
+Parameter                                              Description
+p_message                                              Message to add into to the task history.
+
+API Reference                                                                                    July 24, 2026
+G26651-03                                                                                        Page 7 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                            Chapter 9
+                                                                                    APPROVE_TASK Procedure
+
+Example
+
+The following example demonstrates how to write log information. The task action uses select
+* from emp as the action source query.
+
+BEGIN
+
+apex_approval.add_to_history(
+
+        p_message => 'Approved leave for employee with empno: ' || :EMPNO );
+
+my_logic_package.update_emp_leave_balance(
+
+        p_empno                                        => :EMPNO,
+
+        p_no_of_days => :NO_OF_DAYS);
+
+END;
+
+9.5 APPROVE_TASK Procedure
+
+       Caution
+       This API is deprecated and will be removed in a future release.
+       Use APEX_HUMAN_TASK instead.
+
+This procedure approves a Task. Only the potential owner or actual owner of the task can
+invoke this procedure. This procedure moves the state of the Task to Completed and sets the
+outcome of the Task to Approved.
+
+This is a convenience procedure and equivalent to calling complete_task with outcome
+apex_approval.c_task_outcome_approved.
+
+       See Also
+       COMPLETE_TASK Procedure
+
+Syntax
+
+APEX_APPROVAL.APPROVE_TASK (
+
+p_task_id                                              IN NUMBER,
+
+p_autoclaim                                            IN BOOLEAN DEFAULT FALSE );
+
+Parameters
+
+Parameter                                                          Description
+p_task_id                                                          The Task ID.
+p_autoclaim                                                        If Task is in state UNASSIGNED then claim the task implicitly.
+
+State Handling
+Pre-State: ASSIGNED|UNASSIGNED (p_autoclaim=true)
+Post-State: COMPLETED
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 8 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                        Chapter 9
+                                                                                                  CANCEL_TASK Procedure
+
+                       Example
+
+                       BEGIN
+                              apex_approval.approve_task(
+                                    p_task_id => 1234);
+
+                       END;
+
+9.6 CANCEL_TASK Procedure
+
+                              Caution
+                                 This API is deprecated and will be removed in a future release.
+                                 Use APEX_HUMAN_TASK instead.
+
+This procedure cancels the task by setting the task to state CANCELED. Only the initiator or the
+Business Administrator of the task can invoke this procedure. Only tasks which are not in
+COMPLETED or ERRORED state can be CANCELED.
+
+Canceling a task is useful when an approval is no longer required. For example, consider a
+travel approval for a business trip, and the person requesting the approval suddenly cannot
+make the trip, and the Task may be canceled.
+
+Syntax
+
+APEX_APPROVAL.CANCEL_TASK (
+
+p_task_id                                              IN NUMBER );
+
+Parameters
+
+ Parameter                                             Description
+p_task_id                                              The Task ID.
+
+State Handling
+Pre-State: Any
+Post-State: CANCELLED
+Example
+
+BEGIN
+      apex_approval.cancel_task(
+            p_task_id => 1234
+      );
+
+END;
+
+API Reference                                                                                     July 24, 2026
+G26651-03                                                                                         Page 9 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                            Chapter 9
+                                                                                                                           CLAIM_TASK Procedure
+
+9.7 CLAIM_TASK Procedure
+
+                              Caution
+                                 This API is deprecated and will be removed in a future release.
+                                 Use APEX_HUMAN_TASK instead.
+
+This procedure claims responsibility for a task. A task can be claimed by potential owners of
+the Task. A Task must be in Unassigned state to claim it. Once the task is claimed by a user,
+the Task transitions to Assigned state and the actual owner of the task is set to the user who
+claimed the task.
+
+Syntax
+
+APEX_APPROVAL.CLAIM_TASK (
+
+p_task_id                                              IN NUMBER );
+
+Parameters
+
+Parameter                                              Description
+p_task_id                                              The Task ID.
+
+State Handling
+Pre-State: UNASSIGNED. Post-State: ASSIGNED.
+
+Example
+
+BEGIN
+      apex_approval.claim_task(
+            p_task_id => 1234);
+
+END;
+
+9.8 COMPLETE_TASK Procedure
+
+Caution
+This API is deprecated and will be removed in a future release.
+Use APEX_HUMAN_TASK instead.
+
+This procedure completes a task. For Approval Tasks, an outcome must be supplied (Approved
+or Rejected). Action Tasks do not have an outcome. Only the actual owner or a potential
+owner of the task can invoke this procedure.
+
+API Reference                                                        July 24, 2026
+G26651-03                                                            Page 10 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                           Chapter 9
+                                                                                        CREATE_TASK Function
+
+Tasks in Assigned state might be completed with an outcome. This operation transitions the
+Task from Assigned state to Completed state and sets the outcome of the task. Once a Task is
+in Completed state, it is subject for purging and archival.
+
+Syntax
+
+APEX_APPROVAL.COMPLETE_TASK (
+
+p_task_id                                              IN NUMBER,
+
+p_outcome                                              IN t_task_outcome DEFAULT NULL,
+
+p_autoclaim                                            IN BOOLEAN DEFAULT FALSE );
+
+Parameters
+
+Parameter                                              Description
+p_task_id                                              The Task ID.
+p_outcome                                              The outcome of the Task for Approval Tasks.
+p_autoclaim                                            If Task is in state UNASSIGNED then claim the task implicitly.
+
+State Handling
+Pre-State: ASSIGNED|UNASSIGNED (p_autoclaim=true)
+Post-State: COMPLETED
+
+Example
+
+BEGIN
+      apex_approval.complete_task(
+            p_task_id => 1234,
+            p_outcome => apex_approval.c_task_outcome_approved
+      );
+
+END;
+
+9.9 CREATE_TASK Function
+
+Caution
+This API is deprecated and will be removed in a future release.
+Use APEX_HUMAN_TASK instead.
+
+This function creates a new task. A new Task (Instance) is created. Depending on the task
+definition participant setting, the Task is set to state Unassigned or Assigned.
+
+If the task definition has a single potential owner, the Task is set to Assigned.
+
+If the task has multiple potential owners, the Task is set to Unassigned and can be claimed by
+any of the potential owners. This procedure throws an exception if no potential owners are
+found in the corresponding task definition.
+
+API Reference                                                                           July 24, 2026
+G26651-03                                                                               Page 11 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                Chapter 9
+                                                                             CREATE_TASK Function
+
+Syntax
+
+APEX_APPROVAL.CREATE_TASK (
+
+p_application_id                                       IN NUMBER             DEFAULT
+
+apex_application.g_flow_id,
+
+p_task_def_static_id IN VARCHAR2,
+
+p_subject                                              IN VARCHAR2           DEFAULT NULL,
+
+p_parameters                                           IN t_task_parameters  DEFAULT
+
+c_empty_task_parameters,
+
+p_priority                                             IN INTEGER            DEFAULT NULL,
+
+p_initiator                                            IN VARCHAR2           DEFAULT NULL,
+
+p_initiator_can_complete IN BOOLEAN                                          DEFAULT NULL,
+
+p_detail_pk                                            IN VARCHAR2           DEFAULT NULL,
+
+p_due_date                                             IN TIMESTAMP WITH TIME ZONE DEFAULT NULL )
+
+RETURN NUMBER;
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+p_task_def_static_id                                   The application ID that creates the Task.
+p_subject
+p_parameters                                           The Task Definition static ID.
+p_priority
+                                                       The subject (expression of the Task).
+p_initiator
+p_initiator_can_complete                               The task parameters.
+
+p_detail_pk                                            (Optional) A task priority, default is NULL. If no priority is
+p_due_date                                             provided, uses the priority set in the corresponding task
+                                                       definition.
+                                                       (Optional) An initiator information for the task.
+
+                                                       (Optional) Enables the initiator of a task to complete the task
+                                                       (default NULL). If this parameter is not specified, the value
+                                                       of the corresponding task definition is used.
+                                                       (Optional) A primary key value for the task details.
+
+                                                       (Optional) Page Item representing the Due Date of the Task.
+                                                       When specified, this value overrides the Due Date provided
+                                                       in the Task Definition this Task is based on.
+
+Returns
+Returns the ID of the newly created task.
+
+Example
+
+The following example creates a requisition item in the system of record in the database and
+then creates a new Human Task to get the requisition item approved by a user.
+
+DECLARE
+    l_req_id number;
+    l_req_item varchar2(100) := 'Some requisition item requiring approval';
+    l_req_amount number := 2499.42;
+    l_task_id number;
+
+BEGIN
+      insert into requisitions(created_by, creator_emailid, item, item_amount,
+
+item_category)
+      values (:emp_uid, :emp_email, l_req_item, l_req_amount, 'Equipment')
+
+API Reference                                                                               July 24, 2026
+G26651-03                                                                                   Page 12 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                            Chapter 9
+                                                                                                                      DELEGATE_TASK Procedure
+
+                              returning id into l_req_id;
+                              commit;
+
+                              l_task_id := apex_approval.create_task(
+                                    p_application_id => 110,
+                                    p_task_def_static_id => 'REQAPPROVALS',
+                                    p_subject => 'Requisition ' || l_req_id || ': ' || l_req_item || '
+
+                       for ' || l_req_amount,
+                                    p_initiator => :emp_uid,
+                                    p_initiator_can_complete => true,
+                                    p_parameters => apex_approval.t_task_parameters(
+                                          1 => apex_approval.t_task_parameter(static_id => 'REQ_DATE',
+
+                       string_value => sysdate),
+                                          3 => apex_approval.t_task_parameter(static_id => 'REQ_AMOUNT',
+
+                       string_value => l_req_amount),
+                                          4 => apex_approval.t_task_parameter(static_id => 'REQ_ITEM',
+
+                       string_value => l_req_item),
+                                          5 => apex_approval.t_task_parameter(static_id => 'REQ_ID',
+
+                       string_value => l_req_id)
+                                    ),
+                                    p_detail_pk => l_req_id
+
+                              );
+                       END;
+
+9.10 DELEGATE_TASK Procedure
+
+                              Caution
+                                 This API is deprecated and will be removed in a future release.
+
+                                 Use APEX_HUMAN_TASK instead.
+
+This procedure assigns the task to one potential owner and sets the task state to Assigned.
+Either the current owner of the task (the user to whom the task is currently assigned) or the
+Business Administrator of the task can perform this operation.
+
+Syntax
+
+APEX_APPROVAL.DELEGATE_TASK (
+
+p_task_id                                              IN NUMBER,
+
+p_to_user                                              IN VARCHAR2 );
+
+Parameters
+
+ Parameter                                             Description
+p_task_id                                              The Task ID.
+p_to_user                                              A (user) participant.
+
+State Handling
+Pre-State: UNASSIGNED, ASSIGNED
+
+API Reference                                                                 July 24, 2026
+G26651-03                                                                     Page 13 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                           Chapter 9
+                                                                                                GET_LOV_PRIORITY Function
+
+Post-State: ASSIGNED
+Example
+
+BEGIN
+
+apex_approval.delegate_task(
+
+       p_task_id      => 1234,
+
+       p_to_user      => 'STIGER'
+
+);
+
+END;
+
+9.11 GET_LOV_PRIORITY Function
+
+       Caution
+       This API is deprecated and will be removed in a future release.
+       Use APEX_HUMAN_TASK instead.
+
+                       This function retrieves the list of value data for the task priority.
+                       Syntax
+                       APEX_APPROVAL.GET_LOV_PRIORITY
+                       RETURN apex_t_temp_lov_data pipelined;
+
+                       Returns
+                       A table of apex_t_temp_lov_data.
+                       Example
+                       select disp,val from table ( apex_approval.get_lov_priority )
+
+9.12 GET_LOV_STATE Function
+
+                              Caution
+                                 This API is deprecated and will be removed in a future release.
+                                 Use APEX_HUMAN_TASK instead.
+
+                       This function gets the list of value data for the task attribute state.    July 24, 2026
+                       Syntax                                                                     Page 14 of 35
+
+                       APEX_APPROVAL.GET_LOV_STATE
+                       RETURN apex_t_temp_lov_data pipelined;
+
+API Reference
+G26651-03
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                            Chapter 9
+                                                                                                     GET_NEXT_PURGE_TIMESTAMP Function
+
+                       Returns
+                       A table of apex_t_temp_lov_data.
+                       Example
+
+                       select disp,val from table ( apex_approval.get_lov_state )
+
+9.13 GET_NEXT_PURGE_TIMESTAMP Function
+
+                              Caution
+                                 This API is deprecated and will be removed in a future release.
+                                 Use APEX_HUMAN_TASK instead.
+
+                       This function retrieves the timestamp of the next purge.
+                       Syntax
+
+                       APEX_APPROVAL.GET_NEXT_PURGE_TIMESTAMP
+                       RETURN timestamp with time zone;
+
+                       Parameters
+                       None.
+                       Returns
+                       Returns the timestamp of the next purge.
+                       Example
+
+                       DECLARE
+                              l_next_purge_job_ts timestamp with time zone;
+
+                       BEGIN
+                              l_next_purge_job_ts := apex_approval.get_next_purge_timestamp();
+
+                       END;
+
+9.14 GET_TASK_DELEGATES Function
+
+                              Caution
+                                 This API is deprecated and will be removed in a future release.
+                                 Use APEX_HUMAN_TASK instead.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 15 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                             Chapter 9
+                                                                                 GET_TASK_HISTORY Function
+
+This function gets the potential new owners of a task. The actual owner is excluded from the
+list.
+This function only returns data in the context of a valid Oracle APEX session. It returns no data
+in SQL Workshop.
+
+Syntax
+
+APEX_APPROVAL.GET_TASK_DELEGATES (
+      p_task_id IN NUMBER )
+
+RETURN apex_t_temp_lov_data pipelined;
+
+Parameters
+
+ Parameter                                                         Description
+p_task_id                                                          The task ID.
+
+Returns
+A table of apex_t_temp_lov_data.
+Example
+
+select disp,val from table ( apex_approval.get_task_delegates ( p_task_id =>
+1234 ) )
+
+9.15 GET_TASK_HISTORY Function
+
+Caution
+This API is deprecated and will be removed in a future release.
+Use APEX_HUMAN_TASK instead.
+
+This function gets the approval log for a task.
+This function only returns data in the context of a valid Oracle APEX session. It returns no data
+in SQL Workshop.
+
+Syntax
+
+APEX_APPROVAL.GET_TASK_HISTORY (
+
+p_task_id                                              IN NUMBER,
+
+p_include_all IN VARCHAR2 DEFAULT 'N' )
+
+RETURN apex_t_approval_log_table pipelined;
+
+Parameters
+
+Parameter                                                          Description
+p_task_id                                                          The task ID.
+
+API Reference                                                                    July 24, 2026
+G26651-03                                                                        Page 16 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                   Chapter 9
+                                                       GET_TASK_HISTORY Function
+
+Parameter                                              Description
+p_include_all
+                                                       If set to Y, the history of all tasks linked to the task with the
+                                                       given task ID is shown. Since Oracle APEX release 22.2,
+                                                       this includes prior Tasks that have been expired.
+
+Returns
+
+A table of approval log entries (type apex_t_approval_log_table) containing the following
+columns:
+
+� display_msg varchar2(4000)
+� event_creator varchar2(255)
+� event_creator_lower varchar2(255)
+� event_timestamp timestamp with time zone
+� event_type varchar2(255)
+� event_type_code varchar2(32)
+� new_actual_owner varchar2(255)
+� new_actual_owner_lower varchar2(255)
+� new_priority number
+� new_priority_level varchar2(255)
+� new_state varchar2(255)
+� new_state_code varchar2(32)
+� old_actual_owner varchar2(255)
+� old_actual_owner_lower varchar2(255)
+� old_priority number
+� old_priority_level varchar2(255)
+� old_state varchar2(255)
+� old_state_code varchar2(32)
+� outcome varchar2(255)
+� outcome_code varchar2(32)
+
+Example
+
+select * from table ( apex_approval.get_task_history ( p_task_id => 1234,
+                                                                             p_include_all => 'Y' ) )
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 17 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                            Chapter 9
+                                                                                               GET_TASK_PARAMETER_OLD_VALUE Function
+
+9.16 GET_TASK_PARAMETER_OLD_VALUE Function
+
+                              Caution
+                                 This API is deprecated and will be removed in a future release.
+                                 Use APEX_HUMAN_TASK instead.
+
+This function retrieves the old value of a parameter of this task that was updated in the current
+session. Raises a "No Data Found" error if the parameter does not exist and p_raise_error
+flag is set to TRUE.
+
+Syntax
+
+APEX_APPROVAL.GET_TASK_PARAMETER_OLD_VALUE (
+
+p_task_id                                              IN NUMBER,
+
+p_param_static_id IN VARCHAR2,
+
+p_raise_error                                          IN BOOLEAN DEFAULT TRUE )
+
+Parameters
+
+Parameter                                              Description
+p_task_id                                              The Task ID.
+p_param_static_id                                      The static ID of the parameter.
+p_raise_error                                          If TRUE, raises an error if the parameter is not found.
+
+Returns
+VARCHAR2 - The old value of this parameter in VARCHAR2 format.
+
+Example
+
+BEGIN
+
+return apex_approval.get_task_parameter_old_value(
+
+            p_task_id                                              => 1234,
+
+            p_param_static_id => 'REQ_AMOUNT',
+
+            p_raise_error                                          => false);
+
+END;
+
+9.17 GET_TASK_PARAMETER_VALUE Function
+
+       Caution
+       This API is deprecated and will be removed in a future release.
+       Use APEX_HUMAN_TASK instead.
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 18 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                  Chapter 9
+                                                                                   GET_TASK_PRIORITIES Function
+
+This function gets the value of a Task parameter. This function can be used in SQL or PL/SQL
+to get the value of a Task parameter for a given task.
+
+Syntax
+
+APEX_APPROVAL.GET_TASK_PARAMETER_VALUE (
+
+      p_task_id                                        IN NUMBER,
+
+      p_param_static_id                                IN VARCHAR2,
+
+      p_ignore_not_found                               IN BOOLEAN DEFAULT FALSE )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_task_id
+p_param_static_id                                      The Task ID.
+p_ignore_not_found                                     The static id of the parameter.
+                                                       If set to false (default) and no data is found, a
+                                                       no_data_found exception will be raised. If set to true and no
+                                                       data is found, null will be returned.
+
+Returns
+The task parameter value for the given static ID or null.
+
+Exception
+
+no_data_found - In the case where p_ignore_not_found is set to false and no data is found
+(for example, if the parameter of given name does not exist).
+
+Example
+
+DECLARE
+
+l_req_item varchar2(100);
+
+BEGIN
+
+l_req_item := apex_approval.get_task_parameter_value(
+
+         p_task_id                                     => 1234,
+
+         p_param_static_id => 'REQ_ITEM'
+
+);
+
+dbms_output.put_line('Parameter REQ_ITEM of task 1234 has value ' ||
+
+l_req_item);
+
+END;
+
+9.18 GET_TASK_PRIORITIES Function
+
+       Caution
+       This API is deprecated and will be removed in a future release.
+       Use APEX_HUMAN_TASK instead.
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 19 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                     Chapter 9
+                                                                     GET_TASKS Function
+
+This function gets the potential new priorities of a task. The actual priority is excluded from the
+list.
+This function only returns data in the context of a valid Oracle APEX session. It returns no data
+in SQL Workshop.
+
+Syntax
+
+APEX_APPROVAL.GET_TASK_PRIORITIES (
+      p_task_id IN NUMBER )
+
+RETURN apex_t_temp_lov_data pipelined;
+
+Parameters
+
+ Parameter                                             Description
+p_task_id                                              The task ID.
+
+Returns
+A table of apex_t_temp_lov_data.
+Example
+
+select disp,val from table ( apex_approval.get_task_priorities ( p_task_id =>
+1234 ) )
+
+9.19 GET_TASKS Function
+
+Caution
+This API is deprecated and will be removed in a future release.
+Use APEX_HUMAN_TASK instead.
+
+This function gets the tasks of a user depending on the given context.
+
+Context can be one of the following:
+
+� MY_TASKS - Returns all tasks where the user calling the function is either the Owner or one
+     of the Potential Owners of the task.
+
+� ADMIN_TASKS - Returns all tasks for which the user calling the function is a Business
+     Administrator.
+
+� INITIATED_BY_ME - Returns all tasks where the user calling the function is the Initiator.
+
+� SINGLE_TASK - Returns the task identified by the P_TASK_ID input parameter.
+
+This function only returns data in the context of a valid Oracle APEX session. It returns no data
+in SQL Workshop.
+
+API Reference                                                        July 24, 2026
+G26651-03                                                            Page 20 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                Chapter 9
+                                                                                GET_TASKS Function
+
+Syntax
+
+APEX_APPROVAL.GET_TASKS (
+
+p_context                                              IN VARCHAR2 DEFAULT apex_approval.c_context_my_tasks,
+
+p_user                                                 IN VARCHAR2 DEFAULT apex_application.g_user,
+
+p_task_id                                              IN NUMBER DEFAULT NULL,
+
+p_application_id IN NUMBER DEFAULT NULL,
+
+p_show_expired_tasks IN VARCHAR2 DEFAULT 'N' )
+
+RETURN apex_t_approval_tasks pipelined;
+
+Parameters
+
+Parameter                                              Description
+p_context
+p_user                                                 The list context. Default is MY_TASKS.
+                                                       The user to check for. Default is logged-in user. Requires
+p_task_id                                              p_context set to MY_TASKS, ADMIN_TASKS or
+                                                       INITIATED_BY_ME.
+p_application_id                                       Filter for a task ID instead of a user. Default is null. Requires
+p_show_expired_tasks                                   p_context set to SINGLE_TASK.
+                                                       Filter for an application. Default is null (all applications).
+
+                                                       If set to Y the tasks returned include tasks which are in
+                                                       Expired state.
+
+Returns
+A table of tasks (type apex_t_approval_tasks) containing the following columns:
+
+� actual_owner varchar2(255)
+� actual_owner_lower varchar2(255)
+� app_id number
+� badge_css_classes varchar2(255)
+� badge_text varchar2(255)
+� created_ago varchar2(255)
+� created_ago_hours number
+� created_by varchar2(255)
+� created_on timestamp with time zone
+� detail_pk
+� details_app_id number
+� details_app_name varchar2(255)
+� details_link_target varchar2(4000)
+� due_code varchar2(32)
+� due_in varchar2(255)
+� due_in_hours number
+� due_on timestamp with time zone
+� initiator varchar2(255)
+
+API Reference                                                                                        July 24, 2026
+G26651-03                                                                                            Page 21 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                            Chapter 9
+                                                                                                         HANDLE_TASK_DEADLINES Procedure
+
+                       � initiator_can_complete varchar2(1)
+                       � initiator_lower varchar2(255)
+                       � is_completed varchar2(1)
+                       � last_updated_by varchar2(255)
+                       � last_updated_on timestamp with time zone
+                       � outcome varchar2(255)
+                       � outcome_code varchar2(32)
+                       � priority number(1)
+                       � priority_level varchar2(255)
+                       � state varchar2(255)
+                       � state_code varchar2(32)
+                       � subject varchar2(1000)
+                       � task_def_id number
+                       � task_def_name varchar2(255)
+                       � task_def_static_id varchar2(255)
+                       � task_id number
+                       � task_type varchar2(8)
+
+                       Example
+
+                       select * from table ( apex_approval.get_tasks ( p_context => 'MY_TASKS',
+                       p_show_expired_tasks => 'Y') )
+
+9.20 HANDLE_TASK_DEADLINES Procedure
+
+                              Caution
+                                 This API is deprecated and will be removed in a future release.
+                                 Use APEX_HUMAN_TASK instead.
+
+                       This procedure handles Task Deadlines for all Tasks in the current Workspace. A background
+                       Job performs this work every hour.
+                       Use this API for testing of Task Expiration Policies and "Before Expire" and "Expire" Task
+                       Actions.
+
+                       Syntax
+
+                       APEX_APPROVAL.HANDLE_TASK_DEADLINES;
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 22 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                       Chapter 9
+                                                                              HAS_TASK_PARAM_CHANGED Function
+
+Parameters
+
+ Parameter                                             Description
+ none                                                  none
+Example
+
+BEGIN
+      apex_approval.handle_task_deadlines;
+
+END;
+
+9.21 HAS_TASK_PARAM_CHANGED Function
+
+       Caution
+       This API is deprecated and will be removed in a future release.
+       Use APEX_HUMAN_TASK instead.
+
+This function checks if the value of this task paramter has been modified in the current session.
+Returns NULL when the parameter does not exist.
+
+Syntax
+
+APEX_APPROVAL.HAS_TASK_PARAM_CHANGED (
+
+            p_task_id                                             IN NUMBER,
+
+            p_param_static_id                                     IN VARCHAR2 )
+
+RETURN BOOLEAN;
+
+Parameters
+
+ Parameter                                             Description
+p_task_id                                              The Task ID.
+p_param_static_id                                      The static ID of the parameter.
+
+Example
+
+BEGIN
+
+return apex_approval.has_task_param_changed(
+
+                                                       p_task_id    => 1234,
+
+                                                       p_param_static_id => 'REQ_AMOUNT'
+
+);
+
+END;
+
+API Reference                                                                             July 24, 2026
+G26651-03                                                                                 Page 23 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                            Chapter 9
+                                                                                                                            IS_ALLOWED Function
+
+9.22 IS_ALLOWED Function
+
+                              Caution
+                                 This API is deprecated and will be removed in a future release.
+                                 Use APEX_HUMAN_TASK instead.
+
+This function checks whether the given user is permitted to perform a certain operation on a
+Task.
+
+Syntax
+
+APEX_APPROVAL.IS_ALLOWED (                             IN NUMBER,
+      p_task_id                                        IN apex_approval.t_task_operation,
+      p_operation                                      IN VARCHAR2 DEFAULT apex_application.g_user,
+      p_user                                           IN VARCHAR2 DEFAULT NULL )
+      p_new_participant
+
+RETURN BOOLEAN;
+
+Parameters
+
+Parameter                                              Description
+p_task_id                                              The Task ID.
+p_operation                                            The operation to check (see constants c_task_op_###).
+p_user                                                 The user to check for. Default is logged in user.
+p_new_participant                                      (Optional) The new assignee in case of Delegate operation.
+
+Returns
+
+TRUE if the user given by p_user is permitted to perform the operation given by p_operation,
+FALSE otherwise.
+
+Example
+
+DECLARE
+
+l_is_allowed boolean;
+
+BEGIN
+
+l_is_allowed := apex_approval.is_allowed(
+
+         p_task_id                                     => 1234,
+
+         p_operation                                   => apex_approval.c_task_op_delegate
+
+         p_user                                        => 'STIGER',
+
+         p_new_participant => 'SMOON'
+
+);
+
+IF l_is_allowed THEN
+
+         dbms_output.put_line('STIGER is a allowed to delegate the task to
+
+SMOON for task 1234');
+
+END IF;
+
+END;
+
+API Reference                                                                               July 24, 2026
+G26651-03                                                                                   Page 24 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                            Chapter 9
+                                                                                                                   IS_BUSINESS_ADMIN Function
+
+9.23 IS_BUSINESS_ADMIN Function
+
+                              Caution
+                                 This API is deprecated and will be removed in a future release.
+                                 Use APEX_HUMAN_TASK instead.
+
+This function checks whether the given user is a business administrator for at least one task
+definition.
+
+Syntax
+
+APEX_APPROVAL.IS_BUSINESS_ADMIN (
+
+p_user                                                 IN VARCHAR2 DEFAULT apex_application.g_user,
+
+p_application_id IN NUMBER DEFAULT NULL )
+
+RETURN BOOLEAN;
+
+Parameters
+
+Parameter                                              Description
+p_user
+p_application_id                                       The user to check for. Default is logged-in user.
+                                                       The application to check for. Default behavior checks
+                                                       against all applications in the workspace.
+
+Returns
+
+TRUE if the user given by p_user is at least in one task definition configured as participant type
+BUSINESS_ADMIN, FALSE otherwise.
+
+Example
+
+DECLARE
+      l_is_business_admin boolean;
+
+BEGIN
+      l_is_business_admin := apex_approval.is_business_admin(
+            p_user => 'STIGER'
+      );
+      IF l_is_business_admin THEN
+            dbms_output.put_line('STIGER is a Business Administrator');
+      END IF;
+
+END;
+
+API Reference                                                                                        July 24, 2026
+G26651-03                                                                                            Page 25 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                            Chapter 9
+                                                                                                            IS_OF_PARTICIPANT_TYPE Function
+
+9.24 IS_OF_PARTICIPANT_TYPE Function
+
+                              Caution
+                                 This API is deprecated and will be removed in a future release.
+                                 Use APEX_HUMAN_TASK instead.
+
+This function checks whether the given user is of a certain participant type for a Task.
+Syntax
+
+APEX_APPROVAL.IS_OF_PARTICIPANT_TYPE (
+
+      p_task_id                                        IN NUMBER,
+
+      p_participant_type                               IN t_task_participant_type
+
+                                                       DEFAULT c_task_potential_owner,
+
+      p_user                                           IN VARCHAR2
+
+                                                       DEFAULT wwv_flow_security.g_user)
+
+RETURN BOOLEAN;
+
+Parameters
+
+Parameter                                              Description
+p_task_id
+p_participant_type                                     The Task ID.
+                                                       The participant type. Can be set to POTENTIAL_OWNER
+p_user                                                 (default) or BUSINESS_ADMIN.
+                                                       The user to check for. Default is logged-in user.
+
+Returns
+
+TRUE if the user given by p_user is a participant of given participant type for a given task, FALSE
+otherwise.
+
+Example
+
+DECLARE
+
+l_is_potential_owner boolean;
+
+BEGIN
+
+l_is_potential_owner := apex_approval.is_of_participant_type(
+
+         p_task_id                                     => 1234,
+
+         p_participant_type => apex_approval.c_task_potential_owner,
+
+         p_user                                        => 'STIGER'
+
+);
+
+IF l_is_potential_owner THEN
+
+         dbms_output.put_line('STIGER is a potential owner for task 1234');
+
+END IF;
+
+END;
+
+API Reference                                                                             July 24, 2026
+G26651-03                                                                                 Page 26 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                            Chapter 9
+                                                                                                                         REJECT_TASK Procedure
+
+9.25 REJECT_TASK Procedure
+
+                              Caution
+                                 This API is deprecated and will be removed in a future release.
+                                 Use APEX_HUMAN_TASK instead.
+
+This procedure rejects the task. Only a potential owner or the actual owner of the task can
+invoke this procedure.
+
+Moves the state of the Task to Completed and sets the outcome of the Task to Rejected. This
+is a convenience procedure and equivalent to calling complete_task with outcome
+apex_approval.c_task_outcome_rejected.
+
+Syntax
+
+APEX_APPROVAL.REJECT_TASK (
+
+p_task_id                                              IN NUMBER,
+
+p_autoclaim                                            IN BOOLEAN DEFAULT FALSE );
+
+Parameters
+
+Parameter                                              Description
+p_task_id                                              The Task ID.
+p_autoclaim                                            If Task is in state UNASSIGNED then claim the task implicitly.
+
+State Handling
+Pre-State: ASSIGNED|UNASSIGNED (p_autoclaim=true)
+Post-State: COMPLETED
+
+Example
+
+BEGIN
+      apex_approval.reject_task(
+            p_task_id => 1234
+      );
+
+END;
+
+See Also
+COMPLETE_TASK Procedure
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 27 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                         Chapter 9
+                                                                                                  RELEASE_TASK Procedure
+
+9.26 RELEASE_TASK Procedure
+
+                              Caution
+                                 This API is deprecated and will be removed in a future release.
+                                 Use APEX_HUMAN_TASK instead.
+
+This procedure releases an Assigned task from its current owner and sets the task to
+Unassigned state. Only the current owner of the task can invoke this procedure.
+
+Syntax
+
+APEX_APPROVAL.RELEASE_TASK (
+
+      p_task_id                                        IN NUMBER );
+
+Parameters
+
+ Parameter                                             Description
+p_task_id                                              The Task ID.
+
+State Handling
+Pre-State: ASSIGNED
+Post-State: UNASSIGNED
+Example
+
+BEGIN
+
+apex_approval.release_task(
+
+       p_task_id                                       => 1234
+
+);
+
+END;
+
+9.27 REMOVE_POTENTIAL_OWNER Procedure
+
+       Caution
+       This API is deprecated and will be removed in a future release.
+       Use APEX_HUMAN_TASK instead.
+
+This procedure removes a potential owner of a task. If the user to be removed is not an
+existing potential owner, the API raises an exception.
+
+Only a Business Administrator for the task can run this procedure.
+
+API Reference                                                                                     July 24, 2026
+G26651-03                                                                                         Page 28 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                            Chapter 9
+                                                                                         RENEW_TASK Function
+
+Syntax
+
+APEX_APPROVAL.REMOVE_POTENTIAL_OWNER (
+
+      p_task_id                                        IN NUMBER,
+
+      p_potential_owner                                IN VARCHAR2 );
+
+Parameters
+
+Parameter                                                          Description
+p_task_id                                                          The Task ID.
+p_potential_owner                                                  The potential owner.
+
+Example
+The following example removes user "STIGER" as potential owner for Task ID 1234.
+
+BEGIN
+
+apex_approval.remove_potential_owner(
+
+        p_task_id                                      => 1234,
+
+        p_potential_owner => 'STIGER'
+
+);
+
+END;
+
+9.28 RENEW_TASK Function
+
+       Caution
+       This API is deprecated and will be removed in a future release.
+       Use APEX_HUMAN_TASK instead.
+
+This function reactivates Expired or Errored Tasks. Tasks that have been transitioned to state
+EXPIRED or ERRORED can be renewed by a Business Administrator.
+
+When a Business Administrator renews a Task, a new Task is created with the given
+information from the given Task ID. The renewed task is associated with the Expired/Errored
+Task so that users can review the origin of the Task. This function returns the ID of the
+renewed task.
+
+Syntax
+
+APEX_APPROVAL.RENEW_TASK (
+
+      p_task_id                                        IN NUMBER,
+
+      p_priority                                       IN INTEGER DEFAULT NULL,
+
+      p_due_date                                       IN timestamp with time zone )
+
+RETURN NUMBER;
+
+API Reference                                                                            July 24, 2026
+G26651-03                                                                                Page 29 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                      Chapter 9
+                                                                        REQUEST_MORE_INFORMATION Procedure
+
+Parameters
+
+Parameter                                              Description
+p_task_id                                              The Task ID.
+p_priority                                             The priority of the renewed Task.
+p_due_date                                             The due date for the renewed Task.
+
+Returns
+This function returns the ID of the renewed task.
+
+State Handling
+State of original Task: EXPIRED, ERRORED
+State of renewed Task: ASSIGNED, UNASSIGNED
+
+Example
+
+BEGIN
+
+      apex_approval.renew_task(
+
+         p_task_id                                     => 1234,
+
+         p_priority                                    => apex_approval.c_task_priority_high,
+
+         p_due_date                                    => sysdate + 10
+
+);
+
+END;
+
+9.29 REQUEST_MORE_INFORMATION Procedure
+
+       Caution
+       This API is deprecated and will be removed in a future release.
+       Use APEX_HUMAN_TASK instead.
+
+This procedure requests more information for a task. The owner of a task can request
+additional information regarding a Task from the initiator. The task then moves to the
+Information Requested state and can be acted on by the owner only after the initiator submits
+the requested information.
+
+Syntax
+
+APEX_APPROVAL.REQUEST_MORE_INFORMATION (
+
+      p_task_id                                        IN NUMBER,
+
+      p_text                                           IN VARCHAR2 )
+
+API Reference                                                                                  July 24, 2026
+G26651-03                                                                                      Page 30 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                 Chapter 9
+                                                                   SET_INITIATOR_CAN_COMPLETE Procedure
+
+Parameters
+
+ Parameter                                             Description
+p_task_id                                              The Task ID.
+p_text                                                 Text describing the information requested.
+
+State Handling
+Pre-State: ASSIGNED
+Post-State: INFO_REQUESTED
+
+Example
+
+BEGIN
+      apex_approval.request_more_information(
+            p_task_id => 1234,
+            p_text => 'Please provide the flight PNR for your travel'
+      );
+
+END;
+
+                              See Also
+                                 SUBMIT_INFORMATION Procedure
+
+9.30 SET_INITIATOR_CAN_COMPLETE Procedure
+
+Caution
+This API is deprecated and will be removed in a future release.
+Use APEX_HUMAN_TASK instead.
+
+This procedure updates the initiator_can_Complete attribute of a task. The task can not be
+COMPLETED or ERRORED. Only a user who is a business administrator for the task can
+invoke this procedure.
+
+Syntax
+
+APEX_APPROVAL.SET_INITIATOR_CAN_COMPLETE (
+
+p_task_id                                              IN NUMBER,
+
+p_initiator_can_complete IN BOOLEAN )
+
+API Reference                                                                                      July 24, 2026
+G26651-03                                                                                          Page 31 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                             Chapter 9
+                                                                                      SET_TASK_DUE Procedure
+
+Parameters
+
+ Parameter                                             Description
+p_task_id
+p_initiator_can_complete                               The task ID.
+                                                       TRUE if the initiator is permitted to also approve or reject the
+Example                                                task. Otherwise, FALSE.
+
+BEGIN
+
+apex_approval.set_initiator_can_complete(
+
+       p_task_id                                       => 1234,
+
+       p_initiator_can_complete => true
+
+);
+
+END;
+
+9.31 SET_TASK_DUE Procedure
+
+       Caution
+       This API is deprecated and will be removed in a future release.
+       Use APEX_HUMAN_TASK instead.
+
+This procedure sets the due date of a task and can be invoked by the Business Administrator
+to update the due date of the task.
+
+This API cannot be invoked for a task that is Expired, Errored, Completed or Canceled.
+
+The due date needs to be in the future, otherwise an exception is thrown when invoking this
+API.
+
+Syntax
+
+APEX_APPROVAL.SET_TASK_DUE (
+
+      p_task_id                                        IN NUMBER,
+
+      p_due_date                                       IN timestamp with time zone )
+
+Parameters
+
+ Parameter                                             Description
+p_task_id                                              The Task ID.
+p_due_date                                             The new due date of the Task.
+
+Example
+
+BEGIN
+      apex_approval.set_task_due(
+            p_task_id => 1234,
+
+API Reference                                                                         July 24, 2026
+G26651-03                                                                             Page 32 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                            Chapter 9
+                                                                                                  SET_TASK_PARAMETER_VALUES Procedure
+
+                                    p_due_date => sysdate+20
+                              );
+                       END;
+
+9.32 SET_TASK_PARAMETER_VALUES Procedure
+
+                              Caution
+                                 This API is deprecated and will be removed in a future release.
+                                 Use APEX_HUMAN_TASK instead.
+
+This procedure updates the values of the parameter(s) of this task. This procedure only
+updates the parameters that are marked as "updatable" in the task definition.
+Only a Business Administrator or the owner of the task can run this procedure.
+
+Syntax
+
+APEX_APPROVAL.SET_TASK_PARAMETER_VALUES (
+
+p_task_id                                              IN NUMBER,
+
+p_parameters                                           IN t_task_parameters,
+
+p_raise_error                                          IN BOOLEAN DEFAULT TRUE );
+
+Parameters
+
+ Parameter                                             Description
+p_task_id
+p_parameters                                           The Task ID.
+p_raise_error
+                                                       The list of changed parameters.
+Example
+                                                       Default TRUE.
+
+                                                       When TRUE, the API raises an exception and cancels
+                                                       updates to the parameters.
+                                                       If FALSE, the API ignores raised exceptions if the list
+                                                       contains one or more incorrect parameter static IDs or
+                                                       parameters that are not marked as updatable in the Task
+                                                       Definition. The API updates the rest of the parameters.
+
+BEGIN
+
+apex_approval.set_task_parameter_values(
+
+       p_task_id                                       => 1234,
+
+       p_parameters                                    => apex_approval.t_task_parameters(
+
+            1 => apex_approval.t_task_parameter(static_id => 'REQ_DATE',
+
+                                                                              string_value =>
+
+sysdate+10),
+
+            3 => apex_approval.t_task_parameter(static_id => 'REQ_AMOUNT',
+
+                                                                   string_value =>
+
+l_req_amount));
+
+END;
+
+API Reference                                                                                  July 24, 2026
+G26651-03                                                                                      Page 33 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                     Chapter 9
+                                                                      SET_TASK_PRIORITY Procedure
+
+9.33 SET_TASK_PRIORITY Procedure
+
+                              Caution
+                                 This API is deprecated and will be removed in a future release.
+                                 Use APEX_HUMAN_TASK instead.
+
+This procedure sets the priority of a task.
+
+This procedure updates the priority of a task. The task can not be COMPLETED or ERRORED. Only
+a user who is either a Business Administrator for the task or is the initiator of the task can
+invoke this procedure.
+
+Syntax
+
+APEX_APPROVAL.SET_TASK_PRIORITY (
+
+p_task_id                                              IN NUMBER,
+
+p_priority                                             IN INTEGER );
+
+Parameters
+
+ Parameter                                             Description
+p_task_id                                              The Task ID.
+p_priority                                             The task priority (between 1 and 5, 1 being the highest).
+
+Example
+
+BEGIN
+      apex_approval.set_task_priority(
+            p_task_id => 1234,
+            p_priority => apex_approval.c_task_priority_highest
+      );
+
+END;
+
+9.34 SUBMIT_INFORMATION Procedure
+
+Caution
+This API is deprecated and will be removed in a future release.
+Use APEX_HUMAN_TASK instead.
+
+This procedure submits information for a task. The initiator of a task can submit additional
+information regarding a Task for which information has been requested. For example, a travel
+approver might need airline details from the initiator. The initiator can submit this information to
+the travel approver using this API.
+
+API Reference                                                                                     July 24, 2026
+G26651-03                                                                                         Page 34 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                       Chapter 9
+                                                                      SUBMIT_INFORMATION Procedure
+
+Syntax
+
+APEX_APPROVAL.SUBMIT_INFORMATION (
+
+p_task_id                                              IN NUMBER,
+
+p_text                                                 IN VARCHAR2 )
+
+Parameters
+
+ Parameter                                             Description
+p_task_id                                              The Task ID.
+p_text                                                 Text containing the information submitted.
+
+Example
+
+BEGIN
+      apex_approval.submit_information(
+            p_task_id => 1234,
+            p_text => 'The flight PNR is PN1234'
+      );
+
+END;
+
+See Also
+REQUEST_MORE_INFORMATION Procedure
+
+API Reference                                                                                      July 24, 2026
+G26651-03                                                                                          Page 35 of 35
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+10

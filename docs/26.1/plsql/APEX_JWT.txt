@@ -1,0 +1,268 @@
+# APEX_JWT (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 45867-46133)
+
+APEX_JWT
+
+This package provides APIs to work with JSON Web Tokens (JWT). JWTs can be used to pass
+a number of signed claims between client and server. Token values are URL-safe strings that
+consist of 3 parts, separated by '.'. The header part identifies the algorithm used for the
+signature part. The payload part contains the claims to make.
+
+For more details on JWT, see RFC 7519.
+
+        Note
+         APEX_JWT APIs only support HS256 symmetric encryption algorithm for claim
+         signatures. Asymmetric encryption algorithms such as RS256 are not supported.
+
+                       � t_token Record
+                       � ENCODE Function
+                       � DECODE Function
+                       � VALIDATE Procedure
+
+41.1 t_token Record
+
+                       A t_token record contains the decoded parts of a JSON Web Token.
+
+                       Syntax
+
+type t_token is record (
+
+header      VARCHAR2(32767),
+
+payload VARCHAR2(32767),
+
+signature VARCHAR2(32767) );
+
+Parameters
+
+Parameter                                              Description
+header
+                                                       The Javascript Object Signing and Encryption
+payload                                                (JOSE) header contains cryptographic parameters.
+signature                                              The claims which the token asserts.
+                                                       The signature of header and payload.
+
+41.2 ENCODE Function
+
+This function encodes and optionally encrypts payload.
+
+API Reference                                                                            July 24, 2026
+G26651-03                                                                                  Page 1 of 5
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                            Chapter 41
+                                                                                                  ENCODE Function
+
+Syntax
+
+FUNCTION ENCODE (
+
+p_iss                                                  IN VARCHAR2     DEFAULT NULL,
+
+p_sub                                                  IN VARCHAR2     DEFAULT NULL,
+
+p_aud                                                  IN VARCHAR2     DEFAULT NULL,
+
+p_nbf_ts                                               IN timestamp with time zone DEFAULT NULL,
+
+p_iat_ts                                               IN timestamp with time zone DEFAULT SYSTIMESTAMP,
+
+p_exp_sec                                              IN PLS_INTEGER  DEFAULT NULL,
+
+p_jti                                                  IN VARCHAR2     DEFAULT NULL,
+
+p_other_claims IN VARCHAR2                                             DEFAULT NULL,
+
+p_signature_key IN RAW                                                 DEFAULT NULL )
+
+RETURN VARCHAR2
+
+Parameters
+
+Parameter                                              Description
+p_iss
+p_sub                                                  Optional "iss" (Issuer) claim.
+p_aud                                                  Optional "sub" (Subject) claim.
+p_nbf_ts                                               Optional "aud" (Audience) claim.
+p_iat_ts                                               Optional "nbf" (Not Before) claim.
+p_exp_sec                                              Optional "iat" (Issued At) claim (default systimestamp).
+                                                       Optional "exp" (Expiration Time) claim, in seconds. The start time is
+p_jti                                                  taken from "nbf", "iat" or current time.
+p_other_claims                                         Optional "jti" (JWT ID) Claim.
+p_signature_key                                        Optional raw JSON with additional claims.
+                                                       Optional MAC key for the signature. If not null, a 'HS256' signature is
+                                                       added. This requires Oracle Database 12c or higher. Other signature
+                                                       algorithms are not supported.
+
+Returns
+A VARCHAR2, the encoded token value.
+
+Example
+
+This example creates and prints a JWT value for Example User, intended to be used by
+Example JWT Recipient. The token is valid for 5 minutes.
+
+DECLARE
+      l_jwt_value varchar2(32767);
+
+BEGIN
+      l_jwt_value := apex_jwt.encode (
+                                    p_iss => 'Example Issuer',
+                                    p_sub => 'Example User',
+                                    p_aud => 'Example JWT Recipient',
+                                    p_exp_sec => 60*5,
+                                    p_other_claims => '"name1": '||
+
+apex_json.stringify('value1')||
+                                                                 ',"name2": '||
+
+apex_json.stringify('value2'),
+                                    p_signature_key => ... encryption key ... );
+
+API Reference                                                                                             July 24, 2026
+G26651-03                                                                                                   Page 2 of 5
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                 Chapter 41
+                                                                       DECODE Function
+
+      sys.dbms_output.put_line(l_jwt_value);
+END;
+
+41.3 DECODE Function
+
+                       This function decodes a raw token value.
+                       Syntax
+
+APEX_JWT.DECODE (
+
+p_value                                                IN VARCHAR2,
+
+p_signature_key IN RAW                                 DEFAULT NULL )
+
+RETURN t_token;
+
+Parameters
+
+Parameter                                              Description
+p_value
+                                                       A raw token value contains 3 base64-encoded parts, which are
+p_signature_key                                        separated by '.'. The parts are header, payload and signature.
+
+                                                       If not null, validate p_value's signature using this key and the
+                                                       algorithm specified in header. The algorithms 'HS256' and 'none' are
+                                                       supported, but 'HS256' requires 12c or higher.
+
+Returns
+A t_token.
+
+Errors Raised
+VALUE_ERROR: The input value is invalid.
+WWV_FLOW_CRYPTO.UNSUPPORTED_FUNCTION: The token is signed using an unsupported function.
+
+Example
+This example decodes an encoded token and print it's contents.
+
+declare
+      l_token apex_jwt.t_token;
+      l_keys apex_t_varchar2;
+
+begin
+      l_token := apex_jwt.decode (
+                              p_value =>
+
+'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb2dnZWRJbkFzIjoiYWRtaW4iLCJpYXQiOjE0
+MjI3Nzk2Mzh9.gzSraSYS8EXBxLN_oWnFSRgCzcmJmMjLiuyu5CSpyHI' );
+
+      sys.dbms_output.put_line('--- Header ---');
+      apex_json.parse(l_token.header);
+      l_keys := apex_json.get_members('.');
+      for i in 1 .. l_keys.count loop
+
+            sys.dbms_output.put_line(l_keys(i)||'='||
+apex_json.get_varchar2(l_keys(i)));
+
+      end loop;
+      sys.dbms_output.put_line('--- Payload ---');
+      apex_json.parse(l_token.payload);
+
+API Reference                                                          July 24, 2026
+G26651-03                                                                Page 3 of 5
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                Chapter 41
+                                                                                  VALIDATE Procedure
+
+      l_keys := apex_json.get_members('.');
+      for i in 1 .. l_keys.count loop
+
+            sys.dbms_output.put_line(l_keys(i)||'='||
+apex_json.get_varchar2(l_keys(i)));
+
+      end loop;
+end;
+
+Output:
+
+--- Header ---
+alg=HS256
+typ=JWT
+--- Payload ---
+loggedInAs=admin
+iat=1422779638
+
+41.4 VALIDATE Procedure
+
+                       This procedure validates the given token.
+                       Syntax
+
+APEX_JWT.VALIDATE (
+
+p_token                                                IN t_token,
+
+p_iss                                                  IN VARCHAR2 DEFAULT NULL,
+
+p_aud                                                  IN VARCHAR2 DEFAULT NULL,
+
+p_leeway_seconds IN PLS_INTEGER DEFAULT 0 );
+
+Parameters
+
+Parameter                                              Description
+p_token
+p_iss                                                  The JWT.
+p_aud                                                  If not null, verify that the "iss" claim equals p_iss.
+                                                       If not null, verify that the single "aud" value equals p_aud. If "aud" is
+p_leeway_seconds                                       an array, verify that the "azp" (Authorized Party) claim equals p_aud.
+                                                       This is an OpenID extension.
+                                                       Fudge factor (in seconds) for comparing "exp" (Expiration Time),
+                                                       "nbf" (Not Before), and "iat" (Issued At) claims.
+
+Raises
+VALUE_ERROR: Validation failed, check debug log for details.
+
+Example
+Verify that l_value is a valid OpenID ID token.
+
+DECLARE
+       l_value varchar2(4000) := 'eyJ0 ... NiJ9.eyJ1c ... I6IjIifX0.DeWt4Qu ...
+
+ZXso';
+       l_oauth2_client_id varchar2(30) := '...';
+       l_token apex_jwt.t_token;
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                           Page 4 of 5
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                     Chapter 41
+                                                       VALIDATE Procedure
+
+BEGIN
+       l_token := apex_jwt.decode (
+                               p_value => l_value );
+       apex_jwt.validate (
+              p_token => l_token,
+              p_aud => l_oauth2_client_id );
+
+END;
+
+API Reference                                          July 24, 2026
+G26651-03                                                Page 5 of 5
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+42

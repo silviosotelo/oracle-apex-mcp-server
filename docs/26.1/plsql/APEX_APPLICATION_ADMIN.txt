@@ -1,0 +1,1342 @@
+# APEX_APPLICATION_ADMIN (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 4737-6077)
+
+APEX_APPLICATION_ADMIN
+
+The APEX_APPLICATION_ADMIN package provides APIs to modify application attributes of
+installed Oracle APEX applications.
+
+� Constants and Data Types
+� GET_APPLICATION_ALIAS Function
+� GET_APPLICATION_NAME Function
+� GET_APPLICATION_STATUS Function
+� GET_APPLICATION_VERSION Function
+� GET_AUTHENTICATION_SCHEME Function
+� GET_BUILD_OPTION_STATUS Function Signature 1
+� GET_BUILD_OPTION_STATUS Function Signature 2
+� GET_BUILD_STATUS Function
+� GET_GLOBAL_NOTIFICATION Function
+� GET_FILE_STORAGE Function
+� GET_IMAGE_PREFIX Function
+� GET_MAX_SCHEDULER_JOBS Function
+� GET_NO_PROXY_DOMAINS Function
+� GET_PARSING_SCHEMA Function
+� GET_PASS_ECID Function
+� GET_PROXY_SERVER Function
+� SET_APPLICATION_ALIAS Procedure
+� SET_APPLICATION_NAME Procedure
+� SET_APPLICATION_STATUS Procedure
+� SET_APPLICATION_VERSION Procedure
+� SET_AUTHENTICATION_SCHEME Procedure
+� SET_BUILD_OPTION_STATUS Procedure Signature 1
+� SET_BUILD_OPTION_STATUS Procedure Signature 2
+� SET_BUILD_STATUS Procedure
+� SET_FILE_STORAGE Procedure
+� SET_GLOBAL_NOTIFICATION Procedure
+� SET_IMAGE_PREFIX Procedure
+� SET_MAX_SCHEDULER_JOBS Procedure
+� SET_PARSING_SCHEMA Procedure
+� SET_PASS_ECID Procedure
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 1 of 25
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                              Chapter 7
+                                                                                         Constants and Data Types
+
+                       � SET_PROXY_SERVER Procedure
+                       � SET_REMOTE_SERVER Procedure
+
+7.1 Constants and Data Types
+
+                       The APEX_APPLICATION_ADMIN package uses the following constants and data types.
+                       Application Status
+
+subtype t_app_status is varchar2(30);
+
+c_app_available                                        constant t_app_status := 'AVAILABLE';
+
+c_app_available_with_edit_link constant t_app_status :=
+
+'AVAILABLE_W_EDIT_LINK';
+
+c_app_available_devs_only                              constant t_app_status := 'DEVELOPERS_ONLY';
+
+c_app_restricted_access                                constant t_app_status := 'RESTRICTED_ACCESS';
+
+c_app_unavailable                                      constant t_app_status := 'UNAVAILABLE';
+
+c_app_unavailable_redirect constant t_app_status := 'UNAVAILABLE_URL';
+
+c_app_unavailable_show_plsql constant t_app_status := 'UNAVAILABLE_PLSQL';
+
+Build Status
+
+subtype t_build_status is varchar2(30);
+
+c_build_status_run_and_build constant t_build_status := 'RUN_AND_BUILD';
+
+c_build_status_run_only                                constant t_build_status := 'RUN_ONLY';
+
+Build Option Status
+
+subtype t_build_option_status is varchar2(30);
+c_build_option_status_include constant t_build_option_status := 'INCLUDE';
+c_build_option_status_exclude constant t_build_option_status := 'EXCLUDE';
+
+Storage Type
+
+subtype t_storage_type is varchar2(30);
+
+c_file_storage_oci constant t_storage_type := 'OBJECT_STORE';
+
+c_file_storage_db                                      constant t_storage_type := 'DB';
+
+7.2 GET_APPLICATION_ALIAS Function
+
+                       This function retrieves the application alias.
+
+                       Syntax
+
+                       APEX_APPLICATION_ADMIN.GET_APPLICATION_ALIAS (
+                             p_application_id IN NUMBER )
+                             RETURN VARCHAR2;
+
+API Reference                                                                                   July 24, 2026
+G26651-03                                                                                       Page 2 of 25
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                               Chapter 7
+                                                                            GET_APPLICATION_NAME Function
+
+Parameters
+
+Parameter                                              Description
+p_application_id                                       The application ID.
+
+Example
+The following example returns the value of the application alias.
+
+DECLARE
+      l_application_alias varchar2(255);
+
+BEGIN
+      l_application_alias := apex_application_admin.get_application_alias (
+                                            p_application_id => 100 );
+
+END;
+
+See Also
+SET_APPLICATION_ALIAS Procedure
+
+7.3 GET_APPLICATION_NAME Function
+
+                       This function retrieves the application name.
+                       Syntax
+
+                       APEX_APPLICATION_ADMIN.GET_APPLICATION_NAME (
+                              p_application_id IN NUMBER )
+                              RETURN VARCHAR2;
+
+                       Parameters
+
+Parameter                                              Description
+p_application_id                                       The application ID.
+
+Example
+The following example returns the value of the application name.
+
+DECLARE
+      l_application_name varchar2(255);
+
+BEGIN
+      l_application_name := apex_application_admin.get_application_name (
+                                               p_application_id => 100 );
+
+END;
+
+API Reference                                                               July 24, 2026
+G26651-03                                                                   Page 3 of 25
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                    Chapter 7
+                                                                               GET_APPLICATION_STATUS Function
+
+See Also
+SET_APPLICATION_NAME Procedure
+
+7.4 GET_APPLICATION_STATUS Function
+
+                       This function retrieves the application_status (such as Available, Unavailable). Returns
+                       t_app_status.
+
+                       Syntax
+
+                       APEX_APPLICATION_ADMIN.GET_APPLICATION_STATUS (
+                              p_application_id IN NUMBER )
+                              RETURN t_app_status;
+
+                       Parameters
+
+Parameter                                              Description
+p_application_id                                       The application ID.
+
+Example
+
+The following example gets the application status for application 100 and works with one of the
+constants to act on the result.
+
+DECLARE
+   l_app_status apex_application_admin.t_app_status;
+
+BEGIN
+   apex_util.set_workspace('YOUR_WORKSPACE_NAME');
+   l_app_status := apex_application_admin.get_application_status (
+                                   p_application_id => 100 );
+   IF l_app_status = apex_application_admin.c_app_available_with_edit_link THEN
+      dbms_output.put_line(l_app_status);
+      -- your custom code here...
+   END IF;
+
+END;
+
+                              See Also
+                                 SET_APPLICATION_STATUS Procedure
+
+7.5 GET_APPLICATION_VERSION Function
+
+                       This function retrieves the version of an application.
+
+API Reference                                                                  July 24, 2026
+G26651-03                                                                      Page 4 of 25
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                   Chapter 7
+                                                                      GET_AUTHENTICATION_SCHEME Function
+
+Syntax
+
+APEX_APPLICATION_ADMIN.GET_APPLICATION_VERSION (
+      p_application_id IN NUMBER )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter         Description
+p_application_id  The application ID.
+
+Example
+The following example prints the application version.
+
+select apex_application_admin.get_application_version(100) from sys.dual
+
+See Also
+SET_APPLICATION_VERSION Procedure
+
+7.6 GET_AUTHENTICATION_SCHEME Function
+
+                       This function retrieves the authentication scheme of an application.
+                       Syntax
+
+                       APEX_APPLICATION_ADMIN.GET_AUTHENTICATION_SCHEME (
+                             p_application_id IN NUMBER )
+                             RETURN VARCHAR2;
+
+                       Parameters
+
+Parameter         Description
+p_application_id  The application ID.
+
+Example
+The following example prints the authentication scheme override.
+
+select apex_application_admin.get_authentication_scheme(100) from sys.dual
+
+                              See Also                                                       July 24, 2026
+                                 SET_AUTHENTICATION_SCHEME Procedure                         Page 5 of 25
+
+API Reference
+G26651-03
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                          Chapter 7
+                                                                    GET_BUILD_OPTION_STATUS Function Signature 1
+
+7.7 GET_BUILD_OPTION_STATUS Function Signature 1
+
+                       This function retrieves the status of a build option by ID.
+                       Syntax
+
+APEX_APPLICATION_ADMIN.GET_BUILD_OPTION_STATUS (
+
+p_application_id IN NUMBER,
+
+p_id                                                   IN NUMBER )
+
+RETURN t_build_option_status;
+
+Parameters
+
+Parameter                                              Description
+p_application_id                                       The application ID.
+p_id                                                   The build option ID.
+
+See Also
+SET_BUILD_OPTION_STATUS Procedure Signature 1
+
+7.8 GET_BUILD_OPTION_STATUS Function Signature 2
+
+                       This function retrieves the status of a build option by Static ID.
+
+Note
+
+If APEX cannot find a matching build option by Static ID, it checks for a matching build
+option by name. This is done for backward compatibility.
+
+Syntax
+
+APEX_APPLICATION_ADMIN.GET_BUILD_OPTION_STATUS (
+      p_application_id IN NUMBER,
+      p_build_option_name IN VARCHAR2 )
+
+RETURN t_build_option_status;
+
+Parameters
+
+Parameter                                              Description
+p_application_id                                       The application ID.
+p_build_option_name                                    The build option Static ID.
+
+API Reference                                                                              July 24, 2026
+G26651-03                                                                                  Page 6 of 25
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                  Chapter 7
+                                                                                            GET_BUILD_STATUS Function
+
+Example
+The following example gets the build option status identified by static_id test_apps for app
+100.
+
+declare
+      l_build_option_status varchar(10);
+
+begin
+      l_build_option_status := apex_application_admin.get_build_option_status (
+                                                    p_application_id => 100,
+                                                    p_build_option_name => 'test_apps' );
+      htp.p (l_build_option_status);
+
+end;
+
+See Also
+SET_BUILD_OPTION_STATUS Procedure Signature 1
+
+7.9 GET_BUILD_STATUS Function
+
+                       This function retrieves the application build status.
+                       Syntax
+
+                       APEX_APPLICATION_ADMIN.GET_BUILD_STATUS (
+                              p_application_id IN NUMBER )
+                              RETURN t_build_status;
+
+                       Parameters
+
+Parameter         Description
+p_application_id  The application ID.
+
+Example
+The following example returns the value of the application build status.
+
+DECLARE
+      l_application_build_status apex_application_admin.t_build_status;
+
+BEGIN
+      l_application_build_status := apex_application_admin.get_build_status (
+                                                            p_application_id => 100 );
+
+END;
+
+                              See Also                                        July 24, 2026
+                                 SET_BUILD_STATUS Procedure                   Page 7 of 25
+
+API Reference
+G26651-03
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                   Chapter 7
+                                                                            GET_GLOBAL_NOTIFICATION Function
+
+7.10 GET_GLOBAL_NOTIFICATION Function
+
+                       This function retrieves the global notification message. This is the message displayed in page
+                       #GLOBALNOTIFICATION# substitution string.
+
+                       Syntax
+
+                       APEX_APPLICATION_ADMIN.GET_GLOBAL_NOTIFICATION (
+                              p_application_id IN NUMBER )
+
+                       RETURN VARCHAR2;
+
+                       Parameters
+
+Parameter                                              Description
+p_application_id                                       The application ID.
+
+See Also
+SET_GLOBAL_NOTIFICATION Procedure
+
+7.11 GET_FILE_STORAGE Function
+
+                       This function retrieves the static ID of the file storage remote server of an application.
+                       If database file storage is used, returns NULL.
+                       Syntax
+
+                       APEX_APPLICATION_ADMIN.GET_FILE_STORAGE (
+                              p_application_id IN NUMBER )
+
+                       RETURN VARCHAR2;
+
+                       Parameters
+
+Parameter                                              Description
+p_application_id                                       The ID of the application.
+
+Returns
+The static ID of the file storage remote server, if OCI file storage is used. NULL otherwise.
+
+Example
+The following example prints the static ID of application file storage remote server setting.
+
+select apex_application_admin.get_file_storage(100) from sys.dual
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 8 of 25
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                        Chapter 7
+                                                                            GET_IMAGE_PREFIX Function
+
+See Also
+� SET_FILE_STORAGE Procedure
+
+7.12 GET_IMAGE_PREFIX Function
+
+                       This function retrieves the image prefix.
+                       Syntax
+
+                       APEX_APPLICATION_ADMIN.GET_IMAGE_PREFIX (
+                             p_application_id IN NUMBER )
+                             RETURN VARCHAR2;
+
+                       Parameters
+
+Parameter                                              Description
+p_application_id                                       The application ID.
+
+Example
+The following example returns the value of the image prefix.
+
+DECLARE
+      l_image_prefix varchar2(255);
+
+BEGIN
+      l_image_prefix := apex_application_admin.get_image_prefix (
+                                         p_application_id => 100 );
+
+END;
+
+                              See Also
+                                 SET_IMAGE_PREFIX Procedure
+
+7.13 GET_MAX_SCHEDULER_JOBS Function
+
+                       This function fetches the application attribute "Maximum Scheduler Jobs."
+                       This function also indicates how many scheduler jobs can run at the same time to execute
+                       background page processes.
+
+                       Syntax
+
+                       APEX_APPLICATION_ADMIN.GET_MAX_SCHEDULER_JOBS (
+                             p_application_id IN NUMBER )
+                             RETURN NUMBER
+
+API Reference                                                               July 24, 2026
+G26651-03                                                                   Page 9 of 25
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+Parameters                                                                                                                   Chapter 7
+                                                                                     GET_NO_PROXY_DOMAINS Function
+ Parameter
+p_application_id                                       Description
+                                                       The application ID.
+
+See Also
+� SET_MAX_SCHEDULER_JOBS Procedure
+
+7.14 GET_NO_PROXY_DOMAINS Function
+
+                       This function retrieves the no proxy domains attribute of an application.
+                       Syntax
+
+                       APEX_APPLICATION_ADMIN.GET_NO_PROXY_DOMAINS (
+                             p_application_id IN NUMBER )
+                             RETURN VARCHAR2;
+
+                       Parameters
+
+Parameter                                              Description
+p_application_id                                       The application ID.
+
+Returns
+
+This function returns a comma-delimited list of domains for which the proxy server cannot be
+used. The no proxy domains attribute cannot be more than 500 characters.
+
+                              See Also
+                                 � GET_PROXY_SERVER Function
+                                 � SET_PROXY_SERVER Procedure
+
+7.15 GET_PARSING_SCHEMA Function
+
+                       This function retrieves the parsing schema (or "owner") of an application.
+                       Syntax
+
+                       APEX_APPLICATION_ADMIN.GET_PARSING_SCHEMA (
+                             p_application_id IN NUMBER )
+                             RETURN VARCHAR2;
+
+API Reference                                                                                      July 24, 2026
+G26651-03                                                                                          Page 10 of 25
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                    Chapter 7
+                                                                                              GET_PASS_ECID Function
+
+Parameters
+
+Parameter                                              Description
+p_application_id                                       The application ID.
+
+Example
+The following example returns the value of the application schema for application 100.
+
+DECLARE
+      l_schema varchar2(30);
+
+BEGIN
+      l_schema := apex_application_admin.get_parsing_schema(
+            p_application_id => 100 );
+
+END;
+
+See Also
+SET_PARSING_SCHEMA Procedure
+
+7.16 GET_PASS_ECID Function
+
+                       This function retrieves the application security attribute "Pass ECID" (Execution Context ID).
+                       This indicates whether to pass the ECID to the external web services for end-to-end tracing.
+
+                       Syntax
+
+                       APEX_APPLICATION_ADMIN.GET_PASS_ECID (
+                             p_application_id IN NUMBER )
+                             RETURN BOOLEAN;
+
+                       Parameters
+
+Parameter                                              Description
+p_application_id                                       The application ID.
+
+                              See Also
+                                 SET_PASS_ECID Procedure
+
+7.17 GET_PROXY_SERVER Function
+
+                       This function retrieves the proxy server attribute of an application.
+
+API Reference                                                                                 July 24, 2026
+G26651-03                                                                                     Page 11 of 25
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                Chapter 7
+                                                                            SET_APPLICATION_ALIAS Procedure
+
+Syntax
+
+APEX_APPLICATION_ADMIN.GET_PROXY_SERVER (
+      p_application_id IN NUMBER )
+      RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_application_id                                       The application ID.
+
+Example
+
+The following example returns the value of the application proxy server. The proxy server
+attribute cannot be more than 255 characters.
+
+DECLARE
+      l_proxy_server varchar2(255);
+
+BEGIN
+      l_proxy_server := apex_application_admin.get_proxy_server (
+            p_application_id => 100 );
+
+END;
+
+See Also
+� GET_NO_PROXY_DOMAINS Function
+� SET_PROXY_SERVER Procedure
+
+7.18 SET_APPLICATION_ALIAS Procedure
+
+                       This procedure sets the application alias.
+                       Syntax
+
+                       APEX_APPLICATION_ADMIN.SET_APPLICATION_ALIAS (
+                             p_application_id IN NUMBER,
+                             p_application_alias IN VARCHAR2 )
+
+                       Parameters
+
+Parameter                                              Description
+p_application_id
+p_application_alias                                    The application ID.
+                                                       The application alias. Cannot be more than 255 characters.
+                                                       Cannot be null.
+
+API Reference                                                               July 24, 2026
+G26651-03                                                                   Page 12 of 25
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                           Chapter 7
+                                                                      SET_APPLICATION_NAME Procedure
+
+Example
+
+The following example sets the application alias to "EXECUTIVE-DASHBOARD" for
+application 100.
+
+DECLARE
+
+      c_id constant number                             := 100;
+
+      c_alias constant varchar2(255) := 'EXECUTIVE-DASHBOARD';
+
+BEGIN
+
+      apex_application_admin.set_application_alias (
+
+         p_application_id => c_id,
+
+         p_application_alias => c_alias );
+
+END;
+
+       See Also
+       GET_APPLICATION_ALIAS Function
+
+7.19 SET_APPLICATION_NAME Procedure
+
+                       This procedure sets the application name.
+                       Syntax
+
+                       APEX_APPLICATION_ADMIN.SET_APPLICATION_NAME (
+                             p_application_id IN NUMBER,
+                             p_application_name IN VARCHAR2 );
+
+                       Parameters
+
+Parameter                                              Description
+p_application_id
+p_application_name                                     The application ID.
+                                                       The application name. Cannot be longer than 255
+                                                       characters. Cannot be null.
+
+Example
+The following example sets the application name to "Executive Dashboard" for application 100.
+
+DECLARE
+
+c_id constant number                                   := 100;
+
+c_name constant varchar2(255) := 'Executive Dashboard';
+
+BEGIN
+
+apex_application_admin.set_application_name (
+
+         p_application_id => c_id,
+
+         p_application_name => c_name );
+
+END;
+
+API Reference                                                                  July 24, 2026
+G26651-03                                                                      Page 13 of 25
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                Chapter 7
+                                                                         SET_APPLICATION_STATUS Procedure
+
+    See Also
+    GET_APPLICATION_NAME Function
+
+7.20 SET_APPLICATION_STATUS Procedure
+
+                       This procedure sets the status of the application.
+                       Syntax
+
+APEX_APPLICATION_ADMIN.SET_APPLICATION_STATUS (
+
+p_application_id                                       IN NUMBER,
+
+p_application_status                                   IN t_app_status,
+
+--
+
+p_allowed_users_list                                   IN apex_t_varchar2 DEFAULT NULL,
+
+--
+
+p_message                                              IN VARCHAR2 DEFAULT NULL,
+
+p_plsql_code                                           IN VARCHAR2 DEFAULT NULL,
+
+p_redirect_url                                         IN VARCHAR2 DEFAULT NULL )
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+p_application_status                                   The application ID.
+
+p_allowed_users_list                                   New status to set application to. Values include:
+p_message                                              � apex_application_admin.c_app_available - Application
+p_plsql_code
+p_redirect_url                                               is available with no restrictions.
+                                                       � apex_application_admin.c_app_available_with_edit_link
+
+                                                             - Application is available with no restrictions. Developer
+                                                             Toolbar displays for developers.
+                                                       � apex_application_admin.c_app_available_devs_only -
+                                                             Application only available to developers.
+                                                       � apex_application_admin.c_app_restricted_access -
+                                                             Application only available to users in
+                                                            p_allowed_users_list.
+                                                       � apex_application_admin.c_app_unavailable -
+                                                            Application unavailable. Message shown in p_message.
+                                                       � apex_application_admin.c_app_unavailable_redirect -
+                                                             Application unavailable. Redirected to URL provied in
+                                                            p_redirect_url.
+                                                       � apex_application_admin.c_app_unavailable_show_plsq
+                                                             l - Application unavailable. Message shown from
+                                                            PL/SQL block in p_plsql_code.
+
+                                                       An apex_t_varchar2 list of users which are allowed to
+                                                       access the application when p_application_status =
+                                                       c_app_restricted_access.
+
+                                                       Message shown to users when p_application_status =
+                                                       c_app_unavailable.
+
+                                                       Message shown to users when p_application_status =
+                                                       c_app_unavailable_show_plsql.
+
+                                                       URL to redirect to when p_application_status =
+                                                       c_app_unavailable_redirect.
+
+API Reference                                                                            July 24, 2026
+G26651-03                                                                                Page 14 of 25
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                  Chapter 7
+                                                                                SET_APPLICATION_VERSION Procedure
+
+Example
+The following example sets the status for application 100 to "restricted access" and permits
+only USER1 and USER2 to use it.
+
+BEGIN
+   apex_util.set_workspace('YOUR_WORKSPACE_NAME');
+   apex_application_admin.set_application_status (
+         p_application_id => 100,
+         p_application_status => apex_application_admin.c_app_restricted_access,
+         p_allowed_users_list => apex_t_varchar2('USER1','USER2') );
+   COMMIT;
+
+END;
+
+       See Also
+       GET_APPLICATION_STATUS Function
+
+7.21 SET_APPLICATION_VERSION Procedure
+
+                       This procedure sets the version of an application.
+                       Syntax
+
+APEX_APPLICATION_ADMIN.SET_APPLICATION_VERSION (
+
+p_application_id IN NUMBER,
+
+p_version                                              IN VARCHAR2 )
+
+Parameters
+
+Parameter                                                             Description
+p_application_id
+p_version                                                             The application ID.
+                                                                      The version information. Cannot be longer than 255
+                                                                      characters.
+
+Example
+The following example sets the version for application 100.
+
+BEGIN
+
+apex_application_admin.set_application_version (
+
+       p_application_id => 100,
+
+       p_version                                       => 'Release 1.0' );
+
+END;
+
+API Reference                                                               July 24, 2026
+G26651-03                                                                   Page 15 of 25
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                             Chapter 7
+                                                                               SET_AUTHENTICATION_SCHEME Procedure
+
+       See Also
+       GET_APPLICATION_VERSION Function
+
+7.22 SET_AUTHENTICATION_SCHEME Procedure
+
+                       This procedure sets the authentication scheme of an application. Specify the Static ID of the
+                       authentication scheme.
+
+       Note
+
+       If APEX cannot find a matching authentication scheme by Static ID, it checks for
+       matching authentication scheme by name. This is done for backward compatibility.
+
+Syntax
+
+APEX_APPLICATION_ADMIN.SET_AUTHENTICATION_SCHEME (
+
+p_application_id IN NUMBER,
+
+p_name                                                 IN VARCHAR2 );
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+p_name                                                 The application ID.
+                                                       The name of the authentication scheme to be activated.
+                                                       The authentication scheme must exist in the application. If
+                                                       p_nameis null, the active authentication scheme remains
+                                                       unchanged.
+
+Example
+This example activates authentication scheme "SSO-Production" for application 100.
+
+BEGIN
+
+apex_application_admin.set_authentication_scheme (
+
+        p_application_id => 100,
+
+        p_name                                         => 'SSO-Production' );
+
+END;
+
+                              See Also
+                                 GET_AUTHENTICATION_SCHEME Function
+
+7.23 SET_BUILD_OPTION_STATUS Procedure Signature 1
+
+                       This procedure sets the status of a build option by ID.
+
+API Reference                                                                  July 24, 2026
+G26651-03                                                                      Page 16 of 25
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                             Chapter 7
+                                                                     SET_BUILD_OPTION_STATUS Procedure Signature 2
+
+Syntax
+
+APEX_APPLICATION_ADMIN.SET_BUILD_OPTION_STATUS (
+
+p_application_id IN NUMBER,
+
+p_id                                                   IN NUMBER,
+
+p_build_status IN t_build_option_status );
+
+Parameters
+
+Parameter                                                          Description
+p_application_id
+p_id                                                               The application ID.
+p_build_status                                                     The build option ID.
+                                                                   Status with possible values:
+                                                                   � apex_application_admin.c_build_option_statu
+
+                                                                        s_include
+                                                                   � apex_application_admin.c_build_option_statu
+
+                                                                        s_exclude
+
+See Also
+� GET_BUILD_OPTION_STATUS Function Signature 1
+� GET_BUILD_OPTION_STATUS Function Signature 2
+
+7.24 SET_BUILD_OPTION_STATUS Procedure Signature 2
+
+                       This procedure sets the status of a build option by Static ID.
+                       Syntax
+
+APEX_APPLICATION_ADMIN.SET_BUILD_OPTION_STATUS (
+
+p_application_id IN NUMBER,
+
+p_static_id                                            IN VARCHAR2,
+
+p_build_status                                         IN t_build_option_status );
+
+Parameters
+
+Parameter                                                          Description
+p_application_id
+p_static_id                                                        The application ID.
+p_build_status                                                     The build option Static ID.
+                                                                   Status with possible values:
+                                                                   � apex_application_admin.c_build_option_statu
+
+                                                                        s_include
+                                                                   � apex_application_admin.c_build_option_statu
+
+                                                                        s_exclude
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 17 of 25
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                       Chapter 7
+                                                                          SET_BUILD_STATUS Procedure
+
+Example
+This example sets the build option identified by static ID test_apps for app 100 to INCLUDE.
+
+begin
+
+apex_application_admin.set_build_option_status (
+
+       p_application_id => 100,
+
+       p_static_id                                     => 'test_apps'
+
+       p_build_status =>
+
+apex_application_admin.c_build_option_status_include );
+
+end;
+
+       See Also
+       � GET_BUILD_OPTION_STATUS Function Signature 1
+       � GET_BUILD_OPTION_STATUS Function Signature 2
+
+7.25 SET_BUILD_STATUS Procedure
+
+                       This procedure sets the application build status.
+                       Syntax
+
+                       APEX_APPLICATION_ADMIN.SET_BUILD_STATUS (
+                             p_application_id IN NUMBER,
+                             p_build_status IN t_build_status )
+
+                       Parameters
+
+Parameter                                              Description
+p_application_id
+p_build_status                                         The application ID.
+
+                                                       New build status to set application to. Values include:
+                                                       � RUN_AND_BUILD - Developers and users can both run
+
+                                                             and develop the application.
+                                                       � RUN_ONLY - Users can only run the application.
+
+                                                             Developers cannot edit the application.
+
+Example
+The following example sets build status for app 100 to "RUN_ONLY."
+
+BEGIN
+      apex_application_admin.set_build_status (
+            p_application_id => 100,
+            p_build_status => 'RUN_ONLY' );
+
+END;
+/
+
+API Reference                                                             July 24, 2026
+G26651-03                                                                 Page 18 of 25
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                      Chapter 7
+                                                                        SET_FILE_STORAGE Procedure
+
+       See Also
+       GET_BUILD_STATUS Function
+
+7.26 SET_FILE_STORAGE Procedure
+
+                       This procedure sets the file storage type to use either the local database or OCI Object store. If
+                       Object store is chosen, you must pass the static ID of the remote server pointing to the object
+                       store bucket.
+
+                       Syntax
+
+APEX_APPLICATION_ADMIN.SET_FILE_STORAGE (
+
+p_application_id                                       IN NUMBER,
+
+p_storage_type                                         t_storage_type,
+
+p_remote_server_static_id IN VARCHAR2 DEFAULT NULL,
+
+p_migrate_files                                        IN BOOLEAN DEFAULT FALSE );
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+p_storage_type                                         The ID of the application.
+p_remote_server_static_id                              Whether to use database or OCI storage for files.
+p_migrate_files                                        If OCI is used, Static ID of the remote server.
+                                                       If TRUE, migrates application files from the application export
+                                                       to specified file storage server.
+
+Example
+
+The following example sets the file storage to OCI during import, uses the remote server with
+the static ID bucket-app-files-myapp, and uploads all files contained in the export file.
+
+BEGIN
+
+apex_application_admin.set_file_storage(
+
+       p_application_id                                => 100,
+
+       p_storage_type                                  =>
+
+apex_application_admin.c_file_storage_oci,
+
+       p_remote_server_static_id => 'bucket-app-files-myapp',
+
+       p_migrate_files                                 => true );
+
+END;
+
+       See Also
+       � GET_FILE_STORAGE Function
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 19 of 25
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                            Chapter 7
+                                                                                   SET_GLOBAL_NOTIFICATION Procedure
+
+7.27 SET_GLOBAL_NOTIFICATION Procedure
+
+                       This procedure sets the global notification message. This is the message displayed in page
+                       #GLOBALNOTIFICATION# substitution string.
+
+                       Syntax
+
+APEX_APPLICATION_ADMIN.SET_GLOBAL_NOTIFICATION (
+
+p_application_id                                       IN NUMBER,
+
+p_global_notification_message IN VARCHAR2 )
+
+Parameters
+
+Parameter                                              Description
+p_application_id                                       The application ID.
+p_global_notification_message                          The new global notification message.
+
+       See Also
+       GET_GLOBAL_NOTIFICATION Function
+
+7.28 SET_IMAGE_PREFIX Procedure
+
+                       This procedure sets the application image prefix.
+                       Syntax
+
+                       APEX_APPLICATION_ADMIN.SET_IMAGE_PREFIX (
+                             p_application_id IN NUMBER,
+                             p_image_prefix IN VARCHAR2 )
+
+                       Parameters
+
+Parameter                                              Description
+p_application_id                                       The application ID.
+p_image_prefix                                         The image prefix. Cannot be longer than 255 characters.
+
+Example
+The following example sets the application image prefix to "/static/" for application 100.
+
+DECLARE
+
+c_id              constant number                                         := 100;
+
+c_image_prefix constant varchar2(255) := '/static/';
+
+BEGIN
+
+apex_application_admin.set_image_prefix (
+
+         p_application_id => c_id,
+
+API Reference                                                                                July 24, 2026
+G26651-03                                                                                    Page 20 of 25
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                             Chapter 7
+                                                                   SET_MAX_SCHEDULER_JOBS Procedure
+
+      p_image_prefix => c_image_prefix );
+
+END;
+
+      See Also
+      GET_IMAGE_PREFIX Function
+
+7.29 SET_MAX_SCHEDULER_JOBS Procedure
+
+                       This procedure sets the application attribute "Maximum Scheduler Jobs."
+                       This procedure also indicates how many scheduler jobs can run at the same time to execute
+                       background page processes.
+
+                       Syntax
+
+APEX_APPLICATION_ADMIN.SET_MAX_SCHEDULER_JOBS (
+
+p_application_id                                       IN NUMBER,
+
+p_max_scheduler_jobs IN NUMBER )
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+p_max_scheduler_jobs                                   The application ID.
+                                                       Maximum number of scheduler jobs running for this
+                                                       application at the same time.
+
+Example
+The following example sets the maximum scheduler jobs for app 100 to 5.
+
+BEGIN
+      apex_application_admin.set_max_scheduler_jobs(100, 5);
+
+END;
+
+                              See Also
+                                 � GET_MAX_SCHEDULER_JOBS Function
+
+7.30 SET_PARSING_SCHEMA Procedure
+
+                       This procedure sets the parsing schema ("owner") of an application.
+                       The database user of the schema must already exist and the schema name must already be
+                       mapped to the workspace.
+
+API Reference                                                            July 24, 2026
+G26651-03                                                                Page 21 of 25
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                            Chapter 7
+                                                                                                    SET_PASS_ECID Procedure
+
+Syntax
+
+APEX_APPLICATION_ADMIN.SET_PARSING_SCHEMA (
+
+      p_application_id IN NUMBER,
+
+      p_schema                                         IN VARCHAR2 )
+
+Parameters
+
+Parameter                                                            Description
+p_application_id                                                     The application ID.
+p_schema                                                             The schema name.
+
+Example
+The following example sets the parsing schema to "EXAMPLE" for application 100.
+
+BEGIN
+
+apex_application_admin.set_parsing_schema (
+
+        p_application_id => 100,
+
+        p_schema                                       => 'EXAMPLE' );
+
+END;
+
+       See Also
+       GET_PARSING_SCHEMA Function
+
+7.31 SET_PASS_ECID Procedure
+
+                       This procedure sets the application Security attribute "Pass ECID" (Execution Context ID).
+                       Indicates whether to pass the ECID to the external web services for end-to-end tracing.
+
+                       Syntax
+
+APEX_APPLICATION_ADMIN.SET_PASS_ECID (
+
+      p_application_id IN NUMBER,
+
+      p_pass_ecid                                      IN BOOLEAN )
+
+Parameters
+
+Parameter                                                            Description
+p_application_id                                                     The application ID.
+p_pass_ecid                                                          Boolean value: TRUE or FALSE.
+
+API Reference                                                                                       July 24, 2026
+G26651-03                                                                                           Page 22 of 25
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                  Chapter 7
+                                                                                        SET_PROXY_SERVER Procedure
+
+Example
+
+BEGIN
+      apex_application_admin.set_pass_ecid(100, true);
+
+END;
+
+See Also
+GET_PASS_ECID Function
+
+7.32 SET_PROXY_SERVER Procedure
+
+                       This procedure sets the proxy server attributes of an application.
+                       Syntax
+
+                       APEX_APPLICATION_ADMIN.SET_PROXY_SERVER (
+                             p_application_id IN NUMBER,
+                             p_proxy_server IN VARCHAR2 ,
+                             p_no_proxy_domains IN VARCHAR2 DEFAULT NULL )
+
+                       Parameters
+
+Parameter                                              Description
+p_application_id
+p_proxy_server                                         The application ID.
+
+p_no_proxy_domains                                     The proxy server. There is no default value.
+                                                       The proxy server must be fewer than 255 characters and
+                                                       must exclude any protocol prefix such as http://. The
+                                                       following example is valid: www-proxy.example.com
+
+                                                       Comma-delimited list of domains for which the proxy server
+                                                       is invalid. Default value is null. Cannot be more than 500
+                                                       characters.
+
+Example
+The following example sets the value of the proxy for an application.
+
+BEGIN
+      apex_application_admin.set_proxy_server (
+            p_proxy_server => 'www-proxy.example.com' );
+
+END;
+
+API Reference                                                                              July 24, 2026
+G26651-03                                                                                  Page 23 of 25
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                    Chapter 7
+                                                                                  SET_REMOTE_SERVER Procedure
+
+    See Also
+    � GET_NO_PROXY_DOMAINS Function
+    � GET_PROXY_SERVER Function
+
+7.33 SET_REMOTE_SERVER Procedure
+
+                       This procedure sets the base URL, HTTPS host, and other attributes for remote servers.
+                       Remote servers are identified by their Static ID.
+
+                       Syntax
+
+APEX_APPLICATION_ADMIN.SET_REMOTE_SERVER (
+
+p_static_id                                            IN VARCHAR2,
+
+p_base_url                                             IN VARCHAR2,
+
+p_https_host                                           IN VARCHAR2 DEFAULT NULL,
+
+--
+
+p_default_database IN VARCHAR2 DEFAULT NULL,
+
+p_mysql_sql_modes IN VARCHAR2 DEFAULT NULL,
+
+--
+
+p_ords_timezone IN VARCHAR2 DEFAULT NULL,
+
+--
+
+p_ai_model_name IN VARCHAR2 DEFAULT NULL,
+
+p_ai_http_headers IN CLOB DEFAULT NULL,
+
+p_ai_attributes IN CLOB DEFAULT NULL,
+
+p_ai_max_tokens IN NUMBER DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_static_id
+p_base_url                                             Static ID to reference the remote server object.
+p_https_host
+p_default_database                                     New base URL to use for this remote server object.
+p_mysql_sql_modes
+p_ords_timezone                                        New HTTPS host property to use for this remote server
+                                                       object.
+p_ai_model_name                                        Default database to use when connecting. Currently only
+p_ai_http_headers                                      supported for MySQL databases.
+p_ai_attributes                                        SQL modes to use when connecting to a MySQL database.
+p_ai_max_tokens
+                                                       Time zone in which the remote ORDS server runs. Only
+                                                       relevant for REST-Enabled SQL services, when remote
+                                                       ORDS does not run in UTC time zone.
+                                                       The AI model to use when requesting a response from a
+                                                       generative AI service.
+                                                       HTTP headers to use when making a request to a
+                                                       generative AI service.
+                                                       Attributes in JSON format to use when making a request to
+                                                       a generative AI service.
+                                                       Maximum number of tokens in a rolling 24-hour window
+                                                       APEX is allowed to make to this Generative AI Service.
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 24 of 25
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                  Chapter 7
+                                                                                      SET_REMOTE_SERVER Procedure
+
+Example
+
+BEGIN
+      apex_application_admin.set_remote_server(
+            p_static_id => 'MY_REMOTE_SERVER',
+            p_base_url => 'http://production.example.com' );
+
+END;
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 25 of 25
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+8

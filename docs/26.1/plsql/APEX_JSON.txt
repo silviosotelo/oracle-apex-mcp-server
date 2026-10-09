@@ -1,0 +1,2707 @@
+# APEX_JSON (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 43161-45866)
+
+APEX_JSON
+
+                       This package includes utilities that parse and generate JSON.
+                       � APEX_JSON Overview and Examples
+                       � Constants and Data Types
+                       � CLOSE_ALL Procedure
+                       � CLOSE_ARRAY Procedure
+                       � CLOSE_OBJECT Procedure
+                       � DOES_EXIST Function
+                       � FIND_PATHS_LIKE Function
+                       � FLUSH Procedure
+                       � FREE_OUTPUT Procedure
+                       � GET_BOOLEAN Function
+                       � GET_CLOB Function
+                       � GET_CLOB_OUTPUT Function
+                       � GET_COUNT Function
+                       � GET_DATE Function
+                       � GET_MEMBERS Function
+                       � GET_NUMBER Function
+                       � GET_SDO_GEOMETRY Function
+                       � GET_T_NUMBER Function
+                       � GET_T_VARCHAR2 Function
+                       � GET_VALUE Function
+                       � GET_VALUE_KIND Function
+                       � GET_VARCHAR2 Function
+                       � INITIALIZE_CLOB_OUTPUT Procedure
+                       � INITIALIZE_OUTPUT Procedure
+                       � OPEN_ARRAY Procedure
+                       � OPEN_OBJECT Procedure
+                       � PARSE Procedure Signature 1
+                       � PARSE Procedure Signature 2
+                       � STRINGIFY Function Signature 1
+                       � STRINGIFY Function Signature 2
+                       � STRINGIFY Function Signature 3
+
+API Reference
+G26651-03
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                           Chapter 40
+                                                                                                            APEX_JSON Overview and Examples
+
+                       � STRINGIFY Function Signature 4
+                       � STRINGIFY Function Signature 5
+                       � TO_MEMBER_NAME Function
+                       � TO_XMLTYPE Function
+                       � TO_XMLTYPE_SQL Function
+                       � WRITE Procedure Signature 1
+                       � WRITE Procedure Signature 2
+                       � WRITE Procedure Signature 3
+                       � WRITE Procedure Signature 4
+                       � WRITE Procedure Signature 5
+                       � WRITE Procedure Signature 6
+                       � WRITE Procedure Signature 7
+                       � WRITE Procedure Signature 8
+                       � WRITE Procedure Signature 9
+                       � WRITE Procedure Signature 10
+                       � WRITE Procedure Signature 11
+                       � WRITE Procedure Signature 12
+                       � WRITE Procedure Signature 13
+                       � WRITE Procedure Signature 14
+                       � WRITE Procedure Signature 15
+                       � WRITE Procedure Signature 16
+                       � WRITE Procedure Signature 17
+                       � WRITE Procedure Signature 18
+                       � WRITE Procedure Signature 19
+                       � WRITE Procedure Signature 20
+                       � WRITE Procedure Signature 21
+                       � WRITE_CONTEXT Procedure
+
+40.1 APEX_JSON Overview and Examples
+
+                       To read from a string that contains JSON data, first use parse() to convert the string to an
+                       internal format. Then use the get_% routines (for example, get_varchar2(), get_number(), ...)
+                       to access the data and find_paths_like() to search.
+
+                       Alternatively, use to_xmltype() to convert a JSON string to an xmltype.
+
+                       This package also contains procedures to generate JSON-formatted output. Use the
+                       overloaded open_%(), close_%() and write() procedures for writing to the SYS.HTP buffer. To
+                       write to a temporary CLOB instead, use initialize_clob_output(), get_clob_output(), and
+                       free_output() for managing the output buffer.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 2 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                        Chapter 40
+                                                                    Constants and Data Types
+
+Example 1
+This example parses a JSON string and prints the value of member variable "a".
+
+DECLARE
+      s varchar2(32767) := '{ "a": 1, "b": ["hello", "world"]}';
+
+BEGIN
+      apex_json.parse(s);
+      sys.dbms_output.put_line('a is '||apex_json.get_varchar2(p_path => 'a'));
+
+END;
+
+Example 2
+This example converts a JSON string to XML and uses XMLTABLE to query member values.
+
+select col1, col2
+from xmltable (
+
+            '/json/row'
+            passing apex_json.to_xmltype('[{"col1": 1, "col2": "hello"},'||
+
+                         '{"col1": 2, "col2": "world"}]')
+            columns
+
+                 col1 number path '/row/col1',
+                 col2 varchar2(5) path '/row/col2' );
+
+Example 3
+This example writes a nested JSON object to the HTP buffer.
+
+BEGIN
+
+apex_json.open_object;                                       -- {
+
+apex_json.write('a', 1); -- "a":1
+
+apex_json.open_array('b'); -- ,"b":[
+
+apex_json.open_object; -- {
+
+apex_json.write('c',2); --                                   "c":2
+
+apex_json.close_object; -- }
+
+apex_json.write('hello'); -- ,"hello"
+
+apex_json.write('world'); -- ,"world"
+
+apex_json.close_all;                                         -- ]
+
+                                                       -- }
+
+END;
+
+40.2 Constants and Data Types
+
+Parser Interface
+The following constants are used for the parser interface:
+
+subtype t_kind is binary_integer range 1 .. 8;
+c_null constant t_kind := 1;
+c_true constant t_kind := 2;
+c_false constant t_kind := 3;
+c_number constant t_kind := 4;
+c_varchar2 constant t_kind := 5;
+
+API Reference                                                                   July 24, 2026
+G26651-03                                                                       Page 3 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                              Chapter 40
+                                                             CLOSE_ALL Procedure
+
+c_object  constant t_kind := 6;
+c_array   constant t_kind := 7;
+c_clob    constant t_kind := 8;
+
+Storage for JSON Data
+
+JSON data is stored in an index by varchar2 table. The JSON values are stored as records.
+The discriminator "kind" determines whether the value is null, true, false, a number, a varchar2,
+a clob, an object or an array. It depends on "kind" which record fields are used and how. If not
+explicitly mentioned below, the other record fields' values are undefined:
+
+* c_null: -
+
+* c_true: -
+
+* c_false: -
+
+* c_number: number_value contains the number value
+
+* c_varchar2: varchar2_value contains the varchar2 value
+
+* c_clob: clob_value contains the clob
+
+* c_object: object_members contains the names of the object's members
+
+* c_array: number_value contains the array length
+
+type t_value is record (
+
+kind      t_kind,
+
+number_value number,
+
+varchar2_value varchar2(32767),
+
+clob_value clob,
+
+object_members apex_t_varchar2 );
+
+type t_values is table of t_value index by varchar2(32767);
+
+Default Format for Dates
+
+c_date_iso8601 constant varchar2(30) := 'yyyy-mm-dd"T"hh24:mi:ss"Z"';
+
+Default JSON Values Table
+
+g_values t_values;
+
+Errors Thrown for PARSE()
+
+e_parse_error exception;
+pragma exception_init(e_parse_error, -20987);
+
+40.3 CLOSE_ALL Procedure
+
+                       This procedure closes all objects and arrays up to the outermost nesting level.
+
+API Reference                                                                                           July 24, 2026
+G26651-03                                                                                               Page 4 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                            Chapter 40
+                                                       CLOSE_ARRAY Procedure
+
+                       Syntax
+
+                       APEX_JSON.CLOSE_ALL;
+
+                       Parameters
+                       None.
+                       Example
+                       See APEX_JSON Overview and Examples.
+
+40.4 CLOSE_ARRAY Procedure
+
+                       This procedure writes a close bracket symbol as follows:
+
+                       ]
+
+                       Syntax
+
+                       APEX_JSON.CLOSE_ARRAY ();
+
+                       Parameters
+                       None.
+                       Example
+                       See APEX_JSON Overview and Examples.
+
+40.5 CLOSE_OBJECT Procedure
+
+                       This procedure writes a close curly bracket symbol as follows:
+
+                       }
+
+                       Syntax
+
+                       APEX_JSON.CLOSE_OBJECT ();
+
+                       Parameters
+                       None.
+                       Example
+                       See APEX_JSON Overview and Examples.
+
+40.6 DOES_EXIST Function
+
+                       This function determines whether the given path points to an existing value.
+
+API Reference                                                                                        July 24, 2026
+G26651-03                                                                                            Page 5 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                     Chapter 40
+                                                                                              FIND_PATHS_LIKE Function
+
+Syntax
+
+APEX_JSON.DOES_EXIST (
+
+p_path                                                 IN VARCHAR2,
+
+p0                                                     IN VARCHAR2 DEFAULT NULL,
+
+p1                                                     IN VARCHAR2 DEFAULT NULL,
+
+p2                                                     IN VARCHAR2 DEFAULT NULL,
+
+p3                                                     IN VARCHAR2 DEFAULT NULL,
+
+p4                                                     IN VARCHAR2 DEFAULT NULL,
+
+p_values                                               IN t_values DEFAULT g_values )
+
+RETURN BOOLEAN;
+
+Parameters
+
+ Parameter                                             Description
+p_path
+p[0-4]                                                 Index into p_values.
+                                                       Each %N in p_path is replaced by pN and every i-th %s or %d is
+p_values                                               replaced by the p[i-1].
+Returns                                                Parsed JSON members. The default is g_values.
+
+Return                                                 Description
+TRUE                                                   Given path points to an existing value.
+FALSE                                                  Given path does not point to an existing value
+
+Example
+This example parses a JSON string and prints whether it contains values under a path.
+
+DECLARE
+      j apex_json.t_values;
+
+BEGIN
+      apex_json.parse(j, '{ "items": [ 1, 2, { "foo": true } ] }');
+      IF apex_json.does_exist(p_path => 'items[%d].foo', p0 => 3, p_values => j)
+      THEN
+            dbms_output.put_line('found items[3].foo');
+      END IF;
+
+END;
+
+40.7 FIND_PATHS_LIKE Function
+
+                       This function returns paths into p_values that match a given pattern.
+                       Syntax
+
+APEX_JSON.FIND_PATHS_LIKE (
+
+p_return_path                                          IN VARCHAR2,
+
+p_subpath                                              IN VARCHAR2 DEFAULT NULL,
+
+p_value                                                IN VARCHAR2 DEFAULT NULL,
+
+API Reference                                                                                          July 24, 2026
+G26651-03                                                                                              Page 6 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                 Chapter 40
+                                                                                                       FLUSH Procedure
+
+      p_values                                         IN t_values DEFAULT g_values )
+
+RETURN apex_t_varchar2;
+
+Parameters
+
+ Parameter                                             Description
+p_return_path                                          Search pattern for the return path..
+p_subpath                                              (Optional) Search pattern under p_return_path.
+p_value                                                (Optional) Search pattern for value.
+p_values                                               Parsed JSON members. Default is g_values.
+
+Returns/Raised Errors
+
+Return/Error                                           Description
+apex_t_varchar2                                        Table of paths that match the pattern.
+VALUE_ERROR                                            Raises this error if p_values(p_path is not an array or object.
+
+Example
+
+This example parses a JSON string, finds paths that match a pattern, and prints the values
+under the paths.
+
+DECLARE
+
+      j         apex_json.t_values;
+
+      l_paths apex_t_varchar2;
+
+BEGIN
+
+      apex_json.parse(j, '{ "items": [ { "name": "Amulet of Yendor", "magical":
+
+true }, '||
+
+                                                                     { "name": "Slippers", "magical":
+
+"rather not" } ]}');
+
+      l_paths := apex_json.find_paths_like (
+
+         p_values                                      => j,
+
+         p_return_path => 'items[%]',
+
+         p_subpath => '.magical',
+
+         p_value                                       => 'true' );
+
+      dbms_output.put_line('Magical items:');
+
+      FOR i in 1 .. l_paths.count LOOP
+
+         dbms_output.put_line(apex_json.get_varchar2(p_values => j, p_path =>
+
+l_paths(i)||'.name'));
+
+END LOOP;
+
+END;
+
+40.8 FLUSH Procedure
+
+                       This procedure flushes pending changes. Note that close procedures automatically flush.
+                       Syntax
+
+APEX_JSON.FLUSH
+
+API Reference                                                                                          July 24, 2026
+G26651-03                                                                                              Page 7 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                       Chapter 40
+                                                                                  FREE_OUTPUT Procedure
+
+Parameters
+None.
+Example
+This example writes incomplete JSON.
+
+BEGIN
+   apex_json.open_object;
+   apex_json.write('attr', 'value');
+   apex_json.flush;
+   sys.htp.p('the "}" is missing');
+
+END;
+
+40.9 FREE_OUTPUT Procedure
+
+                       Frees output resources. Call this procedure after process if you are using
+                       INITIALIZE_CLOB_OUTPUT to write to a temporary CLOB.
+
+                       Syntax
+
+APEX_JSON.FREE_OUTPUT;
+
+Example
+
+This example configures APEX_JSON for CLOB output, generate JSON, print the CLOB with
+DBMS_OUTPUT, and finally free the CLOB.
+
+BEGIN
+      apex_json.initialize_clob_output;
+
+      apex_json.open_object;
+      apex_json.write('hello', 'world');
+      apex_json.close_object;
+
+      dbms_output.put_line(apex_json.get_clob_output);
+
+      apex_json.free_output;
+END;
+
+40.10 GET_BOOLEAN Function
+
+                       This function returns a boolean member value.
+                       Syntax
+
+APEX_JSON.GET_BOOLEAN (
+
+p_path                                                 IN VARCHAR2,
+
+p0                                                     IN VARCHAR2 DEFAULT NULL,
+
+p1                                                     IN VARCHAR2 DEFAULT NULL,
+
+p2                                                     IN VARCHAR2 DEFAULT NULL,
+
+API Reference                                                                                      July 24, 2026
+G26651-03                                                                                          Page 8 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                    Chapter 40
+                                                                                       GET_CLOB Function
+
+      p3                                               IN VARCHAR2 DEFAULT NULL,
+      p4                                               IN VARCHAR2 DEFAULT NULL,
+      p_default                                        IN BOOLEAN DEFAULT NULL,
+      p_values                                         IN t_values DEFAULT g_values )
+RETURN BOOLEAN;
+
+Parameters
+
+ Parameter                                             Description
+p_path
+p[0-4]                                                 Index into p_values.
+                                                       Each %N in p_path is replaced by pN and every i-th %s or %d is
+p_default                                              replaced by the p[i-1].
+p_values                                               The default value if the member does not exist.
+                                                       Parsed JSON members. The default is g_values.
+Returns
+
+Return                                                 Description
+TRUE                                                   Value at the given path position.
+FALSE                                                  Value at the given path position.
+NULL                                                   Value at the given path position.
+VALUE_ERROR                                            Raises this error if p_values(p_path) is not boolean.
+
+Example
+This example parses a JSON string and prints the boolean value at a position.
+
+DECLARE
+      j apex_json.t_values;
+
+BEGIN
+      apex_json.parse(j, '{ "items": [ 1, 2, { "foo": true } ] }');
+      IF apex_json.get_boolean(p_path=>'items[%d].foo', p0=>3,p_values=>j) THEN
+            dbms_output.put_line('items[3].foo is true');
+      END IF;
+
+END;
+
+40.11 GET_CLOB Function
+
+                       This function returns clob member value. This function auto-converts varchar2, boolean, and
+                       number values.
+
+                       Syntax
+
+GET_CLOB (
+
+p_path IN VARCHAR2,
+
+p0           IN VARCHAR2 DEFAULT NULL,
+
+p1           IN VARCHAR2 DEFAULT NULL,
+
+p2           IN VARCHAR2 DEFAULT NULL,
+
+p3           IN VARCHAR2 DEFAULT NULL,
+
+p4           IN VARCHAR2 DEFAULT NULL,
+
+p_default IN CLOB DEFAULT NULL,
+
+API Reference                                                                                                 July 24, 2026
+G26651-03                                                                                                     Page 9 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                  Chapter 40
+                                                        GET_CLOB_OUTPUT Function
+
+      p_values in t_values DEFAULT g_values )
+RETURN CLOB
+
+Parameters
+
+Parameter                                              Description
+p_values
+p_path                                                 Parsed JSON members. defaults to g_values.
+p[0-4]                                                 Index into p_values.
+                                                       Each %N in p_path is replaced with pN and every i-th %s or %d is
+p_default                                              replaced with p[i-1].
+                                                       Default value if the member does not exist.
+
+Returns/Raised Errors
+
+Return/Error                                           Description
+a clob                                                 Value at the given path position.
+VALUE_ERROR                                            If p_values(p_path) is an array or an object.
+
+Example
+Parse a JSON string and print the value at a position.
+
+DECLARE
+      j apex_json.t_values;
+
+BEGIN
+      apex_json.parse(j, '{ "items": [ 1, 2, { "foo": 42 } ] }');
+      dbms_output.put_line(apex_json.get_clob (
+      p_values => j,
+      p_path => 'items[%d].foo',
+      p0 => 3));
+
+END;
+
+40.12 GET_CLOB_OUTPUT Function
+
+                       Returns the temporary CLOB that you created with INITIALIZE_CLOB_OUTPUT.
+                       Syntax
+
+APEX_JSON.GET_CLOB_OUTPUT (
+      p_free IN BOOLEAN DEFAULT FALSE )
+      RETURN CLOB;
+
+Parameters
+
+Parameter                                              Description
+p_free                                                 If true, frees output resources. Defaults to false.
+
+API Reference                                                                                    July 24, 2026
+G26651-03                                                                                        Page 10 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                              Chapter 40
+                                                                                              GET_COUNT Function
+
+Example 1
+
+This example configures APEX_JSON for CLOB output, generates JSON, prints the CLOB with
+DBMS_OUTPUT, and finally frees the CLOB.
+
+BEGIN
+   apex_json.initialize_clob_output;
+
+   apex_json.open_object;
+   apex_json.write('hello', 'world');
+   apex_json.close_object;
+
+   dbms_output.put_line(apex_json.get_clob_output);
+
+ apex_json.free_output;
+END;
+
+Example 2
+
+This example configures APEX_JSON for CLOB output, generates JSON, and prints and frees
+the CLOB with DBMS_OUTPUT and GET_CLOB_OUTPUT.
+
+BEGIN
+   apex_json.initialize_clob_output;
+
+   apex_json.open_object;
+   apex_json.write('hello', 'world');
+   apex_json.close_object;
+
+   dbms_output.put_line(apex_json.get_clob_output( p_free => true ) );
+END;
+
+40.13 GET_COUNT Function
+
+                       This function returns the number of array elements or object members.
+                       Syntax
+
+APEX_JSON.GET_COUNT (                                  IN VARCHAR2,
+      p_path                                           IN VARCHAR2 DEFAULT NULL,
+      p0                                               IN VARCHAR2 DEFAULT NULL,
+      p1                                               IN VARCHAR2 DEFAULT NULL,
+      p2                                               IN VARCHAR2 DEFAULT NULL,
+      p3                                               IN VARCHAR2 DEFAULT NULL,
+      p4                                               IN t_values DEFAULT g_values )
+      p_values
+
+RETURN NUMBER;
+
+Parameters
+
+Parameter                                              Description
+p_path                                                 Index into p_values.
+
+API Reference                                                                                 July 24, 2026
+G26651-03                                                                                     Page 11 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                    Chapter 40
+                                                                                       GET_DATE Function
+
+ Parameter                                             Description
+p[0-4]
+                                                       Each %N in p_path is replaced by pN and every i-th %s or %d is
+p_values                                               replaced by the p[i-1].
+Returns/Raised Errors                                  Parsed JSON members. The default is g_values.
+
+Return/Error                                           Description
+NUMBER
+                                                       The number of array elements or object members or null if the array or
+VALUE_ERROR                                            object could not be found
+                                                       Raises this error if p_values(p_path) is not an array or object.
+
+Example
+This example parses a JSON string and prints the number of members at positions.
+
+DECLARE
+      j apex_json.t_values;
+
+BEGIN
+      apex_json.parse(j, '{ "foo": 3, "bar": [1, 2, 3, 4] }');
+      dbms_output.put_line(apex_json.get_count(p_path=>'.',p_values=>j)); -- 2
+
+(foo and bar)
+      dbms_output.put_line(apex_json.get_count(p_path=>'bar',p_values=>j)); --
+
+4
+END;
+
+40.14 GET_DATE Function
+
+                       This function returns a date member value.
+                       Syntax
+
+APEX_JSON.GET_DATE (                                   IN VARCHAR2,
+      p_path                                           IN VARCHAR2 DEFAULT NULL,
+      p0                                               IN VARCHAR2 DEFAULT NULL,
+      p1                                               IN VARCHAR2 DEFAULT NULL,
+      p2                                               IN VARCHAR2 DEFAULT NULL,
+      p3                                               IN VARCHAR2 DEFAULT NULL,
+      p4                                               IN DATE DEFAULT NULL,
+      p_default                                        IN VARCHAR2 DEFAULT NULL,
+      p_format                                         IN t_values DEFAULT g_values )
+      p_values
+
+RETURN DATE;
+
+Parameters
+
+Parameter                                              Description
+p_path
+p[0-4]                                                 Index into p_values.
+                                                       Each %N in p_path is replaced by pN and every i-th %s or %d is
+                                                       replaced by the p[i-1].
+
+API Reference                                                                          July 24, 2026
+G26651-03                                                                              Page 12 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                   Chapter 40
+                                                                                               GET_MEMBERS Function
+
+ Parameter                                             Description
+p_default                                              The default value if the member does not exist.
+p_format                                               The date format mask.
+p_values                                               Parsed JSON members. The default is g_values.
+
+Returns/Raised Errors
+
+Return                                                 Description
+DATE                                                   Returns the date.
+VALUE_ERROR                                            Raises this error if p_values(p_path) is not a date.
+
+Example
+This example parses a JSON string and prints the value at a position.
+
+DECLARE
+      j apex_json.t_values;
+
+BEGIN
+      apex_json.parse(j, '{ "items": [ 1, 2, { "foo":
+
+"2014-04-29T10:08:00Z" }] }');
+
+dbms_output.put_line(to_char(apex_json.get_date(p_path=>'items[%d].foo',p0=>3,
+ p_values=>j), 'DD-Mon-YYYY'));
+
+END;
+
+40.15 GET_MEMBERS Function
+
+                       This function returns the table of OBJECT_MEMBERS names for an object.
+                       Syntax
+
+APEX_JSON.GET_MEMBERS (
+
+p_path                                                 IN VARCHAR2,
+
+p0                                                     IN VARCHAR2 DEFAULT NULL,
+
+p1                                                     IN VARCHAR2 DEFAULT NULL,
+
+p2                                                     IN VARCHAR2 DEFAULT NULL,
+
+p3                                                     IN VARCHAR2 DEFAULT NULL,
+
+p4                                                     IN VARCHAR2 DEFAULT NULL,
+
+p_values                                               IN t_values DEFAULT g_values )
+
+RETURN APEX_T_VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_path
+p[0-4]                                                 Index into p_values.
+                                                       Each %N in p_path is replaced by pN and every i-th% or %d is
+p_values                                               replaced by the p[i-1].
+                                                       Parsed JSON members. The default is g_values.
+
+API Reference                                                                                                July 24, 2026
+G26651-03                                                                                                    Page 13 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                         Chapter 40
+                                                                                       GET_NUMBER Function
+
+Returns/Raised Errors
+
+Return/Error                                           Description
+OBJECT_MEMBERS
+                                                       The OBJECT_MEMBERS of the object or null if the object could not be
+VALUE_ERROR                                            found.
+                                                       Raises this error if p_values(p_path) is not an array or object.
+
+Example
+This example parses a JSON string and prints members at positions.
+
+DECLARE
+      j apex_json.t_values;
+
+BEGIN
+      apex_json.parse(j, '{ "foo": 3, "bar": [1, 2, 3, 4] }');
+      dbms_output.put_line(apex_json.get_members(p_path=>'.',p_values=>j)(1));
+
+-- foo
+      dbms_output.put_line(apex_json.get_members(p_path=>'.',p_values=>j)(2));
+
+-- bar
+END;
+
+40.16 GET_NUMBER Function
+
+                       This function returns a numeric member value.
+                       Syntax
+
+APEX_JSON.GET_NUMBER (
+
+p_path                                                 IN VARCHAR2,
+
+p0                                                     IN VARCHAR2 DEFAULT NULL,
+
+p1                                                     IN VARCHAR2 DEFAULT NULL,
+
+p2                                                     IN VARCHAR2 DEFAULT NULL,
+
+p3                                                     IN VARCHAR2 DEFAULT NULL,
+
+p4                                                     IN VARCHAR2 DEFAULT NULL,
+
+p_default                                              IN BOOLEAN DEFAULT NULL,
+
+p_values                                               IN t_values DEFAULT g_values )
+
+RETURN NUMBER;
+
+Parameters
+
+Parameter                                              Description
+p_path
+p[0-4]                                                 Index into p_values.
+                                                       Each %N in p_path is replaced by pN and every i-th% or %d is
+p_default                                              replaced by the p[i-1].
+p_values                                               The default value if the member does not exist.
+                                                       Parsed JSON members. The default is g_values.
+
+API Reference                                                                          July 24, 2026
+G26651-03                                                                              Page 14 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                    Chapter 40
+                                                                                       GET_SDO_GEOMETRY Function
+
+Returns and Raised Errors
+
+Return                                                 Description
+NUMBER                                                 The value at the given path position.
+VALUE_ERROR                                            Raises this error if p_values(p_path) is not a number.
+
+Example
+This example parses a JSON string and prints the value at a position.
+
+DECLARE
+      j apex_json.t_values;
+
+BEGIN
+      apex_json.parse(j, '{ "items": [ 1, 2, { "foo": 42 } ] }');
+      dbms_output.put_line(apex_json.get_number(p_path=>'items[%d].foo',p0=>
+
+3,p_values=>j));
+END;
+
+40.17 GET_SDO_GEOMETRY Function
+
+                       This function returns SDO_GEOMETRY member value from a GeoJSON member. This
+                       function supports only two-dimensional geometry objects.
+
+    Note
+
+    This function is only available if SDO_GEOMETRY (Oracle Locator) is installed in the
+    database.
+
+Syntax
+
+APEX_JSON.GET_SDO_GEOMETRY FUNCTION (
+
+p_path                                                 IN VARCHAR2,
+
+p0                                                     IN VARCHAR2 DEFAULT NULL,
+
+p1                                                     IN VARCHAR2 DEFAULT NULL,
+
+p2                                                     IN VARCHAR2 DEFAULT NULL,
+
+p3                                                     IN VARCHAR2 DEFAULT NULL,
+
+p4                                                     IN VARCHAR2 DEFAULT NULL,
+
+p_srid                                                 IN NUMBER DEFAULT 4326,
+
+p_values                                               IN t_values DEFAULT g_values )
+
+RETURN mdsys.sdo_geometry;
+
+Parameters
+
+Parameter                                              Description
+p_values
+p_path                                                 Parsed JSON members. Defaults to g_values.
+p[0-4]                                                 Index into p_values.
+                                                       Each %N in p_path is replaced by pN and every i-th %s or
+                                                       %d is replaced by the p[i-1].
+
+API Reference                                                                                                  July 24, 2026
+G26651-03                                                                                                      Page 15 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                               Chapter 40
+                                                                                          GET_T_NUMBER Function
+
+ Parameter                                             Description
+p_srid
+                                                       Coordinate system (SRID) to return the SDO_GEOMETRY
+Returns                                                in.
+
+ Return                                                Description
+ a geometry                                            Value at the given path position.
+Errors Raised
+
+Raise                                                  Description
+VALUE_ERROR                                            If p_values(p_path) is not a GeoJSON object.
+
+Example
+The following example parses a JSON string and prints the value at a position.
+
+DECLARE
+
+j apex_json.t_values;
+
+BEGIN
+
+apex_json.parse(j, '{ "items": [ 1, 2, { "geom":
+
+{"type":"Point","coordinates":[-122.7783356,38.8198318,1.85 ] } } ] }');
+
+dbms_output.put_line(to_char(apex_json.get_sdo_geometry (
+
+                                                                     p_values => j,
+
+                                                                     p_path => 'items[%d].geom',
+
+                                                                     p0      => 3) ) );
+
+END;
+
+40.18 GET_T_NUMBER Function
+
+                       This function returns the numeric attributes of an array.
+                       Syntax
+
+APEX_JSON.GET_T_NUMBER (
+
+      p_path                                           IN VARCHAR2,
+
+      p0                                               IN VARCHAR2 DEFAULT NULL,
+
+      p1                                               IN VARCHAR2 DEFAULT NULL,
+
+      p2                                               IN VARCHAR2 DEFAULT NULL,
+
+      p3                                               IN VARCHAR2 DEFAULT NULL,
+
+      p4                                               IN VARCHAR2 DEFAULT NULL,
+
+      p_values                                         IN t_values DEFAULT g_values )
+
+      RETURN apex_t_number;
+
+Parameters
+
+Parameter                                              Description
+p_path                                                 Index into p_values.
+
+API Reference                                                                                     July 24, 2026
+G26651-03                                                                                         Page 16 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                           Chapter 40
+                                                                                   GET_T_VARCHAR2 Function
+
+Parameter                                              Description
+p[0-4]
+                                                       Each %N in p_path is replaced by pN and every i-th% or %d is
+p_values                                               replaced by the p[i-1].
+                                                       Parsed JSON members. Default p_values.
+
+Returns
+
+Array member values if the referenced t_value is an array. An array with just the referenced
+value if its type can be converted to a number.
+
+Return                                                 Description
+VALUE_ERROR                                            On conversion errors.
+
+Example
+This example parses a JSON string and prints the value at position 1.
+
+declare
+
+           j                                           apex_json.t_values;
+
+           l_elements apex_t_number;
+
+begin
+
+           apex_json.parse(j, '{ "foo": [111, 222], "bar": 333 }');
+
+           l_elements := apex_json.get_t_number (
+
+                                                       p_values => j,
+
+                                                       p_path => 'foo' );
+
+           for i in 1 .. l_elements.count loop
+
+              sys.dbms_output.put_line(i||':'||l_elements(i));
+
+           end loop;
+
+           l_elements := apex_json.get_t_number (
+
+                                                       p_values => j,
+
+                                                       p_path => 'bar' );
+
+           for i in 1 .. l_elements.count loop
+
+              sys.dbms_output.put_line(i||':'||l_elements(i));
+
+           end loop;
+
+end;
+
+Output:
+   1:111
+   2:222
+   1:333
+
+40.19 GET_T_VARCHAR2 Function
+
+                       This function returns the varchar2 attributes of an array.
+                       Syntax
+
+APEX_JSON.GET_T_VARCHAR2 (
+
+p_path                                                 IN VARCHAR2,
+
+p0                                                     IN VARCHAR2 DEFAULT NULL,
+
+p1                                                     IN VARCHAR2 DEFAULT NULL,
+
+p2                                                     IN VARCHAR2 DEFAULT NULL,
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 17 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                               Chapter 40
+                                                                                       GET_T_VARCHAR2 Function
+
+p3                                                     IN VARCHAR2 DEFAULT NULL,
+
+p4                                                     IN VARCHAR2 DEFAULT NULL,
+
+p_values                                               IN t_values DEFAULT g_values )
+
+RETURN apex_t_varchar2;
+
+Parameters
+
+Parameter                                              Description
+p_path
+p[0-4]                                                 Index into p_values.
+                                                       Each %N in p_path is replaced by pN and every i-th% or %d is
+p_values                                               replaced by the p[i-1].
+                                                       Parsed JSON members. The default is g_values.
+
+Returns
+
+Array member values if the referenced t_value is an array. An array with just the referenced
+value if its type can be converted to a varchar2.
+
+Raises
+
+Return                                                 Description
+VALUE_ERROR                                            On conversion errors.
+
+Example
+This example parses a JSON and prints the value at position 1.
+
+declare
+
+j            apex_json.t_values;
+
+l_elements apex_t_varchar2;
+
+begin
+
+apex_json.parse(j, '{ "foo": ["one", "two"], "bar": "three" }');
+
+l_elements := apex_json.get_t_varchar2 (
+
+                                                       p_values => j,
+
+                                                       p_path => 'foo' );
+
+for i in 1 .. l_elements.count loop
+
+         sys.dbms_output.put_line(i||':'||l_elements(i));
+
+end loop;
+
+l_elements := apex_json.get_t_varchar2 (
+
+                                                       p_values => j,
+
+                                                       p_path => 'bar' );
+
+for i in 1 .. l_elements.count loop
+
+         sys.dbms_output.put_line(i||':'||l_elements(i));
+
+end loop;
+
+end;
+
+Output:
+   1:one
+   2:two
+   1:three
+
+API Reference                                                                          July 24, 2026
+G26651-03                                                                              Page 18 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                       Chapter 40
+                                                                                        GET_VALUE Function
+
+40.20 GET_VALUE Function
+
+                       This function returns the t_value.
+                       Syntax
+
+APEX_JSON.GET_VALUE (                                  IN VARCHAR2,
+      p_path                                           IN VARCHAR2 DEFAULT NULL,
+      p0                                               IN VARCHAR2 DEFAULT NULL,
+      p1                                               IN VARCHAR2 DEFAULT NULL,
+      p2                                               IN VARCHAR2 DEFAULT NULL,
+      p3                                               IN VARCHAR2 DEFAULT NULL,
+      p4                                               IN t_values DEFAULT g_values )
+      p_values
+
+RETURN t_value;
+
+Parameters
+
+ Parameter                                             Description
+p_path
+p[0-4]                                                 Index into p_values.
+                                                       Each %N in p_path is replaced by pN and every i-th% or %d is
+p_values                                               replaced by the p[i-1].
+Returns/Raised Errors                                  Parsed JSON members. The default is g_values.
+
+Return                                                 Description
+t_value
+                                                       The t_value at the given path position. The record attributes are null if
+VALUE_ERROR                                            no data is found.
+                                                       Raises this error if p_values(p_path) is not an array or object.
+
+Example
+This example parses a JSON string and prints attributes of values at positions.
+
+DECLARE
+      j apex_json.t_values;
+      v apex_json.t_value;
+
+BEGIN
+      apex_json.parse(j, '{ "foo": 3, "bar": [1, 2, 3, 4] }');
+      v := apex_json.get_value(p_path=>'bar[%d]',p0=> 2,p_values=>j); --
+
+returns the t_value for bar[2]
+      dbms_output.put_line(v.number_value); -- 2
+      v := apex_json.get_value(p_path=>'does.not.exist',p_values=>j);
+      dbms_output.put_line(case when v.kind is null then 'not found!' end);
+
+END;
+
+40.21 GET_VALUE_KIND Function
+
+                       This function returns the kind of the value at a path position.
+
+API Reference                                                                           July 24, 2026
+G26651-03                                                                               Page 19 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                              Chapter 40
+                                                                                       GET_VALUE_KIND Function
+
+Syntax
+
+APEX_JSON.GET_VALUE_KIND (
+
+p_path                                                 IN VARCHAR2,
+
+p0                                                     IN VARCHAR2 DEFAULT NULL,
+
+p1                                                     IN VARCHAR2 DEFAULT NULL,
+
+p2                                                     IN VARCHAR2 DEFAULT NULL,
+
+p3                                                     IN VARCHAR2 DEFAULT NULL,
+
+p4                                                     IN VARCHAR2 DEFAULT NULL,
+
+p_values                                               IN t_values DEFAULT g_values )
+
+RETURN t_kind;
+
+Parameters
+
+ Parameter                                             Description
+p_values
+p_path                                                 Parsed JSON members. Defaults to g_values.
+p[0-4]                                                 Index into p_values.
+                                                       Each %N in p_path is replaced by pN and every i-th %s or
+Table 40-1 Returns                                     %d is replaced by the p[i-1].
+
+Return                                                               Description
+t_kind
+                                                                     The t_kind of the value at the given path position.
+                                                                     Returns NULL if no data is found.
+
+Example
+This example parses a JSON string and prints the kind of an attribute.
+
+DECLARE
+      j apex_json.t_values;
+      k apex_json.t_kind;
+
+PROCEDURE print_kind( p_kind in apex_json.t_kind ) IS
+
+BEGIN
+
+        dbms_output.put_line(
+
+            CASE p_kind
+
+            WHEN apex_json.c_null                                    THEN 'NULL'
+
+            WHEN apex_json.c_true                                    THEN 'true'
+
+            WHEN apex_json.c_false THEN 'false'
+
+            WHEN apex_json.c_number THEN 'NUMBER'
+
+            WHEN apex_json.c_varchar2 THEN 'VARCHAR2'
+
+            WHEN apex_json.c_object THEN 'OBJECT'
+
+            WHEN apex_json.c_array THEN 'ARRAY'
+
+            WHEN apex_json.c_clob                                    THEN 'CLOB' end );
+
+END print_kind;
+
+BEGIN
+
+apex_json.parse(j, '{ "foo": 3, "bar": [1, 2, 3, 4] }');
+
+k := apex_json.get_value_kind (
+
+            p_values => j,
+
+            p_path => 'bar[%d]',
+
+API Reference                                                                            July 24, 2026
+G26651-03                                                                                Page 20 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                            Chapter 40
+                                                                                       GET_VARCHAR2 Function
+
+              p0                                       => 2); -- returns the t_value for bar[2]
+
+print_kind(k);                                         -- 'NUMBER'
+
+k := apex_json.get_value_kind (
+
+              p_values => j,
+
+              p_path => 'bar');
+
+print_kind(k);                                         -- 'ARRAY'
+
+END;
+
+40.22 GET_VARCHAR2 Function
+
+                       This function returns a varchar2 member value. This function converts boolean and number
+                       values to varchar2 values.
+
+                       Syntax
+
+APEX_JSON.GET_VARCHAR2 (
+
+p_path                                                 IN VARCHAR2,
+
+p0                                                     IN VARCHAR2 DEFAULT NULL,
+
+p1                                                     IN VARCHAR2 DEFAULT NULL,
+
+p2                                                     IN VARCHAR2 DEFAULT NULL,
+
+p3                                                     IN VARCHAR2 DEFAULT NULL,
+
+p4                                                     IN VARCHAR2 DEFAULT NULL,
+
+p_default                                              IN BOOLEAN DEFAULT NULL,
+
+p_values                                               IN t_values DEFAULT g_values )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_path
+p[0-4]                                                 Index into p_values.
+                                                       Each %N in p_path is replaced by pN and every i-th %s or %d is
+p_default                                              replaced by the p[i-1].
+p_values                                               The default value if the member does not exist.
+                                                       Parsed JSON members. The default is g_values.
+
+Returns and Raised Errors
+
+Return/Error                                           Description
+VARCHAR2                                               This is the value at the given path position.
+VALUE_ERROR                                            Raises this error if p_values(p_path) is not an array or object.
+
+Example
+This example parses a JSON string and prints the value at a position.
+
+DECLARE
+      j apex_json.t_values;
+
+BEGIN
+      apex_json.parse(j, '{ "items": [ 1, 2, { "foo": 42 } ] }');
+      dbms_output.put_line(apex_json.get_varchar2(p_path=>'items[%d].foo',p0=>
+
+API Reference                                                                                    July 24, 2026
+G26651-03                                                                                        Page 21 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                           Chapter 40
+                                                       INITIALIZE_CLOB_OUTPUT Procedure
+
+3,p_values=>j));
+END;
+
+40.23 INITIALIZE_CLOB_OUTPUT Procedure
+
+                       This procedure initializes the output interface to write to a temporary CLOB. The default is to
+                       write to SYS.HTP. If using CLOB output, call FREE_OUTPUT() at the end to free the CLOB.
+
+                       Syntax
+
+APEX_JSON.INITIALIZE_CLOB_OUTPUT (
+
+p_dur             IN PLS_INTEGER DEFAULT sys.dbms_lob.call,
+
+p_cache           IN BOOLEAN DEFAULT TRUE,
+
+p_indent          IN PLS_INTEGER DEFAULT NULL,
+
+p_preserve IN BOOLEAN DEFAULT FALSE )
+
+Parameters
+
+Parameter         Description
+p_dur
+                  Duration of the temporary CLOB. this can be DBMS_LOB.SESSION or
+p_cache           DBMS_LOB.CALL (the default).
+p_indent          Specifies if the lob should be read into buffer cache or not.
+p_preserve        Indent level. Defaults to 2 if debug is turned on, 0 otherwise.
+                  Whether to preserve the currently active output object.
+                  After calling FREE_OUTPUT, subsequent write calls will be executed on the
+                  preserved output. Defaults to FALSE.
+                  If HTP output has already been initialized and a CLOB needs to be created, use
+                  p_preserve => true. After FREE_OUTPUT, subsequent output will be directed
+                  to the original HTP output again.
+                  If p_preserve is true, you must call FREE_OUTPUT after JSON processing.
+
+Example
+
+This example configures APEX_JSON for CLOB output, generates JSON, prints the CLOB with
+DBMS_OUTPUT, and finally frees the CLOB.
+
+BEGIN
+   apex_json.initialize_clob_output( p_preserve => true );
+
+   apex_json.open_object;
+   apex_json.write('hello', 'world');
+   apex_json.close_object;
+
+   dbms_output.put_line(apex_json.get_clob_output);
+
+   apex_json.free_output;
+END;
+
+API Reference                                                July 24, 2026
+G26651-03                                                    Page 22 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                 Chapter 40
+                                                                                      INITIALIZE_OUTPUT Procedure
+
+40.24 INITIALIZE_OUTPUT Procedure
+
+                       This procedure initializes the output interface. You only have to call this procedure if you want
+                       to modify the parameters below. Initially, output is already configured with the defaults
+                       mentioned in the parameter table.
+
+                       Syntax
+
+APEX_JSON.INITIALIZE_OUTPUT (
+
+p_http_header IN BOOLEAN DEFAULT TRUE,
+
+p_http_cache                                           IN BOOLEAN DEFAULT FALSE,
+
+p_http_cache_etag IN VARCHAR2 DEFAULT NULL,
+
+p_indent                                               IN PLS_INTEGER DEFAULT NULL )
+
+Parameters
+
+Parameter                                              Description
+p_http_header
+p_http_cache                                           If TRUE (default), writes an application/JSON mime type header.
+
+http_cache_etag                                        This parameter is only relevant if p_http_header is TRUE. If TRUE,
+p_indent                                               writes Cache-Control: max-age=315360000. If FALSE (the default),
+                                                       writes Cache-Control: no-cache. Otherwise, does not write Cache-
+                                                       Control.
+
+                                                       If not null, writes an etag header. This parameter is only used if
+                                                       P_HTTP_CACHE is true.
+
+                                                       Indent level. Defaults to 2, if debug is turned on, otherwise defaults to
+                                                       0.
+
+Example
+
+This example configures APEX_JSON to not emit default headers, because they are written
+directly.
+
+BEGIN
+   apex_json.initialize_output (
+         p_http_header => false );
+
+   sys.owa_util.mime_header('application/json', false);
+   sys.owa_util.status_line(429, 'Too Many Requests');
+   sys.owa_util.http_header_close;
+   --
+   apex_json.open_object;
+   apex_json.write('maxRequestsPerSecond', 10);
+   apex_json.close_object;
+END;
+
+40.25 OPEN_ARRAY Procedure
+
+                       This procedure writes an open bracket symbol as follows:
+                          [
+
+API Reference                                                                         July 24, 2026
+G26651-03                                                                             Page 23 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                            Chapter 40
+                                                                                       OPEN_OBJECT Procedure
+
+Syntax
+
+APEX_JSON.OPEN_ARRAY (
+      p_name IN VARCHAR2 DEFAULT NULL )
+
+Parameters
+
+Parameter                                              Description
+p_name
+                                                       If not null, write an object attribute name and colon before the opening
+                                                       bracket.
+
+Example
+This example performs a write { "array":[ 1 ,[ ] ] }.
+
+BEGIN
+   apex_json.open_object; -- {
+   apex_json.open_array('array'); -- "array": [
+   apex_json.write(1); -- 1
+   apex_json.open_array; -- , [
+   apex_json.close_array; -- ]
+   apex_json.close_array; -- ]
+   apex_json.close_object; -- }
+
+END;
+
+40.26 OPEN_OBJECT Procedure
+
+                       This procedure writes an open curly bracket symbol as follows:
+
+{
+
+Syntax
+
+APEX_JSON.OPEN_OBJECT (
+      p_name IN VARCHAR2 DEFAULT NULL )
+
+Parameters
+
+Parameter                                              Description
+p_name
+                                                       If not null, write an object attribute name and colon before the opening
+                                                       brace.
+
+Example
+This example performs a write { "obj": { "obj-attr": "value" }}.
+
+BEGIN
+   apex_json.open_object; -- {
+   apex_json.open_object('obj'); -- "obj": {
+   apex_json.write('obj-attr', 'value'); -- "obj-attr": "value"
+
+API Reference                                                                          July 24, 2026
+G26651-03                                                                              Page 24 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                 Chapter 40
+                                                                        PARSE Procedure Signature 1
+
+   apex_json.close_all; -- }}
+END;
+
+40.27 PARSE Procedure Signature 1
+
+                       This procedure parses a JSON-formatted VARCHAR2 or CLOB and puts the members into
+                       p_values.
+
+                       Syntax
+
+APEX_JSON.PARSE (                                      t_values,
+      p_values IN OUT NOCOPY                           DEFAULT TRUE );
+      p_source IN VARCHAR2,
+      p_strict IN BOOLEAN
+
+APEX_JSON.PARSE (                                      t_values,
+      p_values IN OUT NOCOPY                           DEFAULT TRUE );
+      p_source IN CLOB,
+      p_strict IN BOOLEAN
+
+Parameters
+
+Parameter                                              Description
+p_values
+                                                       An index by VARCHAR2 result array which contains the JSON members
+p_source                                               and values. The default is g_values.
+p_strict                                               The JSON source (VARCHAR2 or CLOB)
+                                                       If TRUE (default), enforce strict JSON rules
+
+Example
+This example parses JSON and prints member values.
+
+DECLARE
+      l_values apex_json.t_values;
+
+BEGIN
+      apex_json.parse (
+            p_values => l_values,
+            p_source => '{ "type": "circle", "coord": [10, 20] }' );
+      sys.htp.p('Point at '||
+            apex_json.get_number (
+                   p_values => l_values,
+                   p_path => 'coord[1]')||
+            ','||
+            apex_json.get_number (
+                   p_values => l_values,
+                   p_path => 'coord[2]'));
+
+END;
+
+40.28 PARSE Procedure Signature 2
+
+                       This procedure parses a JSON-formatted varchar2 or clob and puts the members into the
+                       package global g_values. This simplified API works similar to the parse() procedure for
+
+API Reference                                                           July 24, 2026
+G26651-03                                                               Page 25 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                          Chapter 40
+                                                                                              STRINGIFY Function Signature 1
+
+signature 1, but saves the developer from declaring a local variable for parsed JSON data and
+passing it to each JSON API call.
+
+Syntax
+
+APEX_JSON.PARSE (
+      p_source IN VARCHAR2,
+      p_strict IN BOOLEAN DEFAULT TRUE );
+
+APEX_JSON.PARSE (
+      p_source IN CLOB,
+      p_strict IN BOOLEAN DEFAULT TRUE );
+
+Parameters
+
+Parameter                                              Description
+p_source                                               The JSON source (VARCHAR2 or CLOB).
+p_strict                                               If TRUE (default), enforce strict JSON rules.
+
+Example
+This example parses JSON and prints member values.
+
+apex_json.parse('{ "type": "circle", "coord": [10, 20] }');
+sys.htp.p('Point at '||
+
+      apex_json.get_number(p_path=>'coord[1]')||
+      ','||
+      apex_json.get_number(p_path=>'coord[2]'));
+
+40.29 STRINGIFY Function Signature 1
+
+                       This function converts a string to an escaped JSON value.
+                       Syntax
+
+APEX_JSON.STRINGIFY (
+      p_value IN VARCHAR2 )
+
+RETURN VARCHAR2;
+
+Parameters
+
+ Parameter                                             Description
+p_value                                                The string to be converted.
+
+Returns
+
+Return                                                 Description
+VARCHAR2                                               The converted and escaped JSON value.
+
+API Reference                                                                                         July 24, 2026
+G26651-03                                                                                             Page 26 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                          Chapter 40
+                                                                                              STRINGIFY Function Signature 2
+
+                       Example
+                       This example is a query that returns a JSON varchar2 value.
+
+                       select apex_json.stringify('line 1'||chr(10)||'line 2') from dual;
+
+40.30 STRINGIFY Function Signature 2
+
+                       This function converts a number to an escaped JSON value.
+                       Syntax
+
+                       APEX_JSON.STRINGIFY (
+                             p_value IN NUMBER )
+
+                       RETURN VARCHAR2;
+
+                       Parameters
+
+ Parameter                                             Description
+p_value                                                The number to be converted.
+
+Returns
+
+Return                                                 Description
+VARCHAR2                                               The converted and escaped JSON value.
+
+Example
+This example is a query that returns a JSON number value.
+
+select apex_json.stringify(-1/10) from dual
+
+40.31 STRINGIFY Function Signature 3
+
+                       This function converts a date to an escaped JSON value.
+                       Syntax
+
+APEX_JSON.STRINGIFY (
+      p_value IN DATE,
+      p_format IN VARCHAR2 DEFAULT c_date_iso8601 )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_value                                                The date value to be converted.
+
+API Reference                                                                                 July 24, 2026
+G26651-03                                                                                     Page 27 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                          Chapter 40
+                                                                                              STRINGIFY Function Signature 4
+
+Returns
+
+Return                                                 Description
+VARCHAR2                                               The converted and escaped JSON value.
+
+Example
+
+This example is a query that returns a JSON varchar2 value that is suitable to be converted to
+dates.
+
+select apex_json.stringify(sysdate) from dual
+
+40.32 STRINGIFY Function Signature 4
+
+                       This function converts a boolean value to an escaped JSON value.
+                       Syntax
+
+APEX_JSON.STRINGIFY (
+      p_value IN BOOLEAN )
+
+RETURN VARCHAR2;
+
+Parameters
+
+ Parameter                                             Description
+p_value                                                The boolean value to be converted.
+
+Returns
+
+Return                                                 Description
+VARCHAR2                                               The converted and escaped JSON value.
+
+Example
+This example demonstrates printing JSON boolean values.
+
+BEGIN
+   sys.htp.p(apex_json.stringify(true));
+   sys.htp.p(apex_json.stringify(false));
+
+END;
+
+40.33 STRINGIFY Function Signature 5
+
+                       This function converts p_value to a GeoJSON value.
+
+API Reference                                                                                 July 24, 2026
+G26651-03                                                                                     Page 28 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                       Chapter 40
+                                                                             TO_MEMBER_NAME Function
+
+Note
+
+This signature is only available if SDO_GEOMETRY (Oracle Locator) is installed in
+the database.
+
+Syntax
+
+APEX_JSON.STRINGIFY (
+      p_value IN mdsys.sdo_geometry )
+      RETURN CLOB;
+
+Parameters
+
+ Parameter                                             Description
+p_value                                                The sdo_geometry value to be converted.
+
+Returns
+
+Return                                                 Description
+CLOB                                                   The GeoJSON value.
+
+Example
+The following example prints GeoJSON values.
+
+BEGIN
+   sys.htp.p(apex_json.stringify(
+                         mdsys.sdo_geometry( 2001, 4326, sdo_point_type( 10, 50,
+
+null ), null, null ) ) );
+END;
+
+40.34 TO_MEMBER_NAME Function
+
+                       This function converts the given string to a JSON member name, usable for accessing values
+                       via the get_% functions. Unless member names are simple identifiers (A-Z,0-9, "_"), they
+                       need to be quoted.
+
+                       Syntax
+
+FUNCTION TO_MEMBER_NAME (
+    p_string IN VARCHAR2 )
+    RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_string                                               The raw member name.
+
+API Reference                                                                                   July 24, 2026
+G26651-03                                                                                       Page 29 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                      Chapter 40
+                                                                                                     TO_XMLTYPE Function
+
+                       Returns
+                       A valid member name for get_% functions.
+
+                       Example
+                       Print various converted strings.
+
+                       BEGIN
+                             sys.dbms_output.put_line('Unquoted: '||
+
+                       apex_json.to_member_name('member_name'));
+                             sys.dbms_output.put_line('Quoted: '||
+
+                       apex_json.to_member_name('Hello"World'));
+                       END;
+
+                       Output:
+
+                             Unquoted: member_name
+                             Quoted: "Hello\"World"
+
+40.35 TO_XMLTYPE Function
+
+                       This procedure parses a JSON-formatted varchar2 or CLOB and converts it to an xmltype.
+
+                       Syntax
+
+                       APEX_JSON.TO_XMLTYPE (
+                              p_source IN VARCHAR2,
+                              p_strict IN BOOLEAN DEFAULT TRUE )
+
+                       RETURN sys.xmltype;
+
+                       APEX_JSON.TO_XMLTYPE (
+                              p_source IN CLOB,
+                              p_strict IN BOOLEAN DEFAULT TRUE )
+
+                       RETURN sys.xmltype;
+
+                       Parameters
+
+ Parameter                                             Description
+p_source                                               The JSON source (VARCHAR2 or CLOB)
+p_strict                                               If TRUE (default), enforce strict JSON rules
+
+Returns
+
+Return                                                 Description
+sys.xmltype                                            An xmltype representation of the JSON data.
+
+API Reference                                                                                        July 24, 2026
+G26651-03                                                                                            Page 30 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                          Chapter 40
+                                                                                                  TO_XMLTYPE_SQL Function
+
+                       Example
+                       This example parses JSON and prints the XML representation.
+
+                       DECLARE
+                              l_xml xmltype;
+
+                       BEGIN
+                              l_xml := apex_json.to_xmltype('{ "items": [ 1, 2, { "foo": true } ] }');
+                              dbms_output.put_line(l_xml.getstringval);
+
+                       END;
+
+40.36 TO_XMLTYPE_SQL Function
+
+                       This function parses a JSON-formatted varchar2 or CLOB and converts it to an xmltype. This
+                       function overload has the p_strict parameter as VARCHAR2 in order to allow invoking from
+                       within a SQL query and having JSON parsing in LAX mode.
+
+                       Syntax
+
+                       APEX_JSON.TO_XMLTYPE_SQL (
+                             p_source IN VARCHAR2,
+                             p_strict IN VARCHAR2 DEFAULT 'Y' )
+
+                       RETURN sys.xmltype;
+
+                       APEX_JSON.TO_XMLTYPE_SQL (
+                             p_source IN CLOB,
+                             p_strict IN VARCHAR2 DEFAULT 'Y' )
+
+                       RETURN sys.xmltype;
+
+                       Parameters
+
+Parameter                                              Description
+p_source                                               The JSON source (VARCHAR2 or CLOB)
+p_strict                                               If Y (default), enforce strict JSON rules
+
+Returns
+An xmltype representation of the json data
+
+Example
+
+This example SQL query converts JSON to XMLTYPE and uses the XMLTABLE SQL function to
+extract data. The p_strict argument is set to N , so the JSON can successfully be parsed in
+lax mode, although the items attribute is not enquoted.
+
+select
+      attr_1
+
+from
+      xmltable(
+      '/json/items/row'
+      passing apex_json.to_xmltype_sql( '{ items: [ 1, 2, { "foo": true } ] }',
+
+p_strict => 'N' )
+
+API Reference                                                                                     July 24, 2026
+G26651-03                                                                                         Page 31 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                           Chapter 40
+                                                                                   WRITE Procedure Signature 1
+
+                             columns
+                             attr_1 varchar2(20) path 'foo/text()'
+                         );
+
+40.37 WRITE Procedure Signature 1
+
+                       This procedure writes an array attribute of type VARCHAR2.
+                       Syntax
+
+                       APEX_JSON.WRITE (
+                             p_value IN VARCHAR2 );
+
+                       Parameters
+
+Parameter                                              Description
+p_value                                                The value to be written.
+
+Example
+
+This example writes an array containing 1, "two", "long text", false, the current date and a
+JSON representation of an XML document.
+
+DECLARE
+   l_clob clob := 'long text';
+   l_xml sys.xmltype := sys.xmltype('<obj><foo>1</foo><bar>2</bar></obj>');
+
+BEGIN
+-- if not executed within an APEX session context, JSON output needs to be
+initialized first
+
+   apex_json.initialize_clob_output;
+   apex_json.open_object;
+   apex_json.open_array; -- [
+   apex_json.write(1); -- 1
+   apex_json.write('two'); -- , "two"
+   apex_json.write(l_clob); -- , "long text"
+   apex_json.write(false); -- , false
+   apex_json.write(sysdate); -- , "2014-05-05T05:36:08Z"
+   apex_json.write(localtimestamp); -- , "2014-05-05T05:36:08.5434Z"
+   apex_json.write(current_timestamp); -- , "2014-05-05T05:36:08.5434+02:00"
+   apex_json.write(l_xml); -- , { "foo": 1, "bar": 2 }
+   apex_json.close_array; -- ]
+   apex_json.close_object;
+   dbms_output.put_line(apex_json.get_clob_output);
+   apex_json.free_output;
+END;
+
+40.38 WRITE Procedure Signature 2
+
+                       This procedure writes an array attribute of type clob.
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 32 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                         Chapter 40
+                                                                                 WRITE Procedure Signature 3
+
+Syntax
+
+APEX_JSON.WRITE (
+      p_value IN CLOB );
+
+Parameters
+
+Parameter                                              Description
+p_value                                                The value to be written.
+
+                       Example
+                       See WRITE Procedure Signature 1.
+
+40.39 WRITE Procedure Signature 3
+
+This procedure writes an array attribute of type NUMBER.
+
+Syntax
+
+APEX_JSON.WRITE (
+      p_value IN NUMBER );
+
+Parameters
+
+Parameter                                              Description
+p_value                                                The value to be written.
+
+Example
+See WRITE Procedure Signature 1.
+
+40.40 WRITE Procedure Signature 4
+
+This procedure writes an array attribute. of type date.
+
+Syntax
+
+APEX_JSON.WRITE (
+      p_value IN DATE,
+      p_format IN VARCHAR2 DEFAULT c_date_iso8601 );
+
+Parameters
+
+Parameter                                              Description
+p_value                                                The value to be written.
+p_format                                               The date format mask (default c_date_iso8601).
+
+API Reference                                                                                          July 24, 2026
+G26651-03                                                                                              Page 33 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                          Chapter 40
+                                                                                  WRITE Procedure Signature 5
+
+                       Example
+                       See WRITE Procedure Signature 1.
+
+40.41 WRITE Procedure Signature 5
+
+                       This procedure writes an array attribute of type boolean.
+                       Syntax
+
+                       APEX_JSON.WRITE (
+                              p_value IN BOOLEAN );
+
+                       Parameters
+
+Parameter                                              Description
+p_value                                                The value to be written.
+
+Example
+See WRITE Procedure Signature 1.
+
+40.42 WRITE Procedure Signature 6
+
+This procedure writes an array attribute of type sys.xmltype. The procedure uses a XSL
+transformation to generate JSON. To determine the JSON type of values, it uses the following
+rules:
+
+� If the value is empty, it generates a NULL value.
+
+� If upper(value) is TRUE, it generates a boolean true value.
+
+� If upper(value) is FALSE, it generates a boolean false value.
+
+� If the XPath number function returns TRUE, it emits the value as is. Otherwise, it enquotes
+     the value (that is, treats it as a JSON string).
+
+Syntax
+
+APEX_JSON.WRITE (
+      p_value IN sys.xmltype );
+
+Parameters
+
+Parameter                                              Description
+p_value                                                The value to be written.
+
+Example
+See WRITE Procedure Signature 1.
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 34 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                            Chapter 40
+                                                                                    WRITE Procedure Signature 7
+
+40.43 WRITE Procedure Signature 7
+
+                       This procedure writes an array with all rows that the cursor returns. Each row is a separate
+                       object. If the query contains object type, collection, or cursor columns, the procedure
+                       uses write(xmltype) to generate JSON. Otherwise, it uses DBMS_SQL to fetch rows and
+                       the write() procedures for the appropriate column data types for output. If the column type
+                       is varchar2 and the uppercase value is 'TRUE' or 'FALSE', it generates boolean values.
+
+                       Syntax
+
+APEX_JSON.WRITE (
+
+p_cursor             IN OUT NOCOPY sys_refcursor );
+
+Parameters
+
+Parameter                                              Description
+p_cursor                                               The cursor.
+
+Example
+This example writes an array containing JSON objects for departments 10 and 20.
+
+DECLARE
+      c sys_refcursor;
+
+BEGIN
+      open c for select deptno, dname, loc from dept where deptno in (10, 20);
+      apex_json.write(c);
+
+END;
+
+This is the output:
+
+[ { "DEPTNO":10 ,"DNAME":"ACCOUNTING" ,"LOC":"NEW YORK" }
+, { "DEPTNO":20 ,"DNAME":"RESEARCH" ,"LOC":"DALLAS" } ]
+
+40.44 WRITE Procedure Signature 8
+
+                       This procedure writes array attribute of type SDO_GEOMETRY.
+
+Note
+
+This signature is only available if SDO_GEOMETRY (Oracle Locator) is installed in
+the database.
+
+Syntax
+
+APEX_JSON.WRITE (
+
+p_value              IN mdsys.sdo_geometry );
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 35 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                         Chapter 40
+                                                                                 WRITE Procedure Signature 9
+
+Parameters
+
+Parameter                                              Description
+p_value                                                The value to be written.
+
+40.45 WRITE Procedure Signature 9
+
+This procedure writes an object attribute of type VARCHAR2.
+
+Syntax
+
+APEX_JSON.WRITE (
+
+p_name             IN VARCHAR2,
+
+p_value            IN VARCHAR2,
+
+p_write_null IN BOOLEAN DEFAULT FALSE );
+
+Parameters
+
+Parameter                                              Description
+p_name                                                 The attribute name.
+p_value                                                The attribute value to be written.
+p_write_null                                           If TRUE, write NULL values. If FALSE (default), do not write NULLs.
+
+Example
+
+This example writes an object with named member attributes of various types. The comments
+to the right of the statements show the output that they generate.
+
+DECLARE
+   l_clob clob := 'long text';
+   l_xml sys.xmltype := sys.xmltype('<obj><foo>1</foo><bar>2</bar></obj>');
+
+BEGIN
+   apex_json.open_object; -- {
+   apex_json.write('a1', 1); -- "a1": 1
+   apex_json.write('a2', 'two'); -- ,"a2": "two"
+   apex_json.write('a3', l_clob); -- ,"a3": "long text"
+   apex_json.write('a4', false); -- ,"a4": false
+   apex_json.write('a5', sysdate); -- ,"a5": "2014-05-05T05:36:08Z"
+   apex_json.write('a6', l_xml); -- ,"a6": { "foo": 1, "bar": 2 }
+   apex_json.close_object; -- }
+
+END;
+
+40.46 WRITE Procedure Signature 10
+
+                       This procedure writes an object attribute of type CLOB.
+                       Syntax
+
+APEX_JSON.WRITE (
+
+p_name             IN VARCHAR2,
+
+API Reference                                                                    July 24, 2026
+G26651-03                                                                        Page 36 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                               Chapter 40
+                                                                     WRITE Procedure Signature 11
+
+p_value             IN CLOB,
+
+p_write_null IN BOOLEAN DEFAULT FALSE );
+
+Parameters
+
+Parameter                                              Description
+p_name                                                 The attribute name.
+p_value                                                The attribute value to be written.
+p_write_null                                           If TRUE, write NULL values. If FALSE (the default), do not write NULLs.
+
+                       Example
+                       See example for WRITE Procedure Signature 9.
+
+40.47 WRITE Procedure Signature 11
+
+This procedure writes an object attribute of type NUMBER.
+
+Syntax
+
+APEX_JSON.WRITE (   IN VARCHAR2,
+      p_name        IN NUMBER,
+      p_value       IN BOOLEAN DEFAULT FALSE );
+      p_write_null
+
+Parameters
+
+Parameter                                              Description
+p_name                                                 The attribute name.
+p_value                                                The attribute value to be written.
+p_write_null                                           If TRUE, write NULL values. If false (the default), do not write NULLs.
+
+                       Example
+                       See example for WRITE Procedure Signature 9.
+
+40.48 WRITE Procedure Signature 12
+
+This procedure writes an object attribute of type date.
+Syntax
+
+APEX_JSON.WRITE (   IN VARCHAR2,
+      p_name        IN DATE,
+      p_value       IN VARCHAR2 DEFAULT c_date_iso8601,
+      p_format      IN BOOLEAN DEFAULT FALSE );
+      p_write_null
+
+API Reference                                                        July 24, 2026
+G26651-03                                                            Page 37 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                               Chapter 40
+                                                                     WRITE Procedure Signature 13
+
+Parameters
+
+Parameter                                              Description
+p_name                                                 The attribute name.
+p_value                                                The attribute value to be written.
+p_format                                               The date format mask (default apex_json.c_date_iso8601).
+p_write_null                                           If TRUE, write NULL values. If FALSE (default), do not write NULL.
+
+                       Example
+                       See example for WRITE Procedure Signature 9.
+
+40.49 WRITE Procedure Signature 13
+
+This procedure writes an object attribute of type boolean.
+Syntax
+
+APEX_JSON.WRITE (   IN VARCHAR2,
+      p_name        IN BOOLEAN,
+      p_value       IN BOOLEAN DEFAULT FALSE );
+      p_write_null
+
+Parameters
+
+Parameter                                              Description
+p_name                                                 The attribute name.
+p_value                                                The attribute value to be written.
+p_write_null                                           If TRUE, write NULL values. If FALSE (default), do not write NULL.
+
+Example
+See example for WRITE Procedure Signature 9.
+
+40.50 WRITE Procedure Signature 14
+
+This procedure writes an attribute where the value is an array that contains all rows that the
+cursor returns. Each row is a separate object.
+
+If the query contains object type, collection, or cursor columns, the procedure
+uses write(p_name,<xmltype>). See WRITE Procedure Signature 15. Otherwise, it
+uses DBMS_SQL to fetch rows and the write() procedures for the appropriate column data
+types for output. If the column type is varchar2 and the uppercase value is 'TRUE' or 'FALSE',
+it generates boolean values.
+
+Syntax
+
+APEX_JSON.WRITE (
+
+p_name              IN VARCHAR2,
+
+p_cursor            IN OUT NOCOPY sys_refcursor );
+
+API Reference                                                        July 24, 2026
+G26651-03                                                            Page 38 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                      Chapter 40
+                                                                            WRITE Procedure Signature 15
+
+Parameters
+
+Parameter                                              Description
+p_name                                                 The attribute name.
+p_cursor                                               The cursor.
+
+Example
+
+This example writes an array containing JSON objects for departments 10 and 20, as an object
+member attribute.
+
+DECLARE
+   c sys_refcursor;
+
+BEGIN
+   open c for select deptno,
+                               dname,
+                               cursor(select empno,
+                                                      ename
+                                              from emp e
+                                            where e.deptno=d.deptno) emps
+                       from dept d;
+   apex_json.open_object;
+   apex_json. write('departments', c);
+   apex_json.close_object;
+
+END;
+
+{ "departments":[
+         {"DEPTNO":10,
+           "DNAME":"ACCOUNTING",
+           "EMPS":[{"EMPNO":7839,"ENAME":"KING"}]},
+         ...
+
+       ,{"DEPTNO":40,"DNAME":"OPERATIONS","EMPS":null}] }
+
+40.51 WRITE Procedure Signature 15
+
+                       This procedure writes an array attribute of type sys.xmltype. The procedure uses a XSL
+                       transformation to generate JSON. To determine the JSON type of values, it uses the following
+                       rules:
+                       � If the value is empty, it generates a NULL value.
+                       � If upper(value) is TRUE, it generates a boolean true value.
+                       � If upper(value) is FALSE, it generates a boolean false value.
+                       � If the XPath number function returns true, it emits the value as is. Otherwise, it enquotes
+
+                             the value (that is, treats it as a JSON string).
+
+                       Syntax
+
+APEX_JSON.WRITE (   IN VARCHAR2,
+      p_name        IN sys.xmltype,
+      p_value       IN BOOLEAN DEFAULT FALSE );
+      p_write_null
+
+API Reference                                                               July 24, 2026
+G26651-03                                                                   Page 39 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                              Chapter 40
+                                                                                    WRITE Procedure Signature 16
+
+Parameters
+
+Parameter                                              Description
+p_name                                                 The attribute name.
+p_value                                                The value to be written. The XML is converted to JSON
+p_write_null                                           If TRUE, write NULL values. If FALSE (default), do not write NULLs.
+
+                       Example
+                       See example for WRITE Procedure Signature 14.
+
+40.52 WRITE Procedure Signature 16
+
+This procedure writes parts of a parsed APEX_JSON.t_values table.
+Syntax
+
+APEX_JSON.WRITE (                                      IN t_values,
+      p_values                                         IN VARCHAR2 DEFAULT '.',
+      p_path                                           IN VARCHAR2 DEFAULT NULL,
+      p0                                               IN VARCHAR2 DEFAULT NULL,
+      p1                                               IN VARCHAR2 DEFAULT NULL,
+      p2                                               IN VARCHAR2 DEFAULT NULL,
+      p3                                               IN VARCHAR2 DEFAULT NULL );
+      p4
+
+Parameters
+
+Parameter                                              Description
+p_values
+p_path                                                 The parsed JSON members.
+p[0-4]                                                 The index into p_values.
+                                                       Each %N in p_path will be replaced by pN and every i-th %s or %d is
+                                                       replaced by p[i-1].
+
+Example
+This example parses a JSON string and writes parts of it.
+
+DECLARE
+      j apex_json.t_values;
+
+BEGIN
+      apex_json.parse(j, '{ "foo": 3, "bar": { "x": 1, "y": 2 }}');
+      apex_json.write(j,'bar');
+
+END;
+
+40.53 WRITE Procedure Signature 17
+
+                       This procedure writes parts of a parsed APEX_JSON.t_values table as an object member
+                       attribute.
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 40 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                              Chapter 40
+                                                                                    WRITE Procedure Signature 18
+
+Syntax                                                 IN VARCHAR2,
+                                                       IN t_values,
+APEX_JSON.WRITE (                                      IN VARCHAR2 DEFAULT '.',
+      p_name                                           IN VARCHAR2 DEFAULT NULL,
+      p_values                                         IN VARCHAR2 DEFAULT NULL,
+      p_path                                           IN VARCHAR2 DEFAULT NULL,
+      p0                                               IN VARCHAR2 DEFAULT NULL,
+      p1                                               IN VARCHAR2 DEFAULT NULL,
+      p2                                               IN BOOLEAN DEFAULT FALSE );
+      p3
+      p4
+      p_write_null
+
+Parameters
+
+Parameter                                              Description
+p_name
+p_values                                               The attribute name.
+p_path                                                 The parsed JSON members.
+p[0-4]                                                 The index into p_values.
+                                                       Each %N in p_path will be replaced by pN and every i-th %s or %d is
+p_write_null                                           replaced by p[i-1].
+                                                       If true, write NULL values. If false (the default), do not write NULLs.
+
+Example
+This example parses a JSON string and writes parts of it as an object member.
+
+DECLARE
+   j apex_json.t_values;
+
+BEGIN
+   apex_json.parse(j, '{ "foo": 3, "bar": { "x": 1, "y": 2 }}');
+   apex_json.open_object; -- {
+   apex_json.write('parsed-bar',j,'bar');-- "parsed-bar":{ "x":1 ,"y":2 }
+   apex_json.close_object; -- }
+
+END;
+
+40.54 WRITE Procedure Signature 18
+
+                       This procedure writes an array attribute of type VARCHAR2.
+                       Syntax
+
+APEX_JSON.WRITE (                                      IN VARCHAR2,
+         p_name                                        IN apex_t_varchar2,
+         p_values                                      IN BOOLEAN DEFAULT FALSE );
+         p_write_null
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 41 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                            Chapter 40
+                                                                                  WRITE Procedure Signature 19
+
+Parameters
+
+Parameter                                              Description
+p_name
+p_values                                               The attribute name.
+p_write_null                                           The VARCHAR2 array values to be written.
+                                                       If true, write an empty array. If false (the default), do not write an empty
+                                                       array.
+
+Example
+This example writes an array containing a, b, c.
+
+DECLARE
+
+l_values apex_t_varchar2 := apex_t_varchar2( 'a', 'b', 'c' );
+
+BEGIN
+
+apex_json.open_object;                                 -- {
+
+apex_json.write('array', l_values ); -- "array": [ "a", "b", "c" ]
+
+apex_json.close_object;                                -- }
+
+END;
+
+40.55 WRITE Procedure Signature 19
+
+                       This procedure writes an array attribute of type NUMBER .
+                       Syntax
+
+APEX_JSON.WRITE (
+
+p_name        IN VARCHAR2,
+
+p_values      IN apex_t_number,
+
+p_write_null IN BOOLEAN DEFAULT FALSE );
+
+Parameters
+
+Parameter                                              Description
+p_name
+p_values                                               The attribute name.
+p_write_null                                           The NUMBER array values to be written.
+                                                       If true, write an empty array. If false (the default), do not write an empty
+                                                       array.
+
+Example
+This example writes an array containing 1, 2, 3.
+
+DECLARE
+
+l_values apex_t_number := apex_t_number( 1, 2, 3 );
+
+BEGIN
+
+apex_json.open_object;                                 -- {
+
+apex_json.write('array', l_values ); -- "array": [ 1, 2, 3 ]
+
+apex_json.close_object;                                -- }
+
+END;
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 42 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                             Chapter 40
+                                                                   WRITE Procedure Signature 20
+
+40.56 WRITE Procedure Signature 20
+
+                       This procedure writes a BLOB object attribute. The value will be Base64-encoded.
+                       Syntax
+
+APEX_JSON.WRITE (
+
+p_name             IN VARCHAR2
+
+p_value            IN BLOB,
+
+p_write_null IN BOOLEAN DEFAULT FALSE );
+
+Parameters
+
+Parameter                                              Description
+p_name
+p_values                                               The attribute name.
+p_write_null                                           The attribute value to be written.
+                                                       If TRUE, write an empty array. If FALSE (default), do not write an empty
+                                                       array.
+
+Example
+
+This example writes a JSON object with the a1, a2, a3, and a4 attributes. a3 is a BLOB, encoded
+in Base64 format.
+
+DECLARE
+   l_blob blob := to_blob( hextoraw('000102030405060708090a');
+
+BEGIN
+   apex_json.open_object; -- {
+   apex_json.write('a1', 1); -- "a1": 1
+   apex_json.write('a2', 'two'); -- ,"a2": "two"
+   apex_json.write('a3', l_blob); -- ,"a3": "AAECAwQFBgcICQo="
+   apex_json.write('a4', false); -- ,"a4": false
+   apex_json.close_object; -- }
+
+END;
+
+40.57 WRITE Procedure Signature 21
+
+                       This procedure writes an object attribute.
+
+Note
+
+This signature is only available if SDO_GEOMETRY (Oracle Locator) is installed in
+the database.
+
+Syntax
+
+APEX_JSON.WRITE (
+
+p_name             IN VARCHAR2,
+
+API Reference                                                                                            July 24, 2026
+G26651-03                                                                                                Page 43 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                               Chapter 40
+                                                       WRITE_CONTEXT Procedure
+
+p_value       IN mdsys.sdo_geometry,
+
+p_write_null IN BOOLEAN DEFAULT FALSE );
+
+Parameters
+
+Parameter                                              Description
+p_name
+p_value                                                The attribute name.
+p_write_null                                           The attribute value to be written.
+                                                       If TRUE, write null values. If FALSE (the default), do not write
+                                                       nulls.
+
+Example
+
+The following example writes a JSON object with the a1, a2, a3, and a4 attributes. a3 is an
+SDO_GEOMETRY, encoded as GeoJSON.
+
+DECLARE
+   l_sdo_geometry mdsys.sdo_geometry := sdo_geometry( 2001, 4326,
+
+sdo_point_type( 10, 50, null ), null, null );
+BEGIN
+
+   apex_json.open_object; -- {
+   apex_json.write('a1', 1); -- "a1": 1
+   apex_json.write('a2', 'two'); -- ,"a2": "two"
+   apex_json.write('a3', l_sdo_geometry); -- ,"a3": { "type": "Point",
+"coordinates": [ 10, 50 ] }
+   apex_json.write('a4', false); -- ,"a4": false
+   apex_json.close_object; -- }
+END;
+
+40.58 WRITE_CONTEXT Procedure
+
+                       This procedure writes an array with all rows that the context handle returns. Each row is a
+                       separate object.
+
+                       If the query contains object type, collection or cursor columns, an error is raised. If the column
+                       is VARCHAR2 and the uppercase value is 'TRUE' or 'FALSE', boolean values are generated.
+
+                       Syntax
+
+PROCEDURE WRITE_CONTEXT (
+
+p_name        IN VARCHAR2
+
+p_context IN apex_exec.t_context,
+
+p_write_null IN BOOLEAN DEFAULT FALSE );
+
+Parameters
+
+Parameter                                              Description
+p_name                                                 The attribute name.
+p_context                                              The context handle from an APEX_EXEC.OPEN_QUERY_CONTEXT call.
+p_write_null                                           Whether to write (TRUE) or omit (FALSE) NULL values.
+
+API Reference                                                           July 24, 2026
+G26651-03                                                               Page 44 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                 Chapter 40
+                                                                                              WRITE_CONTEXT Procedure
+
+Example
+This example opens an APEX_EXEC quey context selecting the DEPT table and passes it to
+APEX_JSON.
+
+DECLARE
+      l_context apex_exec.t_context;
+
+begin
+      l_context := apex_exec.open_query_context(
+                                 p_location => apex_exec.c_location_local_db,
+                                 p_sql_query => q'#select * from dept#' );
+
+    apex_json.open_object;
+    apex_json.write_context( p_name => 'departments', p_context => l_context);
+    apex_json.close_object;
+ end;
+
+{ "departments":[
+       { "DEPTNO":10 ,"DNAME":"ACCOUNTING" ,"LOC":"NEW YORK" }
+
+      ,{ "DEPTNO":20 ,"DNAME":"RESEARCH" ,"LOC":"DALLAS" }
+      ,{ "DEPTNO":30 ,"DNAME":"SALES" ,"LOC":"CHICAGO" }
+      ,{ "DEPTNO":40 ,"DNAME":"OPERATIONS" ,"LOC":"BOSTON" } ] }
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 45 of 45
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+41

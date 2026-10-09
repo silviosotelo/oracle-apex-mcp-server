@@ -1,0 +1,1271 @@
+# APEX_ESCAPE (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 24521-25790)
+
+APEX_ESCAPE
+
+                       The APEX_ESCAPE package provides functions for escaping special characters in strings to
+                       ensure that the data is suitable for further processing.
+                       � Constants
+                       � CSS_SELECTOR Function
+                       � CSV Function Signature 1
+                       � CSV Function Signature 2
+                       � GET_CSV_ENCLOSED_BY Function
+                       � GET_CSV_SEPARATED_BY Function
+                       � HTML Function
+                       � HTML_ALLOWLIST Function
+                       � HTML_ALLOWLIST_CLOB Function
+                       � HTML_ATTRIBUTE Function
+                       � HTML_ATTRIBUTE_CLOB Function
+                       � HTML_CLOB Function
+                       � HTML_TRUNC Function Signature 1
+                       � HTML_TRUNC Function Signature 2
+                       � JS_LITERAL Function
+                       � JS_LITERAL_CLOB Function
+                       � JSON Function
+                       � JSON_CLOB Function
+                       � LDAP_DN Function
+                       � LDAP_SEARCH_FILTER Function
+                       � NOOP Function Signature 1
+                       � NOOP Function Signature 2
+                       � REGEXP Function
+                       � SET_CSV_PARAMETERS Procedure
+                       � SET_HTML_ESCAPING_MODE Procedure
+                       � STRIPHTML Function Signature 1
+                       � STRIPHTML Function Signature 2
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 1 of 24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                            Chapter 27
+                                                                                            Constants
+
+27.1 Constants
+
+                       The APEX_ESCAPE package uses the following constants.
+
+                       c_ldap_dn_reserved_chars constant varchar2(8) := '"+,;<=>\';
+                       c_ldap_search_reserved_chars constant varchar2(5) := '*()\/';
+                       c_html_allowlist_tags constant varchar2(255) := '<h1>,</h1>,<h2>,</h2>,<h3>,</
+                       h3>,<h4>,</h4>,<p>,</p>,<b>,</b>,<strong>,</strong>,<i>,</i>,<ul>,</
+                       ul>,<ol>,</ol>,<li>,</li>,<br />,<hr/>';
+
+27.2 CSS_SELECTOR Function
+
+                       This function escapes meta-characters in a string used in a CSS selector.
+                       See http://api.jquery.com/category/selectors/ for a list of characters.
+
+                       Syntax
+
+                       APEX_ESCAPE.CSS_SELECTOR (
+                              p_string IN VARCHAR2 )
+                              RETURN VARCHAR2 deterministic;
+
+                       Parameters
+
+Parameter                                              Description
+p_string                                               The string to be escaped.
+
+Example
+
+The following example ensures that the meta-character @ in mary@example.com is escaped and
+ignored by jQuery.
+
+DECLARE
+      l_name varchar2(30) := 'mary@example.com';
+
+BEGIN
+      apex_javascript.add_onload_code( '$( "#' ||
+
+apex_escape.js_literal( apex_escape.css_selector( l_name ), null ) ||
+'" ).hide();' );
+END;
+
+27.3 CSV Function Signature 1
+
+                       This function escapes special characters in a CSV value (VARCHAR2).
+                       Syntax
+
+APEX_ESCAPE.CSV (                                      IN VARCHAR2,
+      p_string                                         IN BOOLEAN DEFAULT TRUE,
+      p_quote
+
+API Reference                                                                               July 24, 2026
+G26651-03                                                                                   Page 2 of 24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                           Chapter 27
+                                                                                        CSV Function Signature 2
+
+      p_strip_html IN BOOLEAN DEFAULT FALSE )
+      RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_string
+p_quote                                                The string to be escaped.
+                                                       If TRUE (default) and p_string contains special characters,
+p_strip_html                                           enclose the result with the p_enclose_by parameter of
+                                                       set_csv_parameters.
+                                                       Default FALSE.
+                                                       If TRUE, remove any HTML tags.
+
+Example
+
+The following example prints a CSV report with employee IDs and names and non-default ; as
+separator.
+
+BEGIN
+    apex_escape.set_csv_parameters (
+           p_enclosed_by => '"',
+           p_separated_by => ';' );
+
+    for i in ( select empno, ename from emp ) loop
+           sys.dbms_output.put_line (
+                 i.empno || ';' || apex_escape.csv(i.ename) );
+
+    END loop;
+END;
+
+See Also
+� CSV Function Signature 2
+� SET_CSV_PARAMETERS Procedure
+� GET_CSV_ENCLOSED_BY Function
+� GET_CSV_SEPARATED_BY Function
+
+27.4 CSV Function Signature 2
+
+                       This function escapes special characters in a CSV value (CLOB).
+                       Syntax
+
+APEX_ESCAPE.CSV (                                      IN CLOB,
+      p_string                                         IN BOOLEAN DEFAULT TRUE,
+      p_quote                                          IN BOOLEAN DEFAULT FALSE )
+      p_strip_html
+      RETURN CLOB;
+
+API Reference                                                                           July 24, 2026
+G26651-03                                                                               Page 3 of 24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                             Chapter 27
+                                                                            GET_CSV_ENCLOSED_BY Function
+
+Parameters
+
+Parameter                                              Description
+p_string
+p_quote                                                The string to be escaped.
+                                                       If TRUE (default) and p_string contains special characters,
+p_strip_html                                           enclose the result with the p_enclose_by parameter of
+                                                       set_csv_parameters.
+                                                       Default FALSE.
+                                                       If TRUE, remove any HTML tags.
+
+Example
+
+The following example prints a CSV report with employee IDs and bio (a CLOB column) and
+non-default ; as separator.
+
+BEGIN
+    apex_escape.set_csv_parameters (
+           p_enclosed_by => '"',
+           p_separated_by => ';' );
+
+    for i in ( select empno, bio from emp ) loop
+           sys.dbms_output.put_line (
+                 i.empno || ';' || apex_escape.csv(i.bio) );
+
+    END loop;
+END;
+
+See Also
+� CSV Function Signature 1
+� SET_CSV_PARAMETERS Procedure
+� GET_CSV_ENCLOSED_BY Function
+� GET_CSV_SEPARATED_BY Function
+
+27.5 GET_CSV_ENCLOSED_BY Function
+
+                       This function returns the CSV enclose by character.
+                       Syntax
+
+                       APEX_ESCAPE.GET_CSV_ENCLOSED_BY
+                             RETURN VARCHAR2;
+
+                       Parameters
+
+Parameter                                              Description
+None.                                                  None.
+
+API Reference                                                               July 24, 2026
+G26651-03                                                                   Page 4 of 24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                 Chapter 27
+                                                                              GET_CSV_SEPARATED_BY Function
+
+See Also
+� CSV Function Signature 1
+� CSV Function Signature 2
+� SET_CSV_PARAMETERS Procedure
+� GET_CSV_SEPARATED_BY Function
+
+27.6 GET_CSV_SEPARATED_BY Function
+
+                       This function returns the CSV separated by character.
+                       Syntax
+
+                       APEX_ESCAPE.GET_CSV_SEPARATED_BY
+                              RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+None.                                                  None.
+
+                              See Also
+                                 � CSV Function Signature 1
+                                 � CSV Function Signature 2
+                                 � SET_CSV_PARAMETERS Procedure
+                                 � GET_CSV_ENCLOSED_BY Function
+
+27.7 HTML Function
+
+                       This function escapes characters which can change the context in an HTML environment. It is
+                       an extended version of sys.htf.escape_sc.
+
+                       This function's result depends on the escaping mode that is defined by using
+                       apex_escape.set_html_escaping_mode. By default, the escaping mode is Extended, but it can
+                       be overridden by manually calling set_html_escaping_mode or by setting the application
+                       security attribute HTML Escaping Mode to Basic. If the mode is Basic, the function behaves like
+                       sys.htf.escape_sc. Otherwise, the rules below apply.
+
+                       The following table, depicts ASCII characters that the function transforms and their escaped
+                       values:
+
+API Reference                                                                 July 24, 2026
+G26651-03                                                                     Page 5 of 24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                               Chapter 27
+                                                                                         HTML Function
+
+ Raw ASCII   Returned Escaped Characters
+ Characters
+&            &amp;
+"            &quot;
+<            &lt;
+>            &gt;
+ '           &#x27;
+/            &#x2F;
+
+Syntax
+
+APEX_ESCAPE.HTML (
+      p_string IN VARCHAR2 )
+      RETURN VARCHAR2 deterministic;
+
+Parameters
+
+Parameter                                              Description
+p_string                                               The string text that is escaped.
+
+Example
+This example tests escaping in basic (B) and extended (E) mode.
+
+DECLARE
+procedure eq(p_str1 in varchar2,p_str2 in varchar2)
+
+      is
+      BEGIN
+
+            IF p_str1||'.' <> p_str2||'.' THEN
+                   raise_application_error(-20001,p_str1||' <> '||p_str2);
+
+      END IF;
+END eq;
+BEGIN
+
+      apex_escape.set_html_escaping_mode('B');
+      eq(apex_escape.html('hello &"<>''/'), 'hello &amp;&quot;&lt;&gt;''/');
+      apex_escape.set_html_escaping_mode('E');
+      eq(apex_escape.html('hello &"<>''/'), 'hello
+      &amp;&quot;&lt;&gt;&#x27;&#x2F;');
+END;
+
+See Also
+� SET_HTML_ESCAPING_MODE Procedure
+
+API Reference                                                                            July 24, 2026
+G26651-03                                                                                Page 6 of 24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                            Chapter 27
+                                                                     HTML_ALLOWLIST Function
+
+27.8 HTML_ALLOWLIST Function
+
+                       The HTML_ALLOWLIST function performs HTML escape on all characters in the input text except
+                       the specified allowlist tags. This function can be useful if the input text contains simple html
+                       markup but a developer wants to ensure that an attacker cannot use malicious tags for cross-
+                       site scripting.
+
+                       Syntax
+
+APEX_ESCAPE.HTML_ALLOWLIST (
+
+p_html                                                 IN VARCHAR2,
+
+p_allowlist_tags IN VARCHAR2 DEFAULT c_html_allowlist_tags )
+
+RETURN VARCHAR2 deterministic;
+
+Parameters
+
+Parameter                                              Description
+p_html                                                 The text string that is filtered.
+p_allowlist_tags                                       The comma separated list of tags that stays in p_html.
+
+Example
+
+This example shows how to use HTML_ALLOWLIST to remove unwanted html markup from a
+string, while preserving allowlisted tags.
+
+BEGIN
+       sys.htp.p(apex_escape.html_allowlist(
+              '<h1>Hello<script>alert("XSS");</script></h1>'));
+
+END;
+
+See Also
+� SET_HTML_ESCAPING_MODE Procedure
+
+27.9 HTML_ALLOWLIST_CLOB Function
+
+                       This function performs HTML escape on all characters in the input text except the specified
+                       allowlist tags. This function can be useful if the input text contains simple HTML markup but a
+                       developer wants to ensure that an attacker cannot use malicious tags for cross-site scripting.
+
+                       Syntax
+
+APEX_ESCAPE.HTML_ALLOWLIST_CLOB (
+
+p_html                                                 IN CLOB,
+
+p_allowlist_tags IN VARCHAR2 DEFAULT c_html_allowlist_tags )
+
+RETURN CLOB deterministic;
+
+API Reference                                                                                                  July 24, 2026
+G26651-03                                                                                                      Page 7 of 24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+Parameters                                                                                                                  Chapter 27
+                                                                                                HTML_ATTRIBUTE Function
+ Parameter
+p_html                                                 Description
+p_allowlist_tags                                       The text string that is filtered.
+                                                       The comma-separated list of tags that stays in p_html.
+
+                              See Also
+                                 � HTML_ALLOWLIST Function
+                                 � HTML_CLOB Function
+                                 � HTML_TRUNC Function Signature 2
+                                 � HTML_ATTRIBUTE_CLOB Function
+                                 � SET_HTML_ESCAPING_MODE Procedure
+
+27.10 HTML_ATTRIBUTE Function
+
+                              Important
+                                 When using HTML_ATTRIBUTE for plain text attributes (such as title, placeholder,
+                                 aria-label), you may expose HTML code to end users. To exclude HTML code
+                                 exposed to end users for similar plain text attributes, avoid calls to HTML_ATTRIBUTE
+                                 function.
+
+Warning
+
+Do not use the HTML_ATTRIBUTE function to escape such attributes as aria-label,
+alt, summary and other attributes because they produce visually hidden content that is
+not obvious when HTML code is exposed to users of assistive technologies.
+
+Tip
+
+Oracle recommends GET_HTML_ATTR Function to escape all HTML attributes
+instead of this function.
+
+GET_HTML_ATTR enables you to choose the proper algorithm to escape the attribute
+value.
+
+This function escapes the values of HTML entity attributes. The API hex escapes everything
+that is not alphanumeric or within one of the following characters:
+
+�,
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 8 of 24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                         Chapter 27
+                                                                                         HTML_ATTRIBUTE_CLOB Function
+
+�.
+�-
+�_
+Syntax
+
+APEX_ESCAPE.HTML_ATTRIBUTE (
+      p_string IN VARCHAR2 )
+      RETURN VARCHAR2 deterministic;
+
+Parameters
+
+Parameter                                              Description
+p_string                                               The text string that is escaped.
+
+Example
+
+This example generates a HTML list of titles and text bodies. HTML entity attributes are
+escaped with HTML_ATTRIBUTE, whereas normal text is escaped with HTML and HTML_TRUNC.
+
+BEGIN
+      htp.p('<ul>');
+
+      for l_data in ( select title, cls, body
+            from my_topics )
+
+      LOOP
+            sys.htp.p('<li><span class="'||
+                   apex_escape.html_attribute(l_data.cls)||'">'||
+                   apex_escape.html(l_data.title)||'</span>');
+            sys.htp.p(apex_escape.html_trunc(l_data.body));
+            sys.htp.p('</li>');
+
+      END LOOP;
+
+      htp.p('</ul>');
+END;
+
+See Also
+� GET_HTML_ATTR Function
+� SET_HTML_ESCAPING_MODE Procedure
+
+27.11 HTML_ATTRIBUTE_CLOB Function
+
+                       This function escapes the values of HTML entity attributes. It hex escapes everything that is
+                       not alphanumeric or in one of the following characters:
+
+                       �,
+                       �.
+
+API Reference                                                                            July 24, 2026
+G26651-03                                                                                Page 9 of 24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                        Chapter 27
+                                                                                         HTML_CLOB Function
+
+�-
+�_
+Syntax
+
+APEX_ESCAPE.HTML_ATTRIBUTE_CLOB (
+      p_string IN CLOB )
+      RETURN CLOB deterministic;
+
+Parameters
+
+Parameter                                              Description
+p_string                                               The text string that is escaped.
+
+See Also
+� HTML_ALLOWLIST Function
+� HTML_CLOB Function
+� HTML_TRUNC Function Signature 2
+� HTML_ALLOWLIST_CLOB Function
+� SET_HTML_ESCAPING_MODE Procedure
+
+27.12 HTML_CLOB Function
+
+                       This function escapes characters which can change the context in an HTML environment. It is
+                       an extended version of the well-known SYS.HTF.ESCAPE_SC.
+
+                       The function's result depends on the escaping mode that is defined by using
+                       SET_HTML_ESCAPING_MODE. By default, the escaping mode is "Extended", but it can be
+                       overridden by manually calling SET_HTML_ESCAPING_MODE or by setting the "application security
+                       attribute HTML Escaping Mode" to "Basic." If the mode is Basic, the function behaves like
+                       SYS.HTF.ESCAPE_SC. Otherwise, the rules below apply.
+
+                       The following table, depicts ASCII characters that the function transforms and their escaped
+                       values:
+
+                       Table 27-1 Escaped Values for Transformed ASCII Characters
+
+Raw ASCII   Returned Escaped Characters
+Characters
+            &amp;
+&           &quot;
+"           &lt;
+<           &gt;
+>           &#x27;
+'           &#x2F;
+/
+
+API Reference                                                                            July 24, 2026
+G26651-03                                                                                Page 10 of 24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                       Chapter 27
+                                                       HTML_TRUNC Function Signature 1
+
+In addition, the function may escape unicode characters if the database NLS character set is
+not UTF-8 or if the REQUEST_IANA_CHARSET HTTP header variable is set to something different
+than UTF-8 (which is the default). If unicode escaping applies, these characters are escaped
+via &#xHHHH; where HHHH is the unicode hex code.
+
+Syntax
+
+APEX_ESCAPE.HTML_CLOB (
+      p_string IN CLOB )
+      RETURN CLOB deterministic;
+
+Parameters
+
+Parameter                                              Description
+p_string                                               The string text that is escaped.
+
+Example
+The following example tests escaping in basic (B) and extended (E) mode.
+
+DECLARE
+   procedure eq(p_str1 in clob,p_str2 in clob)
+   is
+   BEGIN
+      IF dbms_lob.compare(p_str1||'.', p_str2||'.') <> 0 THEN
+         raise_application_error(-20001,'p_str1 <> p_str2');
+      END IF;
+   END eq;
+
+BEGIN
+   apex_escape.set_html_escaping_mode('B');
+   eq(apex_escape.html_clob('hello &"<>''/'), 'hello &amp;&quot;&lt;&gt;''/');
+   apex_escape.set_html_escaping_mode('E');
+   eq(apex_escape.html_clob('hello &"<>''/'), 'hello
+
+&amp;&quot;&lt;&gt;&#x27;&#x2F;');
+END;
+
+See Also
+� HTML Function
+� HTML_TRUNC Function Signature 2
+� HTML_ALLOWLIST_CLOB Function
+� HTML_ATTRIBUTE_CLOB Function
+� SET_HTML_ESCAPING_MODE Procedure
+
+27.13 HTML_TRUNC Function Signature 1
+
+                       This function escapes HTML and limits the returned string to p_length bytes. This function
+                       returns the first p_length bytes of an input VARCHAR2 and escapes them. You can use this
+
+API Reference                                                                            July 24, 2026
+G26651-03                                                                                Page 11 of 24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                            Chapter 27
+                                                            HTML_TRUNC Function Signature 2
+
+function if the input VARCHAR2 is too large to fit in a VARCHAR2 variable and it is sufficient to
+only display the first part of it.
+
+Syntax
+
+APEX_ESCAPE.HTML_TRUNC (
+      p_string IN VARCHAR2,
+      p_length IN NUMBER DEFAULT 4000 )
+      RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_string                                               The text string that is escaped.
+p_length                                               The number of bytes from p_string that are escaped.
+
+Example
+
+This example generates a html list of of titles and text bodies. HTML entity attributes are
+escaped with HTML_ATTRIBUTE, whereas normal text is escaped with HTML and HTML_TRUNC.
+
+BEGIN
+      htp.p('<ul>');
+      for l_data in ( select title, cls, body
+            from my_topics )
+      LOOP
+      sys.htp.p('<li><span class="'||
+            apex_escape.html_attribute(l_data.cls)||'">'||
+            apex_escape.html(l_data.title)||'</span>');
+      sys.htp.p(apex_escape.html_trunc(l_data.body));
+      sys.htp.p('</li>');
+      END LOOP;
+      htp.p('</ul>');
+
+END;
+
+See Also
+� SET_HTML_ESCAPING_MODE Procedure
+
+27.14 HTML_TRUNC Function Signature 2
+
+                       This function escapes HTML and limits the returned string to p_length bytes. This function
+                       returns the first p_length bytes of an input CLOB and escapes them. You can use this function
+                       if the input CLOB is too large to fit in a VARCHAR2 variable and it is sufficient to only display
+                       the first part of it.
+
+                       Syntax
+
+                       APEX_ESCAPE.HTML_TRUNC (
+                             p_string IN CLOB,
+
+API Reference                                                                                               July 24, 2026
+G26651-03                                                                                                   Page 12 of 24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                           Chapter 27
+                                                            JS_LITERAL Function
+
+      p_length IN NUMBER DEFAULT 4000 )
+      return VARCHAR2 deterministic;
+
+Parameters
+
+Parameter                                              Description
+p_string
+p_length                                               The text string to be escaped (CLOB).
+                                                       The number of bytes from p_string that are escaped.
+                                                       For ASCII characters, a byte is a character.
+                                                       For Unicode characters, a single character can take up to 4 bytes.
+
+Example
+
+This example generates a HTML list of of titles and text bodies. HTML entity attributes are
+escaped with HTML_ATTRIBUTE, whereas normal text is escaped with HTML and HTML_TRUNC.
+
+BEGIN
+      htp.p('<ul>');
+      for l_data in ( select title, cls, body
+            from my_topics )
+      LOOP
+      sys.htp.p('<li><span class="'||
+            apex_escape.html_attribute(l_data.cls)||'">'||
+            apex_escape.html(l_data.title)||'</span>');
+      sys.htp.p(apex_escape.html_trunc(l_data.body));
+      sys.htp.p('</li>');
+      END LOOP;
+      htp.p('</ul>');
+
+END;
+
+See Also
+� HTML_TRUNC Function Signature 1
+� HTML_CLOB Function
+� HTML_ALLOWLIST_CLOB Function
+� HTML_ATTRIBUTE_CLOB Function
+� SET_HTML_ESCAPING_MODE Procedure
+
+27.15 JS_LITERAL Function
+
+                       The JS_LITERAL function escapes and optionally enquotes a JavaScript string. This function
+                       replaces non-immune characters with \xHH or \uHHHH equivalents. The result can be injected
+                       into JavaScript code, within <script> tags or inline (javascript:nnn). Immune characters
+                       include:
+
+                       � a through z
+
+                       � A through Z
+
+API Reference                                               July 24, 2026
+G26651-03                                                   Page 13 of 24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                               Chapter 27
+                                                       JS_LITERAL_CLOB Function
+
+� 0 through 9
+� commas ,
+� periods .
+� underscores _
+If the output should not be enclosed in quotes, then the parameter p_quote is NULL.
+If p_quote has a value, printable ASCII 7 characters are not escaped except for & < > " ' ` / \ %
+
+Syntax
+
+APEX_ESCAPE.JS_LITERAL (
+      p_string IN VARCHAR2,
+      p_quote IN VARCHAR2 DEFAULT '''' )
+      return VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_string
+p_quote                                                The text string that is escaped.
+                                                       If not NULL, this string is placed on the left and right of the result. The
+                                                       quotation character must be a single- or double-quotation mark.
+
+Example
+It describes how to use JS_LITERAL to escape special characters in the l_string variable.
+
+DECLARE
+      l_string varchar2(4000) := 'O''Brien';
+
+BEGIN
+      sys.htp.p('<script>'||
+            'alert('||apex_escape.js_literal(l_string)||');'||'</script>');
+
+END;
+
+27.16 JS_LITERAL_CLOB Function
+
+                       This function escapes and optionally enquotes a JavaScript string. This function replaces non-
+                       immune characters with \xHH or \uHHHH equivalents. The result can be injected into JavaScript
+                       code, within <script> tags or inline (javascript:nnn). Immune characters include:
+
+                       � a through z
+                       � A through Z
+                       � 0 through 9
+                       � commas ,
+                       � periods .
+                       � underscores _
+                       If the output should not be enclosed in quotes, then the parameter p_quote is NULL.
+
+                       If p_quote has a value, printable ASCII 7 characters are not escaped except for & < > " ' ` / \ %
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 14 of 24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                  Chapter 27
+                                                                                            JSON Function
+
+Syntax
+
+APEX_ESCAPE.JS_LITERAL_CLOB (
+      p_string IN CLOB )
+      RETURN CLOB;
+
+Parameters
+
+Parameter                                              Description
+p_string
+p_quote                                                The text string that is escaped.
+
+                                                       If not NULL, this string is placed on the left and right of the
+                                                       result. The quotation character must be a single- or double-
+                                                       quotation mark.
+
+Example
+
+The following example describes how to use JS_LITERAL to escape special characters in the
+l_string variable.
+
+DECLARE
+      l_string clob := 'O''Brien';
+
+BEGIN
+      sys.htp.p(
+            to_clob('<script>')||
+            'alert(' || apex_escape.js_literal_clob(l_string) || ');' ||
+            '</script>' );
+
+END;
+
+27.17 JSON Function
+
+                       This function returns p_string with all special characters escaped.
+                       Syntax
+
+APEX_ESCAPE.JSON (
+      p_string IN VARCHAR2 )
+
+RETURN VARCHAR2;
+
+Parameters
+
+ Parameter                                             Description
+p_string                                               The string to be escaped.
+
+Returns
+
+Return                                                 Description
+VARCHAR2                                               The escaped string.
+
+API Reference                                                                               July 24, 2026
+G26651-03                                                                                   Page 15 of 24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                           Chapter 27
+                                                                                            JSON_CLOB Function
+
+                       Example
+                       The following example prints this: { "name": "O\u0027Brien"}
+
+                       DECLARE
+                              l_string varchar2(4000) := 'O''Brien';
+
+                       BEGIN
+                              sys.htp.p('{ "name": "'||apex_escape.json(l_string)||'"}');
+
+                       END;
+
+27.18 JSON_CLOB Function
+
+                       This function returns p_string with all special characters escaped.
+
+                       Syntax
+
+                       APEX_ESCAPE.JSON_CLOB (
+                             p_string IN CLOB )
+                             RETURN CLOB;
+
+                       Parameters
+
+Parameter                                              Description
+p_string                                               The string to be escaped.
+
+Example
+The following example prints this: { "name": "O\u0027Brien"}
+
+DECLARE
+      l_string clob := 'O''Brien';
+
+BEGIN
+      sys.htp.p('{ "name": "' || apex_escape.json_clob(l_string) || '"}');
+
+END;
+
+27.19 LDAP_DN Function
+
+                       The LDAP_DN function escapes reserved characters in an LDAP distinguished name, according
+                       to RFC 4514. The RFC describes "+,;<=>\ as reserved characters (see p_reserved_chars).
+                       These are escaped by a backslash, for example, " becomes \". Non-printable characters,
+                       ASCII 0 - 31, and ones with a code > 127 (see p_escape_non_ascii) are escaped as \xx,
+                       where xx is the hexadecimal character code. The space character at the beginning or end of
+                       the string and a # at the beginning is also escaped with a backslash.
+
+                       Syntax
+
+APEX_ESCAPE.LDAP_DN (                                  IN VARCHAR2,
+      p_string                                         IN VARCHAR2 DEFAULT c_ldap_dn_reserved_chars,
+      p_reserved_chars
+
+API Reference                                                                                         July 24, 2026
+G26651-03                                                                                             Page 16 of 24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                       Chapter 27
+                                                                                         LDAP_SEARCH_FILTER Function
+
+      p_escaped_non_ascii IN BOOLEAN DEFAULT TRUE )
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_string
+p_reserved_chars                                       The text string that is escaped.
+
+p_escaped_non_ascii                                    A list of characters that when found in p_string is escaped with a
+                                                       backslash.
+                                                       If TRUE, characters above ASCII 127 in p_string are escaped with a
+                                                       backslash. This is supported by RFCs 4514 and 2253, but may cause
+                                                       errors with older LDAP servers and Microsoft AD.
+
+Example
+This example escapes characters in l_name and places the result in l_escaped.
+
+DECLARE
+      l_name varchar2(4000) := 'Joe+User';
+      l_escaped varchar2(4000);
+
+BEGIN
+      l_escaped := apex_escape.ldap_dn(l_name);
+      htp.p(l_name||' becomes '||l_escaped);
+
+END;
+
+Note
+LDAP_SEARCH_FILTER Function
+
+27.20 LDAP_SEARCH_FILTER Function
+
+                       The LDAP_SEARCH_FILTER function escapes reserved characters in an LDAP search filter,
+                       according to RFC 4515. The RFC describes *()\/ as reserved characters (see
+                       p_reserved_chars). These, non-printable characters (ASCII 0 - 31) and ones with a code >
+                       127 (see p_escape_non_ascii) are escaped as \xx, where xx is the hexadecimal character
+                       code.
+
+                       Syntax
+
+APEX_ESCAPE.LDAP_SEARCH_FILTER (
+
+p_string                                               IN VARCHAR2,
+
+p_reserved_chars                                       IN VARCHAR2 DEFAULT c_ldap_search_reserved_chars,
+
+p_escape_non_ascii IN BOOLEAN DEFAULT TRUE )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_string                                               The text string that is escaped.
+
+API Reference                                                                            July 24, 2026
+G26651-03                                                                                Page 17 of 24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                     Chapter 27
+                                                                               NOOP Function Signature 1
+
+Parameter                                              Description
+p_reserved_chars
+                                                       A list of characters that when found in p_string is escaped with \xx
+p_escape_non_ascii                                     where xx is the character's ASCII hexadecimal code.
+
+                                                       If TRUE, characters above ascii 127 in p_string are escaped with
+                                                       \xx where xx is the character's ASCII hexadecimal code. This is
+                                                       supported by RFCs 4514, but may cause errors with older LDAP
+                                                       servers and Microsoft AD.
+
+Example
+This example escapes the text in l_name and places the result in l_escaped.
+
+DECLARE
+l_name varchar2(4000) := 'Joe*User';
+l_escaped varchar2(4000);
+BEGIN
+
+      l_escaped := apex_escape.ldap_search_filter(l_name);
+      htp.p(l_name||' becomes '||l_escaped);
+END;
+
+Note
+LDAP_DN Function
+
+27.21 NOOP Function Signature 1
+
+                       This function returns p_string unchanged. Use this function to silence automatic injection
+                       detection tests, similar to dbms_assert.noop for SQL injection.
+
+                       Syntax
+
+                       APEX_ESCAPE.NOOP (
+                             p_string IN VARCHAR2 )
+                             RETURN VARCHAR2 deterministic;
+
+                       Parameters
+
+Parameter                                              Description
+p_string                                               The input text string.
+
+Example
+
+This example shows how to use NOOP to show the developer's intention to explicitly not escape
+text.
+
+BEGIN
+      sys.htp.p(apex_escape.noop('Cats & Dogs'));
+
+END;
+
+API Reference                                                                  July 24, 2026
+G26651-03                                                                      Page 18 of 24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                     Chapter 27
+                                                                               NOOP Function Signature 2
+
+27.22 NOOP Function Signature 2
+
+                       This function returns p_string (CLOB) unchanged. Use this function to silence automatic
+                       injection detection tests, similar to DBMS_ASSERT.NOOP for SQL injection.
+
+                       Syntax
+
+                       APEX_ESCAPE.NOOP (
+                              p_string IN CLOB )
+                              RETURN CLOB deterministic;
+
+                       Parameters
+
+Parameter                                              Description
+p_string                                               The input text string.
+
+Example
+
+The following example shows how to use NOOP to show the developer's intention to explicitly
+not escape text.
+
+BEGIN
+      sys.htp.p(apex_escape.noop( to_clob('Cats & Dogs') ));
+
+END;
+
+27.23 REGEXP Function
+
+                       This function escapes characters that can change the context in a regular expression. It should
+                       be used to secure user input. The following list depicts ascii characters that the function
+                       escapes with a backslash (\):
+
+                       \.^$*+-?()[]{|
+
+                       Syntax
+
+APEX_ESCAPE.REGEXP (
+      p_string IN VARCHAR2 )
+
+Parameters
+
+Parameter                                              Description
+p_string                                               Text to escape.
+
+Example
+
+The following example ensures the special character "-" in "Mary-Ann" is escaped and ignored
+by the regular expression engine.
+
+DECLARE
+      l_subscribers varchar2(4000) := 'Christina,Hilary,Mary-Ann,Joel';
+
+API Reference                                                                  July 24, 2026
+G26651-03                                                                      Page 19 of 24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                               Chapter 27
+                                                                             SET_CSV_PARAMETERS Procedure
+
+                             l_name varchar2(4000) := 'Mary-Ann';
+                       BEGIN
+
+                             IF regexp_instr(l_subscribers,'(^|,)'||
+                       apex_escape.regexp(l_name)||'($|,)')>0
+
+                             THEN
+                                    sys.htp.p('found');
+
+                             ELSE
+                                    sys.htp.p('not found')
+
+                             END IF;
+                       END
+
+27.24 SET_CSV_PARAMETERS Procedure
+
+                       This procedure sets parameters for the CSV function.
+
+                       Syntax
+
+                       APEX_ESCAPE.SET_CSV_PARAMETERS (
+                             p_enclosed_by IN VARCHAR2 DEFAULT NULL,
+                             p_separated_by IN VARCHAR2 DEFAULT NULL,
+                             p_escape_formulas IN BOOLEAN DEFAULT NULL );
+
+                       Parameters
+
+Parameter                                              Description
+p_enclosed_by
+p_separated_by                                         The string to enclose CSV values. If NULL (default), fall back
+                                                       to double quote.
+p_escape_formulas
+                                                       The string to separate CSV values. If NULL (default),
+                                                       determine the separator by checking the NLS decimal
+                                                       separator. If that is comma ( , ) the CSV separator is
+                                                       semicolon ( ; ) otherwise it is comma ( , ).
+
+                                                       Default TRUE, but can be overridden with instance
+                                                       parameter CSV_DOWNLOAD_ESCAPE_FORMULAS
+
+                                                       If TRUE, escape formula cells by prepending them with a
+                                                       space. Formula cells can start with:
+                                                       �=
+                                                       �@
+                                                       �+
+                                                       �-
+
+                                                       The sign characters are only escaped if they are not part of
+                                                       numbers.
+
+See Also
+� CSV Function Signature 1
+� CSV Function Signature 2
+� GET_CSV_ENCLOSED_BY Function
+� GET_CSV_SEPARATED_BY Function
+
+API Reference                                                                July 24, 2026
+G26651-03                                                                    Page 20 of 24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                Chapter 27
+                                                       SET_HTML_ESCAPING_MODE Procedure
+
+27.25 SET_HTML_ESCAPING_MODE Procedure
+
+                       The SET_HTML_ESCAPING_MODE procedure configures HTML escaping mode for
+                       apex_escape.html.
+                       Syntax
+
+                       APEX_ESCAPE.SET_HTML_ESCAPING_MODE (
+                              p_mode IN VARCHAR2 )
+
+                       Parameters
+
+Parameter                                              Description
+p_mode
+                                                       If B, then do basic escaping, like sys.htf.escape_sc. If E, then do
+                                                       extended escaping.
+
+Example
+This example tests escaping in basic (B) and extended (E) mode.
+
+DECLARE
+procedure eq(p_str1 in varchar2,p_str2 in varchar2)
+
+      is
+      BEGIN
+
+            IF p_str1||'.' <> p_str2||'.' THEN
+                   raise_application_error(-20001,p_str1||' <> '||p_str2);
+
+      END IF;
+END eq;
+BEGIN
+
+      apex_escape.set_html_escaping_mode('B');
+      eq(apex_escape.html('hello &"<>''/'), 'hello &amp;&quot;&lt;&gt;''/');
+      apex_escape.set_html_escaping_mode('E');
+      eq(apex_escape.html('hello &"<>''/'), 'hello
+      &amp;&quot;&lt;&gt;&#x27;&#x2F;');
+END;
+
+                              See Also
+                                 � HTML Function
+                                 � HTML_ALLOWLIST Function
+                                 � HTML_ATTRIBUTE Function
+                                 � HTML_TRUNC Function Signature 1
+
+27.26 STRIPHTML Function Signature 1
+
+                       This function returns p_string (VARCHAR2) removing HTML tags, leaving plain text.
+
+API Reference                                                                                  July 24, 2026
+G26651-03                                                                                      Page 21 of 24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                            Chapter 27
+                                                                               STRIPHTML Function Signature 1
+
+This function removes all HTML attributes regardless of the type of HTML content. For
+example, it preserves content such as JavaScript and CSS, but removes script and CSS HTML
+tags.
+
+Syntax
+
+APEX_ESCAPE.STRIPHTML (
+      p_string IN VARCHAR2 )
+      RETURN VARCHAR2 deterministic;
+
+Parameters
+
+ Parameter                                             Description
+p_string                                               The input text string.
+
+Example
+
+begin
+      sys.htp.p(apex_escape.striphtml(
+            q'[<p id="greeting">Hello <b>Joe</b></p>]'
+      ));
+
+end;
+
+Result:
+---------------------------------------------------------------------------
+Hello Joe
+---------------------------------------------------------------------------
+
+      begin
+            sys.htp.p(apex_escape.striphtml(q'[
+                   <html>
+                      <head>
+                         <title>Web Page</title>
+                      </head>
+                      <body>
+                         <h1>Page Title</h1>
+                         <p>
+                               This is some text.
+                         </p>
+                      </body>
+                   </html>
+            ]'));
+
+      end;
+
+Result:
+---------------------------------------------------------------------------
+
+            Web Page
+            Page Title
+
+API Reference                                                                  July 24, 2026
+G26651-03                                                                      Page 22 of 24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                            Chapter 27
+                                                                               STRIPHTML Function Signature 2
+
+                                                       This is some text.
+
+27.27 STRIPHTML Function Signature 2
+
+                       This function returns p_string (CLOB) removing HTML tags, leaving plain text.
+                       This function removes all HTML attributes regardless of the type of HTML content. For
+                       example, it preserves content such as JavaScript and CSS, but removes script and CSS HTML
+                       tags.
+
+                       Syntax
+
+                       APEX_ESCAPE.STRIPHTML (
+                             p_string IN CLOB )
+                             RETURN CLOB deterministic;
+
+                       Parameters
+
+ Parameter                                             Description
+p_string                                               The input text string.
+
+Example
+
+BEGIN
+      sys.htp.p(apex_escape.striphtml(
+            q'[<p id="greeting">Hello <b>Joe</b></p>]'
+      ));
+
+END;
+
+Result:
+---------------------------------------------------------------------------
+Hello Joe
+---------------------------------------------------------------------------
+
+BEGIN
+    sys.htp.p(apex_escape.striphtml(q'[
+           <html>
+              <head>
+                 <title>Web Page</title>
+              </head>
+              <body>
+                 <h1>Page Title</h1>
+                 <p>
+                       This is some text.
+                 </p>
+              </body>
+           </html>
+    ]'));
+
+END;
+
+API Reference                                                                  July 24, 2026
+G26651-03                                                                      Page 23 of 24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                 Chapter 27
+                                                                                         STRIPHTML Function Signature 2
+Result:
+---------------------------------------------------------------------------
+
+                   Web Page
+
+                   Page Title
+                         This is some text.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 24 of 24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+28

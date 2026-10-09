@@ -1,0 +1,241 @@
+# APEX_PWA (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 56890-57129)
+
+APEX_PWA
+
+                       Utilities include: subscribing and unsubscribing users for push notifications; verifying
+                       subscription for push notifications; and sending push notifications to subscribed users.
+                       This package is used to provide utilities to applications that have enabled Progressive Web
+                       App (PWA).
+                       � GENERATE_PUSH_CREDENTIALS Procedure
+                       � HAS_PUSH_SUBSCRIPTION Function
+                       � PUSH_QUEUE Procedure
+                       � SEND_PUSH_NOTIFICATION Procedure
+                       � SUBSCRIBE_PUSH_NOTIFICATIONS Procedure
+                       � UNSUBSCRIBE_PUSH_NOTIFICATIONS Procedure
+
+50.1 GENERATE_PUSH_CREDENTIALS Procedure
+
+                       This procedure regenerates push credential keys based on the provided application ID.
+
+                       Syntax
+
+                       APEX_PWA.GENERATE_PUSH_CREDENTIALS (
+                              p_application_id IN NUMBER DEFAULT [current application id] )
+
+                       Parameters
+
+Parameter                                              Description
+p_application_id                                       ID of the application. Defaults to current application.
+
+Example
+The following example regenerates push credential keys for application 100.
+
+BEGIN
+      apex_pwa.generate_push_credentials (
+            p_application_id => 100 );
+
+END;
+
+50.2 HAS_PUSH_SUBSCRIPTION Function
+
+                       This function returns whether a user has at least one device subscribed to push notifications.
+
+API Reference                                                                July 24, 2026
+G26651-03                                                                      Page 1 of 4
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                 Chapter 50
+                                                                                             PUSH_QUEUE Procedure
+
+Syntax
+
+APEX_PWA.HAS_PUSH_SUBSCRIPTION (
+
+      p_application_id IN NUMBER DEFAULT [current application id],
+
+      p_user_name                                      IN VARCHAR2 DEFAULT [current user] )
+
+      RETURN BOOLEAN;
+
+Parameters
+
+Parameter                                              Description
+p_application_id                                       ID of the application that has the push subscription.
+p_user_name                                            Username of the user that has the push subscription.
+
+Returns
+Function returns boolean containing whether a user is subscribed to an application.
+
+Example
+
+The following example verifies whether user "SMITH" has a push subscription for application
+100.
+
+BEGIN
+
+apex_pwa.has_push_subscription (
+
+        p_application_id => 100,
+
+        p_user_name                                    => 'SMITH' );
+
+END;
+
+50.3 PUSH_QUEUE Procedure
+
+                       This procedure triggers the database job to send all push notifications in the queue.
+                       Syntax
+
+APEX_PWA.PUSH_QUEUE;
+
+Parameters
+None.
+Example
+
+BEGIN
+      apex_pwa.push_queue;
+
+END;
+
+50.4 SEND_PUSH_NOTIFICATION Procedure
+
+                       This procedure sends a push notification to a user. All devices that the user subscribes on
+                       receive the push notification.
+
+API Reference                                                                                                 July 24, 2026
+G26651-03                                                                                                       Page 2 of 4
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                      Chapter 50
+                                                                     SUBSCRIBE_PUSH_NOTIFICATIONS Procedure
+
+Syntax
+
+APEX_PWA.SEND_PUSH_NOTIFICATION (
+
+      p_application_id IN NUMBER DEFAULT [current application id],
+
+      p_user_name                                      IN VARCHAR2,
+
+      p_title                                          IN VARCHAR2,
+
+      p_body                                           IN VARCHAR2 DEFAULT NULL,
+
+      p_icon_url                                       IN VARCHAR2 DEFAULT NULL,
+
+      p_target_url IN VARCHAR2 DEFAULT NULL )
+
+Parameters
+
+Parameter                                                            Description
+p_application_id
+                                                                     ID of the application that contains the user to send the push
+p_user_name                                                          notification to. Defaults to current application.
+p_title                                                              Username of the user receiving the push notification.
+p_body
+p_icon_url                                                           Title of the push notification.
+
+p_target_url                                                         Body of the push notification.
+
+                                                                     URL of the icon that displays on the push notification.
+                                                                     Defaults to the provided application icon.
+                                                                     URL of the page that opens when the user clicks on the
+                                                                     push notification. Defaults to the home page of the
+                                                                     application.
+                                                                     Oracle recommends enabling deep linking or rejoin session
+                                                                     on the application for best performance.
+
+Example
+The following example sends a push notification to user "SMITH" in application 100.
+
+BEGIN
+
+apex_pwa.send_push_notification (
+
+        p_application_id => 100,
+
+        p_user_name                                    => 'SMITH',
+
+        p_title                                        => 'Your order has been shipped',
+
+        p_body                                         => 'Order #123456 will arrive within 3 days.' );
+
+END;
+
+50.5 SUBSCRIBE_PUSH_NOTIFICATIONS Procedure
+
+                       This procedure subscribes a user to an application to enable receiving push notifications from
+                       the application.
+
+                       Syntax
+
+APEX_PWA.SUBSCRIBE_PUSH_NOTIFICATIONS (
+
+      p_application_id                                 IN NUMBER DEFAULT [current application id],
+
+      p_user_name                                      IN VARCHAR2 DEFAULT [current user],
+
+      p_subscription_interface IN VARCHAR2 )
+
+API Reference                                                                               July 24, 2026
+G26651-03                                                                                     Page 3 of 4
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                            Chapter 50
+                                                       UNSUBSCRIBE_PUSH_NOTIFICATIONS Procedure
+
+Parameters
+
+Parameter                                              Description
+p_application_id                                       ID of the application that has the push subscription.
+p_user_name                                            Username of the user that has the push subscription.
+p_subscription_interface                               Subscription object (JSON) generated from a browser.
+
+Example
+
+The following example subscribes a user to push notifications. This is usually used in
+conjunction with APEX JavaScript API apex.pwa.subscribePushNotifications and
+apex.pwa.getPushSubscription that can generate the subscription object.
+
+BEGIN
+      apex_pwa.subscribe_push_notifications (
+            p_subscription_interface => '{ "endpoint": "", "expirationTime": null,
+                                                         "keys": { "p256dh": "", "auth": "" } }' );
+
+END;
+
+50.6 UNSUBSCRIBE_PUSH_NOTIFICATIONS Procedure
+
+                       This procedure unsubscribes a user from the push notifications of an application.
+                       Syntax
+
+APEX_PWA.UNSUBSCRIBE_PUSH_NOTIFICATIONS (
+
+p_application_id                                       IN NUMBER DEFAULT [current application id],
+
+p_user_name                                            IN VARCHAR2 DEFAULT [current user],
+
+p_subscription_interface IN VARCHAR2 DEFAULT NULL )
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+p_user_name                                            ID of the application that has the push subscription.
+p_subscription_interface                               Username of the user that has the push subscription.
+                                                       Subscription object (JSON) generated from a browser. If
+                                                       provided, it will only unsubscribe this subscription. If not
+                                                       provided, it will unsubscribe all subscriptions.
+
+Example
+
+The following example unsubscribes a user from push notifications. This is usually used in
+conjunction with APEX JavaScript API apex.pwa.unsubscribePushNotifications and
+apex.pwa.getPushSubscription that can generate the subscription object.
+
+BEGIN
+      apex_pwa.unsubscribe_push_notifications;
+
+END;
+
+API Reference                                                                                             July 24, 2026
+G26651-03                                                                                                   Page 4 of 4
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+51

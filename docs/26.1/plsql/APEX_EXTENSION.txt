@@ -1,0 +1,323 @@
+# APEX_EXTENSION (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 33369-33690)
+
+APEX_EXTENSION
+
+                       The APEX_EXTENSION package contains utility functions used for invoking extension
+                       applications.
+
+                       This API can be used in the following contexts:
+
+                       � in an Oracle APEX session context of a workspace that has the Component Availability
+                             attribute Allow Hosting Extensions enabled (is an extension workspace)
+
+                       � this extension workspace has created links in its Extension Menu with attribute public set
+                             to Yes
+
+                       � another workspace is subscribed to the extension workspace's published extension menu
+                             and granted read acces to the extension workspace
+
+                       The API can be called in Automations or in database sessions using
+                       APEX_SESSION.CREATE_SESSION to establish an APEX session context. Invoking the procedure
+                       from the extension workspace, with the subscribed workspace name or ID, from an automation
+                       of an application in that extension workspace or session in a database schema associated to it,
+                       changes the behavior of application-related public APEX views such that querying them
+                       returns the application metadata of that subscribed workspace, but not the metadata of the
+                       "own" workspace anymore.
+
+                       � ADD_MENU_ENTRY Procedure
+
+                       � GET_BUILDER_LINK Function
+
+                       � GET_GRANTOR_WORKSPACE Function
+
+                       � REMOVE_MENU_ENTRY Procedure
+
+                       � SET_WORKSPACE Procedure Signature 1
+
+                       � SET_WORKSPACE Procedure Signature 2
+
+30.1 ADD_MENU_ENTRY Procedure
+
+                       This procedure adds a builder extension menu link. Requires the
+                       APEX_ADMINISTRATOR_ROLE.
+
+                       Syntax
+
+APEX_EXTENSION.ADD_MENU_ENTRY (
+
+p_label                                                IN VARCHAR2,
+
+p_url                                                  IN VARCHAR2,
+
+p_display_sequence IN NUMBER DEFAULT NULL,
+
+p_description                                          IN VARCHAR2 DEFAULT NULL,
+
+p_is_public                                            IN BOOLEAN DEFAULT FALSE,
+
+p_tab_identifier IN VARCHAR2 DEFAULT NULL,
+
+p_workspace                                            IN VARCHAR2 DEFAULT NULL )
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                            Page 1 of 5
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                           Chapter 30
+                                                                                  GET_BUILDER_LINK Function
+
+Parameters
+
+Parameter                                                          Description
+p_label
+p_url                                                              Menu entry label. Must be unique within a workspace.
+p_display_sequence
+p_description                                                      The menu entry's URL.
+p_is_public
+                                                                   (Optional) Display sequence for sorting menu entry.
+p_tab_identifier                                                   Default NULL: the value is calculated and the entry is
+                                                                   appended as last.
+p_workspace
+                                                                   (Optional) Description.
+
+                                                                   Default FALSE.
+
+                                                                   If TRUE, the entry is available for subscribing workspaces.
+                                                                   The value TRUE can only be set for extension workspaces.
+
+                                                                   If the given workspace is not enabled for hosting extensions,
+                                                                   the flag is set to FALSE.
+
+                                                                   Used to name the target browser tab the link is opened in. If
+                                                                   the tab doesn't exist yet, it is opened on clicking the link. If it
+                                                                   does exist already, the tab is reused to open the link clicked.
+                                                                   Multiple extension menu entries can have the same tab
+                                                                   identifier, which lets all those links open in the same tab. If
+                                                                   left empty, a unique tab name is generated to ensure the link
+                                                                   opens in the same tab again.
+                                                                   Default NULL, which means the menu entry is created for
+                                                                   the current workspace. Value can be set to any existing
+                                                                   workspace name.
+
+Example
+
+The following example adds an extension menu link in workspace MY_WORKSPACE with
+label "Example."
+
+BEGIN
+
+apex_extension.add_menu_entry(
+
+       p_label                                         => 'Example',
+
+       p_url                                           => 'https://example.com'
+
+       p_description => 'This is an example'
+
+       p_workspace => ' MY_WORKSPACE' );
+
+END;
+
+30.2 GET_BUILDER_LINK Function
+
+                       Generate an action fragment or action data attributes to open the APEX Builder window or tab,
+                       redirect, and focus on a specific component.
+
+                       Syntax
+
+APEX_EXTENSION.GET_BUILDER_LINK (
+
+p_app_id                                               IN NUMBER,
+
+p_page_id                                              IN NUMBER DEFAULT NULL,
+
+p_view_name                                            IN VARCHAR2 DEFAULT NULL,
+
+p_component_id IN NUMBER DEFAULT NULL,
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                           Page 2 of 5
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                Chapter 30
+                                                                       GET_BUILDER_LINK Function
+
+      p_as_data_action IN VARCHAR2 DEFAULT 'N' )
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_app_id
+p_page_id                                              ID of application to open in the Builder
+
+p_view_name                                            Optional ID of page in application to open. NULL if
+p_component_id                                         p_component_id references a shared component, but
+p_as_data_action                                       mandatory if referencing a component defined on a page,
+                                                       like page items, regions, or report columns.
+
+                                                       APEX Dictionary view of component identified in
+                                                       p_component_id.
+
+                                                       ID of component to focus on in the Designer or redirect to
+                                                       the corresponding edit page in Builder.
+
+                                                       Default is N, which will generate an action fragment to be
+                                                       used in a href attribute of an anchor element. If set to Y, this
+                                                       function returns the corresponding data attributes for a
+                                                       button action.
+
+                                                                  Note
+
+                                                                  When set to Y to generate the
+                                                                  link as data attributes for a
+                                                                  button and referencing the
+                                                                  column value as a substitution
+                                                                  string, the Escape Special
+                                                                  Characters must be switched
+                                                                  off for the column that uses the
+                                                                  get_builder_link function.
+
+Example
+
+Generates a Builder Backlink url as action fragment for each List Entry of all Lists in the current
+workspace.
+
+select workspace,
+
+application_name,
+
+list_name,
+
+display_sequence,
+
+entry_text,
+
+parent_entry_text,
+
+apex_extension.get_builder_link(p_app_id                          => application_id,
+
+                                                       p_page_id  => null,
+
+                                                       p_view_name =>
+
+'APEX_APPLICATION_LIST_ENTRIES',
+
+                                                       p_component_id => list_entry_id) as
+
+backlink
+
+from apex_application_list_entries;
+
+API Reference                                                               July 24, 2026
+G26651-03                                                                     Page 3 of 5
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                              Chapter 30
+                                                       GET_GRANTOR_WORKSPACE Function
+
+30.3 GET_GRANTOR_WORKSPACE Function
+
+                       This function gets current grantor workspace name.
+                       Syntax
+
+APEX_EXTENSION.GET_GRANTOR_WORKSPACE
+      RETURN VARCHAR2;
+
+Parameters
+None.
+
+Returns
+Workspace name of grantor workspace.
+
+Example
+The following example query returns the name of the invoking workspace in a builder
+extension context.
+
+select apex_extension.get_grantor_workspace from sys.dual;
+
+30.4 REMOVE_MENU_ENTRY Procedure
+
+                       This procedure removes an existing builder extension menu link entry. Requires the
+                       APEX_ADMINISTRATOR_ROLE.
+
+                       Syntax
+
+APEX_EXTENSION.REMOVE_MENU_ENTRY (
+
+p_label      IN VARCHAR2,
+
+p_workspace IN VARCHAR2 DEFAULT NULL )
+
+Parameters
+
+Parameter                                              Description
+p_label
+p_workspace                                            Menu entry label.
+
+                                                       Default NULL, which means the menu entry is from the
+                                                       current workspace. Value can be set to any existing
+                                                       workspace name.
+
+Example
+
+The following example deletes the builder extension menu entry with label "Example" in the
+current workspace.
+
+BEGIN
+      apex_extension.remove_menu_entry(p_label => 'Example');
+
+END;
+
+API Reference                                                                                              July 24, 2026
+G26651-03                                                                                                    Page 4 of 5
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                               Chapter 30
+                                                       SET_WORKSPACE Procedure Signature 1
+
+30.5 SET_WORKSPACE Procedure Signature 1
+
+                       This procedure sets the current workspace to the workspace that is processed by the
+                       extension application or background automation by its ID.
+                       After calling this API, all Oracle APEX dictionary views show the metadata of that workspace.
+                       Syntax
+
+                       APEX_EXTENSION.SET_WORKSPACE (
+                             p_id IN NUMBER )
+
+                       Parameters
+
+Parameter                                              Description
+p_id                                                   The ID of the workspace to be accessed.
+
+Example
+The following example sets access for an extension application to workspace with 123456789.
+
+BEGIN  apex_extension.set_workspace( p_id => 123456789);
+END;
+
+30.6 SET_WORKSPACE Procedure Signature 2
+
+                       This procedure sets the current workspace to the workspace that is processed by the
+                       extension application or background automation by its name.
+                       After calling this API, all Oracle APEX dictionary views show the metadata of that workspace.
+
+                       Syntax
+
+APEX_EXTENSION.SET_WORKSPACE (
+      p_name IN VARCHAR2 )
+
+Parameters
+
+Parameter                                              Description
+p_name                                                 The (display) name of the workspace to be accessed.
+
+Example
+The following example sets access for an extension application to workspace MYWORKSPACE.
+
+BEGIN
+      apex_extension.set_workspace( p_name => 'MYWORKSPACE');
+
+END;
+
+API Reference                                                                                   July 24, 2026
+G26651-03                                                                                         Page 5 of 5
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+31

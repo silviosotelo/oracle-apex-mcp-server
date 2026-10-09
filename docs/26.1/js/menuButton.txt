@@ -1,0 +1,33 @@
+# menuButton (APEX 26.1 JavaScript API, JSDoc oficial)
+
+JSDoc: Widget: menuButton
+
+Skip to Main Content
+
+Widget: menuButton
+
+ Since:
+
+5.0
+
+Examples
+
+This is the markup that associates a menu with id myMenu with the button.
+
+ <button type="button" data-menu="myMenu" class="...">Menu</button>
+
+This example shows the markup to use when a button is added dynamically to the page
+ including the aria attributes.
+
+ <button type="button" data-menu="myMenu" aria-haspopup="menu" aria-expanded="false" class="...">Menu</button>
+
+This example will open the menu on the side of the button. This may be useful
+when multiple buttons are arranged vertically.
+
+ <button type="button" data-menu="myMenu" data-menu-position="inline" class="...">Menu</button>
+
+This example creates a hover menu link on a vertically arranged icon link.
+
+ <a href="someurl" data-hover-menu="myMenu" data-menu-position="inline" aria-expanded="false" class="t-Button">
+ <span class="t-Icon fa fa-cube" aria-hidden="true"></span>
+ </a>

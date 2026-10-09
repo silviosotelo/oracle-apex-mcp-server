@@ -1,0 +1,185 @@
+# APEX_SHARED_COMPONENT (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 59414-59597)
+
+APEX_SHARED_COMPONENT
+
+                       This package contains APIs to work with shared components. This package is only available in
+                       full Oracle APEX installations.
+                       � Global Constants
+                       � PUBLISH Procedure
+                       � REFRESH Procedure
+
+56.1 Global Constants
+
+                       The APEX_SHARED_COMPONENT package uses the following constants.
+
+subtype t_component_type                               IS VARCHAR2(15);
+
+subtype t_subscription_status IS VARCHAR2(13);
+
+Component Types
+
+c_app_computation constant t_component_type := 'APP_COMPUTATION';
+
+c_app_item                                             constant t_component_type := 'APP_ITEM';
+
+c_app_process                                          constant t_component_type := 'APP_PROCESS';
+
+c_app_setting                                          constant t_component_type := 'APP_SETTING';
+
+c_authentication constant t_component_type := 'AUTHENTICATION';
+
+c_authorization constant t_component_type := 'AUTHORIZATION';
+
+c_build_option                                         constant t_component_type := 'BUILD_OPTION';
+
+c_component_group constant t_component_type := 'COMPONENT_GROUP';
+
+c_component_setting constant t_component_type := 'PLUGIN_SETTINGS';
+
+c_custom_map_bkg constant t_component_type := 'MAP_BACKGROUND';
+
+c_data_load                                            constant t_component_type := 'DATA_LOAD';
+
+c_email_template constant t_component_type := 'EMAIL_TEMPLATE';
+
+c_list                                                 constant t_component_type := 'LIST';
+
+c_lov                                                  constant t_component_type := 'LOV';
+
+c_message                                              constant t_component_type := 'MESSAGE';
+
+c_plugin                                               constant t_component_type := 'PLUGIN';
+
+c_report_layout constant t_component_type := 'REPORT_LAYOUT';
+
+c_search_config constant t_component_type := 'SEARCH_CONFIG';
+
+c_shortcut                                             constant t_component_type := 'SHORTCUT';
+
+c_user_group                                           constant t_component_type := 'APP_ACL';
+
+c_rest_data_source constant t_component_type := 'WEB_SOURCE';
+
+c_duality_view                                         constant t_component_type := 'DUALITY_VIEW'; -- Duality
+
+View
+
+c_json_source                                          constant t_component_type := 'JSON_SOURCE'; -- JSON Source
+
+c_ai_config                                            constant t_component_type := 'AI_CONFIG'; -- AI Config
+
+API Reference                                                                                        July 24, 2026
+G26651-03                                                                                              Page 1 of 3
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                       Chapter 56
+                                                                                          PUBLISH Procedure
+
+Subscription Status
+
+c_status_up_to_date                                    constant t_subscription_status := 'UP_TO_DATE';
+c_status_needs_refresh                                 constant t_subscription_status := 'NEEDS_REFRESH';
+c_status_unknown                                       constant t_subscription_status := 'UNKNOWN';
+
+56.2 PUBLISH Procedure
+
+                       This procedure publishes a component.
+                       Syntax
+
+APEX_SHARED_COMPONENT.PUBLISH (
+      p_component_type IN t_component_type,
+      p_component_id IN NUMBER );
+
+Parameters
+
+Parameter                                                     Description
+p_component_type                                              Component type to publish.
+p_component_id                                                Component ID to publish.
+
+Example
+The following example code publishes a List of Values with component ID 1234.
+
+BEGIN
+      -- set the current workspace, only required when executing this API
+
+outside
+      Oracle APEX environment
+
+      apex_util.set_workspace ( p_workspace => 'WORKSPACE_NAME' );
+
+      -- publish a component
+
+      apex_shared_component.publish (
+            p_component_type => apex_shared_component.c_lov,
+            p_component_id => 1234 );
+
+      COMMIT;
+END;
+
+56.3 REFRESH Procedure
+
+                       This procedure refreshes a component.
+
+API Reference                                                                             July 24, 2026
+G26651-03                                                                                   Page 2 of 3
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                 Chapter 56
+                                                                                   REFRESH Procedure
+
+Syntax
+
+APEX_SHARED_COMPONENT.REFRESH (
+      p_component_type IN t_component_type,
+      p_component_id IN NUMBER )
+
+Parameters
+
+Parameter                                              Description
+p_component_type                                       Component type to refresh.
+p_component_id                                         Component ID to refresh.
+
+Example
+
+The following example refreshes all the subscribed components from application 100, which
+are out of date.
+
+BEGIN
+      -- set the current workspace, only required when executing this API
+
+outside
+      APEX environment
+
+apex_util.set_workspace ( p_workspace => 'WORKSPACE_NAME' );
+
+-- refresh all the components in an app
+
+FOR l_component IN (
+
+SELECT component_type,
+
+               component_id
+
+      FROM apex_subscribed_components
+
+      WHERE application_id                             = 100
+
+      AND Subscription_status <>
+
+apex_shared_component.c_status_up_to_date )
+
+LOOP
+
+apex_shared_component.refresh (
+
+               p_component_type => l_component.component_type,
+
+               p_component_id => l_component.component_id );
+
+END LOOP;
+
+      COMMIT;
+END;
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                            Page 3 of 3
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+57

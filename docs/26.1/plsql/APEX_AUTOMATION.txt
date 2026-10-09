@@ -1,0 +1,737 @@
+# APEX_AUTOMATION (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 11488-12223)
+
+APEX_AUTOMATION
+
+                       The APEX_AUTOMATION package provides automated functionality to your environment.
+                       Automations are a sequential set of actions which are triggered by query results. Use
+                       automations to monitor data and then perform the appropriate action, such as auto-approving
+                       specific requests and sending email alerts.
+                       � ABORT Procedure (Deprecated)
+                       � DISABLE Procedure
+                       � ENABLE Procedure
+                       � EXECUTE Procedure Signature 1
+                       � EXECUTE Procedure Signature 2
+                       � EXECUTE for Query Context Procedure
+                       � EXIT Procedure
+                       � GET_LAST_RUN Function
+                       � GET_LAST_RUN_TIMESTAMP Function
+                       � GET_SCHEDULER_JOB_NAME Function
+                       � IS_RUNNING Function
+                       � LOG_ERROR Procedure
+                       � LOG_INFO Procedure
+                       � LOG_WARN Procedure
+                       � RESCHEDULE Procedure
+                       � SKIP_CURRENT_ROW Procedure
+                       � TERMINATE Procedure
+
+12.1 ABORT Procedure (Deprecated)
+
+                              Important
+                                 This API is deprecated and will be removed in a future release.
+                                 Use APEX_AUTOMATION.TERMINATE instead.
+
+                       This procedure terminates a currently executing automation.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 1 of 13
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                      Chapter 12
+                                                                                          DISABLE Procedure
+
+Syntax
+
+APEX_AUTOMATION.ABORT (
+
+      p_application_id IN NUMBER DEFAULT {current application id},
+
+      p_static_id                                      IN VARCHAR2 )
+
+Parameters
+
+Parameter                                              Description
+p_application_id                                       ID of the application which contains the automation.
+p_static_id                                            Static ID of the automation to terminate.
+
+Example
+
+The following example aborts the currently executing automation my_emp_table_automation in
+application 152. If the automation is not running, nothing happens.
+
+BEGIN
+
+apex_automation.abort(
+
+        p_application_id => 152,
+
+        p_static_id                                    => 'my_emp_table_automation' );
+
+END;
+
+       See Also
+       � TERMINATE Procedure
+
+12.2 DISABLE Procedure
+
+                       This procedure stops the automation from executing automatically.
+                       Syntax
+
+APEX_AUTOMATION.DISABLE (
+
+      p_application_id IN NUMBER DEFAULT {current application id},
+
+      p_static_id                                      IN VARCHAR2 )
+
+Parameters
+
+Parameter                                                             Description
+p_application_id
+                                                                      ID of the application which contains the
+p_static_id                                                           automation.
+                                                                      Static ID of the automation to disable.
+
+API Reference                                                                                                   July 24, 2026
+G26651-03                                                                                                       Page 2 of 13
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                    Chapter 12
+                                                                                        ENABLE Procedure
+
+Examples
+This example disables the automation my_emp_table_automation in application 152.
+
+BEGIN
+
+apex_automation.disable(
+
+       p_application_id => 152,
+
+       p_static_id                                     => 'my_emp_table_automation' );
+
+END;
+
+12.3 ENABLE Procedure
+
+                       This procedure enables the automation for normal execution.
+                       Syntax
+
+APEX_AUTOMATION.ENABLE (
+
+p_application_id IN NUMBER DEFAULT {current application id},
+
+p_static_id                                            IN VARCHAR2 )
+
+Parameters
+
+Parameter                                                             Description
+p_application_id
+                                                                      ID of the application which contains the
+p_static_id                                                           automation.
+                                                                      Static ID of the automation to enable.
+
+Examples
+This example enables the automation my_emp_table_automation in application 152.
+
+BEGIN
+
+apex_automation.enable(
+
+       p_application_id => 152,
+
+       p_static_id                                     => 'my_emp_table_automation' );
+
+END;
+
+12.4 EXECUTE Procedure Signature 1
+
+                       This procedure executes an automation.
+                       Syntax
+
+APEX_AUTOMATION.EXECUTE (
+
+p_application_id IN NUMBER                                                          DEFAULT {current
+                                                                                    DEFAULT
+application id},
+
+p_static_id                                            IN VARCHAR2,
+
+p_filters                                              IN apex_exec.t_filters
+
+apex_exec.c_empty_filters,
+
+API Reference                                                                                                   July 24, 2026
+G26651-03                                                                                                       Page 3 of 13
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                   Chapter 12
+                                                                                      EXECUTE Procedure Signature 2
+
+p_order_bys                                            IN apex_exec.t_order_bys  DEFAULT
+
+apex_exec.c_empty_order_bys )
+
+Parameters
+
+Parameter                                                             Description
+p_application_id
+                                                                      ID of the application which contains the
+p_static_id                                                           automation.
+p_filters                                                             Static ID of the automation to execute.
+p_order_bys                                                           Additional filters to apply to the automation query.
+                                                                      ORDER BY clauses to apply to the automation
+                                                                      query.
+
+Example
+
+This example executes the automation my_emp_table_automation and applies a filter to the
+automation query on the DEPTNO column (DEPTNO = 10).
+
+DECLARE
+      l_filters apex_exec.t_filters;
+
+BEGIN
+      apex_session.create_session( 100, 1, 'ADMIN' );
+
+apex_exec.add_filter(
+
+      p_filters                                        => l_filters,
+
+      p_column_name => 'DEPTNO',
+
+      p_filter_type => apex_exec.c_filter_eq,
+
+      p_value                                          => 10 );
+
+apex_automation.execute(
+
+      p_static_id                                      => 'my_emp_table_automation',
+
+      p_filters                                        => l_filters );
+
+END;
+
+12.5 EXECUTE Procedure Signature 2
+
+                       This procedure executes an automation.
+                       Syntax
+
+APEX_AUTOMATION.EXECUTE (
+
+p_application_id IN NUMBER DEFAULT {current application id},
+
+p_static_id                                            IN VARCHAR2,
+
+p_run_in_background IN BOOLEAN )
+
+Parameters
+
+Parameter                                                             Description
+p_application_id
+                                                                      ID of the application which contains the
+p_static_id                                                           automation.
+                                                                      Static ID of the automation to execute.
+
+API Reference                                                                                                   July 24, 2026
+G26651-03                                                                                                       Page 4 of 13
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                         Chapter 12
+                                                                     EXECUTE for Query Context Procedure
+
+Parameter                                                            Description
+p_run_in_background
+                                                                     If TRUE, synchronization runs in the background as
+                                                                     a one-time DBMS_SCHEDULER job.
+
+Example
+This example executes the automation my_emp_table_automation in the background.
+
+BEGIN
+      apex_session.create_session( 100, 1, 'ADMIN' );
+
+apex_automation.execute(
+
+      p_static_id                                      => 'my_emp_table_automation',
+
+      p_run_in_background => true );
+
+END;
+
+12.6 EXECUTE for Query Context Procedure
+
+                       This procedure executes automation actions for a given query context. The columns returned
+                       by the query context match those defined in the automation query, especially when columns
+                       are referenced as bind variables in the actions code.
+
+                       Syntax
+
+APEX_AUTOMATION.EXECUTE (
+
+p_application_id IN NUMBER DEFAULT {current application id},
+
+p_static_id                                            IN VARCHAR2,
+
+p_query_context IN apex_exec.t_context )
+
+Parameters
+
+Parameter                                                            Description
+p_application_id
+                                                                     ID of the application which contains the
+p_static_id                                                          automation.
+p_query_context                                                      Static ID of the automation to execute.
+                                                                     The context to run the actions for the query.
+
+Examples
+
+This example executes the actions defined in the automation my_emp_table_automation, but
+uses a different query context.
+
+DECLARE
+      l_context apex_exec.t_context:
+
+BEGIN
+      apex_session.create_session( 100, 1, 'ADMIN' );
+
+l_context := apex_exec.open_query_context(
+
+                                                       p_location    => apex_exec.c_location_local_db,
+
+                                                       p_sql_query   => 'select * from emp_copy_table' );
+
+API Reference                                                                         July 24, 2026
+G26651-03                                                                             Page 5 of 13
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                             Chapter 12
+                                                                                      EXIT Procedure
+
+apex_automation.execute(
+
+      p_static_id                                      => 'my_emp_table_automation',
+
+      p_query_context => l_context );
+
+END;
+
+12.7 EXIT Procedure
+
+                       This procedure exits automation processing, including for remaining rows. Use this procedure
+                       in automation action code.
+
+                       Syntax
+
+APEX_AUTOMATION.EXIT (
+      p_log_message IN VARCHAR2 DEFAULT NULL )
+
+Parameters
+
+Parameter                                              Description
+p_log_message                                          Message to write to the automation log.
+
+Examples
+
+This example cancels the automation if a salary higher than 10,000 is found. The automation
+uses select * from emp as the automation query.
+
+BEGIN
+      IF :SQL > 10000 THEN
+            apex_automation.exit( p_log_message => 'Dubious SAL value found. Exit
+
+automation.' );
+      ELSE
+            my_logic_package.process_emp(
+                   p_empno => :EMPNO,
+                   p_sal => :SAL,
+                   p_depto => :DEPTNO );
+      END IF;
+
+END;
+
+12.8 GET_LAST_RUN Function
+
+                       This function returns the last run of the automation as a TIMESTAMP WITH TIME ZONE type. Use
+                       this function within automation action code or the automation query.
+
+                       Syntax
+
+APEX_AUTOMATION.GET_LAST_RUN
+      RETURN timestamp with time zone;
+
+API Reference                                                                                   July 24, 2026
+G26651-03                                                                                       Page 6 of 13
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                            Chapter 12
+                                                                      GET_LAST_RUN_TIMESTAMP Function
+
+Returns
+
+Return                                                 Description
+*                                                      Timestamp of the previous automation run.
+
+Examples
+
+This example automation only selects rows from a table which have the CREATED_AT column
+after the last run of the automation.
+
+select *
+   from {table}
+
+ where created_at > apex_automation.get_last_run;
+
+12.9 GET_LAST_RUN_TIMESTAMP Function
+
+                       This function retrieves information about the latest automation run.
+                       Syntax
+
+APEX_AUTOMATION.GET_LAST_RUN_TIMESTAMP (
+
+p_application_id                                       IN NUMBER DEFAULT {current application id},
+
+p_static_id                                            IN VARCHAR2 )
+
+RETURN timestamp with time zone;
+
+Parameters
+
+ Parameter                                             Description
+p_application_id
+                                                       ID of the application which contains the
+p_static_id                                            automation.
+Returns                                                Static ID of the automation to execute.
+
+Return                                                 Description
+*                                                      Timestamp of the last successful automation run.
+
+Examples
+
+This example retrieves the timestamp of the last successful run of the
+my_emp_table_automation.
+
+DECLARE
+      l_last_run_ts timestamp with time zone;
+
+BEGIN
+      apex_session.create_session( 100, 1, 'ADMIN' );
+      l_last_run := apex_automation.get_last_run_timestamp(
+                                    p_static_id => 'my_emp_table_automation' );
+
+      dbms_output.put_line( 'The automation''s last run was as of: ' ||
+
+API Reference                                                                                    July 24, 2026
+G26651-03                                                                                        Page 7 of 13
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                             Chapter 12
+                                                                      GET_SCHEDULER_JOB_NAME Function
+
+l_last_run );
+END;
+
+12.10 GET_SCHEDULER_JOB_NAME Function
+
+                       This procedure returns the name which is used for the scheduler job when the automation
+                       executes.
+
+                       Syntax
+
+APEX_AUTOMATION.GET_SCHEDULER_JOB_NAME (
+
+p_application_id IN NUMBER DEFAULT {current application id},
+
+p_static_id                                            IN VARCHAR2 )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_application_id                                       ID of the application which contains the automation.
+p_static_id                                            Static ID of the automation.
+
+Returns
+The name of the the scheduler job which is generated to execute this automation.
+
+Example
+
+The following example returns the name of the scheduler job which executes the automation
+with the static ID my_emp_table_automation.
+
+BEGIN
+
+dbms_output.put_line(
+
+apex_automation.get_scheduler_job_name(
+
+       p_application_id => 152,
+
+       p_static_id                                     => 'my_emp_table_automation' ) );
+
+       -- ==> APEX$AUTOMATION_2167837869128719
+
+END;
+
+12.11 IS_RUNNING Function
+
+                       This function determines whether a given automation is currently running.
+                       Syntax
+
+APEX_AUTOMATION.IS_RUNNING (
+
+p_application_id IN NUMBER DEFAULT {current application id},
+
+p_static_id                                            IN VARCHAR2 )
+
+RETURN BOOLEAN;
+
+API Reference                                                                                     July 24, 2026
+G26651-03                                                                                         Page 8 of 13
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                         Chapter 12
+                                                       LOG_ERROR Procedure
+
+Parameters
+
+Parameter                                              Description
+p_application_id                                       ID of the application which contains the automation.
+p_static_id                                            Static ID of the automation.
+
+Returns
+If TRUE, the automation is currently running.
+
+Example
+The following example prints out whether the automation is currently running.
+
+BEGIN
+      IF apex_automation.is_running(p_application_id => 152, p_static_id =>
+
+'my_emp_table_automation' ) THEN
+            dbms_output.put_line( 'The Automation is currently running.' );
+
+      ELSE
+            dbms_output.put_line( 'The Automation is currently not running.' );
+
+      END IF;
+END;
+
+12.12 LOG_ERROR Procedure
+
+                       This procedure writes a log entry with severity ERROR and is to be used within automation code.
+                       Syntax
+
+APEX_AUTOMATION.LOG_ERROR (
+      p_message IN VARCHAR2 )
+
+Parameters
+
+Parameter                                              Description
+p_message                                              Message to write to the automation log.
+
+Example
+
+This example writes some log information.The automation uses select * from emp as the
+automation query.
+
+BEGIN
+      IF :SAL > 10000 THEN
+              apex_automation.log_error(
+                    p_message => 'High Salary found for empno: ' || :EMPNO );
+      ELSE
+            my_logic_package.process_emp(
+                   p_empno => :EMPNO,
+                   p_sal => :SAL,
+                   p_depto => :DEPTNO );
+
+API Reference                                                                                   July 24, 2026
+G26651-03                                                                                       Page 9 of 13
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                      Chapter 12
+                                                       LOG_INFO Procedure
+
+                              END IF;
+                       END;
+
+12.13 LOG_INFO Procedure
+
+                       This procedure writes a log entry with severity of INFO which can be used within automation
+                       code.
+                       Syntax
+
+                       APEX_AUTOMATION.LOG_INFO (
+                             p_message IN VARCHAR2 )
+
+                       Parameters
+
+Parameter                                              Description
+p_message                                              Message to write to the automation log.
+
+Example
+
+This example writes some log information. The automation uses select * from emp as the
+automation query.
+
+BEGIN
+      IF :SAL > 10000 THEN
+            apex_automation.log_info( p_message => 'High Salary found for empno:
+
+' || :EMPNO );
+      END IF;
+      my_logic_package.process_emp(
+            p_empno => :EMPNO,
+            p_sal => :SAL,
+            p_depto => :DEPTNO );
+
+END;
+
+12.14 LOG_WARN Procedure
+
+                       This procedure writes a log entry with severity WARN and is to be usedwithin automation code.
+                       Syntax
+
+APEX_AUTOMATION.LOG_WARN (
+      p_message IN VARCHAR2 )
+
+Parameters
+
+Parameter                                              Description
+p_message                                              Message to write to the automation log.
+
+API Reference                                                                                   July 24, 2026
+G26651-03                                                                                       Page 10 of 13
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                         Chapter 12
+                                                                     RESCHEDULE Procedure
+
+Examples
+
+This example writes some log information. The automation uses select * from emp as the
+automation query.
+
+BEGIN
+      IF :SAL > 10000 THEN
+            apex_automation.log_warn(
+                   p_message => 'High Salary found for empno: ' || :EMPNO );
+      END IF;
+      my_logic_package.process_emp(
+            p_empno => :EMPNO,
+            p_sal => :SAL,
+            p_depto => :DEPTNO );
+
+END;
+
+12.15 RESCHEDULE Procedure
+
+                       This procedure sets the next scheduled execution date of a "polling" automation to now so that
+                       the main automation execution job executes the automation as soon as possible. If the
+                       automation is currently running, it will not restart.
+
+                       Syntax
+
+APEX_AUTOMATION.RESCHEDULE (
+
+p_application_id IN NUMBER                                           DEFAULT {current
+                                                                     DEFAULT systimestamp )
+application id},
+
+p_static_id                                            IN VARCHAR2,
+
+p_next_run_at IN timestamp with time zone
+
+Parameters
+
+Parameter                                                            Description
+p_application_id
+                                                                     ID of the application which contains the
+p_static_id                                                          automation.
+p_next_run_at                                                        Static ID of the automation to execute.
+                                                                     Timestamp of the next automation run.
+
+Examples
+
+This example sets the automation my_emp_table_automation to execute in the background
+right now.
+
+BEGIN
+   apex_session.create_session( 100, 1, 'ADMIN' );
+
+   apex_automation.reschedule(
+      p_static_id => 'my_emp_table_automation' );
+
+END;
+
+API Reference                                                                                                  July 24, 2026
+G26651-03                                                                                                      Page 11 of 13
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                  Chapter 12
+                                                                                    SKIP_CURRENT_ROW Procedure
+
+12.16 SKIP_CURRENT_ROW Procedure
+
+                       This procedure skips processing of the current row and continues with the next one. Use this
+                       procedure in automation action code.
+                       Syntax
+
+                       APEX_AUTOMATION.SKIP_CURRENT_ROW (
+                              p_log_message IN VARCHAR2 DEFAULT NULL )
+
+                       Parameters
+
+Parameter                                                             Description
+p_log_message                                                         Message to write to the automation log.
+
+Examples
+
+This example skips the rest of processing for the current row (PRESIDENT row). The
+automation uses select * from emp as the automation query.
+
+BEGIN
+      IF :ENAME = 'PRESIDENT' THEN
+            apex_automation.skip_current_row( p_log_message => 'PRESIDENT
+
+skipped' );
+      ELSE
+            my_logic_package.process_emp(
+                   p_empno => :EMPNO,
+                   p_sal => :SAL,
+                   p_depto => :DEPTNO );
+      END IF;
+
+END;
+
+12.17 TERMINATE Procedure
+
+                       This procedure terminates a currently executing automation.
+                       Syntax
+
+APEX_AUTOMATION.TERMINATE (
+
+p_application_id IN NUMBER DEFAULT {current application id},
+
+p_static_id                                            IN VARCHAR2 )
+
+Parameters
+
+Parameter                                              Description
+p_application_id                                       ID of the application which contains the automation.
+p_static_id                                            Static ID of the automation to terminate.
+
+API Reference                                                                                                  July 24, 2026
+G26651-03                                                                                                      Page 12 of 13
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                        Chapter 12
+                                                                                        TERMINATE Procedure
+
+Example
+
+The following example terminates the currently executing automation
+my_emp_table_automation in application 152. If the automation is not running, nothing
+happens.
+
+BEGIN
+
+apex_automation.terminate(
+
+       p_application_id => 152,
+
+       p_static_id                                     => 'my_emp_table_automation' );
+
+END;
+
+API Reference                                                                           July 24, 2026
+G26651-03                                                                               Page 13 of 13
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+13

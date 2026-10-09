@@ -1,0 +1,165 @@
+# apex.da (APEX 26.1 JavaScript API, JSDoc oficial)
+
+JSDoc: Namespace: da
+
+Skip to Main Content
+
+Namespace: da
+
+Functions
+
+cancel
+
+handleAjaxErrors
+
+resume
+
+This namespace holds all Dynamic Action functions in Oracle APEX, useful for Dynamic Action plug-in developers.
+
+ Functions
+
+(static) cancel()
+
+For Dynamic Action plug-in developers, call this function to stop execution of the remaining actions in a
+dynamic action without indicating there was an error.
+Returning false from the JavaScript function indicates that there has been an error which
+stops execution of the remaining actions only if the Stop Execution On Error setting is true. This function is
+useful to stop execution of remaining actions regardless of the Stop Execution On Error setting and also
+when the action is asynchronous.
+
+Example
+
+The following example of a plug-in JavaScript function is asynchronous due to the setTimeout
+function. It will cancel the remaining actions based on the result of function someCondition.
+
+var self = this;
+setTimeout( function() {
+ if ( someCondition() ) {
+ apex.da.cancel(); // don't process any more actions
+ } else {
+ doSomething();
+ }
+ apex.da.resume( self.resumeCallback, false );
+}, 800 );
+
+(static) handleAjaxErrors(pjqXHR, pTextStatus, pErrorThrown, pResumeCallback)
+
+ For Dynamic Action plug-in developers that write plug-ins that perform Ajax calls, call this function when
+an Ajax error occurs. Doing so handles both displaying the error message appropriately, and also resuming
+execution of actions in a dynamic action. It is typically passed as a callback to the error option passed in the
+pOptions parameter of the apex.server Ajax APIs.
+
+Parameters:
+
+ | Name
+
+ | Type
+
+ | Description
+
+ | pjqXHR
+
+ | 
+
+object
+
+ | The jqXHR object passed directly from the apex.server error callback.
+
+ | pTextStatus
+
+ | 
+
+string
+
+ | The text status of the error, passed directly from the apex.server error callback.
+
+ | pErrorThrown
+
+ | 
+
+string
+
+ | Text describing the actual error, passed directly from the apex.server error callback.
+
+ | pResumeCallback
+
+ | 
+
+function
+
+ | Reference to callback function available from the this.resumeCallback property,
+ handles resuming execution of the dynamic action.
+
+Example
+
+The following example shows a typical use case of handleAjaxErrors.
+
+// When executing dynamic action JavaScript logic, you have access to the 'this' variable, which contains
+// important dynamic action context information. The 'this' variable contains a property called 'resumeCallback',
+// which is a callback function to handle resuming execution of the actions in a dynamic action.
+var lResumeCallback = this.resumeCallback;
+
+// Define a function that calls handleAjaxErrors
+// Note: Pass the pjqXHR, pTextStatus and pErrorThrown straight down from the apex.server error callback
+function _error( pjqXHR, pTextStatus, pErrorThrown ) {
+ apex.da.handleAjaxErrors( pjqXHR, pTextStatus, pErrorThrown, lResumeCallback );
+}
+
+// In the plug-in's Ajax logic, pass the callback to the 'error' option
+server.plugin ( lAction.ajaxIdentifier, {
+ // pData options
+}, {
+ error : _error
+ // pOptions options
+});
+
+(static) resume(pCallback, pErrorOccurred)
+
+For Dynamic Action plug-in developers that write plug-ins that perform Ajax calls, call this function to resume
+execution of the actions in a dynamic action. Execution of a dynamic action can be paused, if the action's Wait for Result
+attribute is checked. Wait for Result is a dynamic action plug-in standard attribute designed for use with
+Ajax-based dynamic actions. If a plug-in exposes this attribute, it will also need to resume execution by calling
+this function in the relevant place in the plug-in JavaScript code (otherwise your action will break execution of
+dynamic actions).
+
+Note: You should call resume following successful execution of your plug-in logic. In the case where an error
+has occurred, you must instead call apex.da.handleAjaxErrors which will handle resuming execution for you.
+
+Parameters:
+
+ | Name
+
+ | Type
+
+ | Description
+
+ | pCallback
+
+ | 
+
+function
+
+ | Reference to callback function available from the this.resumeCallback
+ property, handles resuming execution of the dynamic action.
+
+ | pErrorOccurred
+
+ | 
+
+boolean
+
+ | Indicate to the framework whether an error has occurred. If an error
+ has occurred and the action's Stop Execution on Error attribute
+ is checked, execution of the dynamic action will be stopped.
+
+Example
+
+Resume execution of the actions in a dynamic action, indicating that no error has occurred (for example from a "success"
+callback of an Ajax-based action).
+
+Note: When executing dynamic action JavaScript logic, you have access to the 'this' variable, which contains
+important dynamic action context information. The 'this' variable contains a property called 'resumeCallback',
+which is a callback function to handle resuming execution of dynamic actions, and is what you need to pass
+for the pCallback parameter.
+
+apex.da.resume( this.resumeCallback, false );

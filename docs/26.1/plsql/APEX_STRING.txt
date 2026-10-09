@@ -1,0 +1,1562 @@
+# APEX_STRING (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 60069-61629)
+
+APEX_STRING
+
+                       The APEX_STRING package provides utilities for the following data types:
+                       � apex_t_clob
+                       � apex_t_number
+                       � apex_t_varchar2
+                       � clob
+                       � varchar2
+                       Unless otherwise noted, the APIs expect arrays to be continuous (that is, without holes that
+                       coll.delete(n) operations generate).
+
+                       � FORMAT Function
+                       � GET_INITIALS Function
+                       � GET_SEARCHABLE_PHRASES Function
+                       � GREP Function Signature 1
+                       � GREP Function Signature 2
+                       � GREP Function Signature 3
+                       � INDEX_OF Function Signature 1
+                       � INDEX_OF Function Signature 2
+                       � JOIN_CLOB Function
+                       � JOIN_CLOBS Function
+                       � JOIN Function Signature 1
+                       � JOIN Function Signature 2
+                       � NEXT_CHUNK Function
+                       � PLIST_DELETE Procedure
+                       � PLIST_EXISTS Function
+                       � PLIST_GET Function
+                       � PLIST_GET_KEY Function
+                       � PLIST_PUSH Procedure
+                       � PLIST_PUT Function
+                       � PLIST_TO_JSON_CLOB Function
+                       � PUSH Procedure Signature 1
+                       � PUSH Procedure Signature 2
+                       � PUSH Procedure Signature 3
+                       � PUSH Procedure Signature 4
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 1 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                 Chapter 58
+                                                                       FORMAT Function
+
+                       � PUSH Procedure Signature 5
+                       � PUSH Procedure Signature 6
+                       � PUSH Procedure Signature 7
+                       � SHUFFLE Function
+                       � SHUFFLE Procedure
+                       � SPLIT Function Signature 1
+                       � SPLIT Function Signature 2
+                       � SPLIT_CLOBS Function
+                       � SPLIT_NUMBERS Function
+                       � STRING_TO_TABLE Function
+                       � TABLE_TO_CLOB Function
+                       � TABLE_TO_STRING Function
+
+58.1 FORMAT Function
+
+                       This function returns a formatted string with substitutions applied.
+                       Returns p_message after replacing each <n>th occurrence of %s with p<n> and each occurrence
+                       of %<n> with p<n>. If p_max_length is not null, substr(p<n>,1,p_arg_max_length) is used
+                       instead of p<n>.
+
+                       Use %% in p_message to emit a single % character. Use %n to emit a newline.
+
+                       Syntax
+
+APEX_STRING.FORMAT (
+
+p_message IN VARCHAR2,
+
+p0   IN VARCHAR2                                       DEFAULT NULL,
+                                                       DEFAULT NULL,
+p1   IN VARCHAR2                                       DEFAULT NULL,
+                                                       DEFAULT NULL,
+p2   IN VARCHAR2                                       DEFAULT NULL,
+                                                       DEFAULT NULL,
+p3   IN VARCHAR2                                       DEFAULT NULL,
+                                                       DEFAULT NULL,
+p4   IN VARCHAR2                                       DEFAULT NULL,
+                                                       DEFAULT NULL,
+p5   IN VARCHAR2                                       DEFAULT NULL,
+                                                       DEFAULT NULL,
+p6   IN VARCHAR2                                       DEFAULT NULL,
+                                                       DEFAULT NULL,
+p7   IN VARCHAR2                                       DEFAULT NULL,
+                                                       DEFAULT NULL,
+p8   IN VARCHAR2                                       DEFAULT NULL,
+                                                       DEFAULT NULL,
+p9   IN VARCHAR2                                       DEFAULT NULL,
+                                                       DEFAULT NULL,
+p10  IN VARCHAR2                                       DEFAULT 1000,
+                                                       DEFAULT NULL )
+p11  IN VARCHAR2
+
+p12  IN VARCHAR2
+
+p13  IN VARCHAR2
+
+p14  IN VARCHAR2
+
+p15  IN VARCHAR2
+
+p16  IN VARCHAR2
+
+p17  IN VARCHAR2
+
+p18  IN VARCHAR2
+
+p19  IN VARCHAR2
+
+p_max_length IN PLS_INTEGER
+
+p_prefix IN VARCHAR2
+
+return VARCHAR2
+
+API Reference                                                          July 24, 2026
+G26651-03                                                              Page 2 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                    Chapter 58
+                                                                                                   GET_INITIALS Function
+
+Parameters
+
+ Parameters                                            Description
+p_message
+p0-p19                                                 Message string with substitution placeholders.
+p_max_length
+                                                       Substitution parameters.
+p_prefix
+                                                       If not null (default is 1000), cap each p<n> at
+Example 1                                              p_max_length characters. The tilde (~) character
+                                                       is appended to indicate that the original value
+                                                       exceeded this length.
+
+                                                       If set, remove leading white space and the given
+                                                       prefix from each line. This parameter can be used
+                                                       to simplify the formatting of indented multi-line text.
+
+APEX_STRING.FORMAT('%s+%s=%s', 1, 2, 'three')
+-> 1+2=three
+
+APEX_STRING.FORMAT('%1+%2=%0', 'three', 1, 2)
+-> 1+2=three
+
+Example 2
+
+APEX_STRING.FORMAT (
+
+q'!BEGIN
+
+! IF NOT VALID THEN
+
+!             apex_debug.info('validation failed');
+
+! END IF;
+
+!END;!',
+
+p_prefix => '!' )
+
+-> BEGIN
+
+   IF NOT VALID THEN
+
+            apex_debug.info('validation failed');
+
+   END IF;
+
+END;
+
+58.2 GET_INITIALS Function
+
+                       Returns the initials of the words in a string.
+                       Words are separated by spaces or other special characters such as:
+                       � commas (,)
+                       � dashes (-)
+                       � quotes (')
+                       If the input only has one word, returns the first characters of that word.
+
+                       Syntax
+
+APEX_STRING.GET_INITIALS (
+    p_str IN VARCHAR2,
+
+API Reference                                                                                      July 24, 2026
+G26651-03                                                                                          Page 3 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                              Chapter 58
+                                                       GET_SEARCHABLE_PHRASES Function
+
+    p_cnt IN PLS_INTEGER DEFAULT 2 )
+    RETURN VARCHAR2
+
+Parameters
+
+Parameters                                             Description
+p_string
+p_cnt                                                  The input string.
+                                                       The number (N) of letter initials to get from the first
+                                                       number (N) of words. Default 2. Allowed values are
+                                                       1 to 255.
+
+Example
+The following example gets initials from "John Doe".
+
+BEGIN
+   sys.dbms_output.put_line(apex_string.get_initials('John Doe'));
+
+END;
+
+Output:
+-> JD
+
+Example 2
+Gets the first three initials from "Andres Homero Lozano Garza".
+
+BEGIN
+   sys.dbms_output.put_line(apex_string.get_initials(p_str => 'Andres Homero
+
+Lozano Garza', p_cnt => 3));
+END;
+
+Output
+-> AHL
+
+Example 3
+Gets the first three initials from "JBHiFi".
+
+BEGIN
+   sys.dbms_output.put_line(get_initials(p_str => 'JBHiFi', p_cnt => 3));
+
+END;
+
+Output:
+-> JBH
+
+58.3 GET_SEARCHABLE_PHRASES Function
+
+                       This function returns distinct phrases of 1-3 consecutive lower case words in the input strings.
+                       Stopwords in the given language are ignored and split phrases.
+
+API Reference                                                       July 24, 2026
+G26651-03                                                           Page 4 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                    Chapter 58
+                                                                                               GREP Function Signature 1
+
+Note
+
+This is a PL/SQL only implementation of a very small subset of what Oracle Text
+provides. Consider using Oracle Text instead, if the features and performance of this
+function are not sufficient.
+
+Syntax
+
+FUNCTION GET_SEARCHABLE_PHRASES (
+      p_strings IN apex_t_varchar2,
+      p_max_words IN PLS_INTEGER DEFAULT 3,
+      p_language IN apex_t_varchar2 DEFAULT 'en' )
+      RETURN apex_t_varchar2;
+
+Parameters
+
+ Parameters                                            Description
+p_string
+p_max_words                                            The input string.
+p_language
+                                                       The maximum number of words in a phrase. The
+Example                                                default is 3.
+Prints keywords in the given input string.             The language identifier for stopwords, defaults to
+                                                       "en". Supported values are
+                                                       "cn","de","en","es","fr","it","ja","ko"
+                                                       ,"pt-br".
+
+BEGIN
+      sys.dbms_output.put_line (
+            apex_string.join (
+                   apex_string.get_searchable_phrases (
+                         p_strings => apex_t_varchar2 (
+                                                      'Oracle APEX 19.1 is great.',
+                                                      'Low code as it should be!' )),
+                   ':' ));
+
+END;
+-> oracle:oracle apex:oracle apex 19.1:apex:apex 19.1:19.1:great:low:low
+code:code
+
+58.4 GREP Function Signature 1
+
+                       Returns the values of the input table that match a regular expression.
+                       Syntax
+
+GREP (          IN apex_t_varchar2,
+    p_table     IN VARCHAR2,
+    p_pattern   IN VARCHAR2 DEFAULT NULL,
+    p_modifier
+
+API Reference                                                                                  July 24, 2026
+G26651-03                                                                                      Page 5 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                 Chapter 58
+                                                                            GREP Function Signature 2
+
+p_subexpression IN VARCHAR2 DEFAULT '0',
+
+p_limit             IN PLS_INTEGER DEFAULT NULL )
+
+RETURN apex_t_varchar2;
+
+Parameters
+
+Parameters                                             Description
+p_table
+p_pattern                                              The input table.
+p_modifier
+p_subexpression                                        The regular expression.
+
+p_limit                                                The regular expression modifier.
+
+                                                       The subexpression which should be returned. If null, return the complete table
+                                                       value. If 0 (the default), return the matched expression. If > 0, return the
+                                                       subexpression value. You can also pass a comma separated list of numbers,
+                                                       to get multiple subexpressions in the result.
+                                                       Limitation for the number of elements in the return table. If null (the default),
+                                                       there is no limit.
+
+Example
+Collect and print basenames of sql files in input collection.
+
+declare
+      l_sqlfiles apex_t_varchar2;
+
+begin
+      l_sqlfiles := apex_string.grep (
+                                    p_table => apex_t_varchar2('a.html','b.sql', 'C.SQL'),
+                                    p_pattern => '(\w+)\.sql',
+                                    p_modifier => 'i',
+                                    p_subexpression => '1' );
+      sys.dbms_output.put_line(apex_string.join(l_sqlfiles, ':'));
+
+end;
+-> b:C
+
+58.5 GREP Function Signature 2
+
+                       Returns the values of the input varchar2 that match a regular expression.
+                       Syntax
+
+APEX_STRING.GREP (
+
+p_str               IN VARCHAR2,
+
+p_pattern           IN VARCHAR2,
+
+p_modifier          IN VARCHAR2 DEFAULT NULL,
+
+p_subexpression IN VARCHAR2 DEFAULT '0',
+
+p_limit             IN PLS_INTEGER DEFAULT NULL )
+
+RETURN apex_t_varchar2;
+
+Parameters
+
+Parameters                                             Description
+p_str                                                  The input varchar2.
+
+API Reference                                                                                     July 24, 2026
+G26651-03                                                                                         Page 6 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                   Chapter 58
+                                                                                              GREP Function Signature 3
+
+Parameters                                             Description
+p_pattern
+p_modifier                                             The regular expression.
+p_subexpression
+                                                       The regular expression modifier.
+p_limit
+                                                       The subexpression which should be returned. If null, return the complete table
+                                                       value. If 0 (the default), return the matched expression. If > 0, return the
+                                                       subexpression value. You can also pass a comma separated list of numbers,
+                                                       to get multiple subexpressions in the result.
+                                                       Limitation for the number of elements in the return table. If null (the default),
+                                                       there is no limit.
+
+Example
+Collect and print key=value definitions.
+
+declare
+      l_plist apex_t_varchar2;
+
+begin
+      l_plist := apex_string.grep (
+                              p_str => 'define k1=v1'||chr(10)||
+                                            'define k2 = v2',
+                              p_pattern => 'define\s+(\w+)\s*=\s*([^'||chr(10)||']*)',
+                              p_modifier => 'i',
+                              p_subexpression => '1,2' );
+      sys.dbms_output.put_line(apex_string.join(l_plist, ':'));
+
+end;
+-> k1:v1:k2:v2
+
+58.6 GREP Function Signature 3
+
+                       Returns the values of the input clob that match a regular expression.
+                       Syntax
+
+APEX_STRING.GREP (
+
+p_str               IN CLOB,
+
+p_pattern           IN VARCHAR2,
+
+p_modifier          IN VARCHAR2 DEFAULT NULL,
+
+p_subexpression IN VARCHAR2 DEFAULT '0',
+
+p_limit             IN PLS_INTEGER DEFAULT NULL )
+
+RETURN apex_t_varchar2;
+
+Parameters
+
+Parameters                                             Description
+p_str                                                  The input clob.
+p_pattern                                              The regular expression.
+p_modifier                                             The regular expression modifier.
+
+API Reference                                                                                 July 24, 2026
+G26651-03                                                                                     Page 7 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                  Chapter 58
+                                                       INDEX_OF Function Signature 1
+
+Parameters                                             Description
+p_subexpression
+                                                       The subexpression which should be returned. If null, return the
+p_limit                                                complete table value. If 0 (the default), return the matched
+                                                       expression. If > 0, return the subexpression value. You can also pass
+                                                       a comma separated list of numbers, to get multiple subexpressions
+                                                       in the result.
+
+                                                       Limitation for the number of elements in the return table. If null (the
+                                                       default), there is no limit.
+
+Example
+Collect and print key=value definitions.
+
+declare
+      l_plist apex_t_varchar2;
+
+begin
+      l_plist := apex_string.grep (
+                              p_str => to_clob('define k1=v1'||chr(10)||
+                                            'define k2 = v2',
+                              p_pattern => 'define\s+(\w+)\s*=\s*([^'||
+
+chr(10)||']*)',
+                              p_modifier => 'i',
+                              p_subexpression => '1,2' );
+
+      sys.dbms_output.put_line(apex_string.join(l_plist, ':'));
+end;
+-> k1:v1:k2:v2
+
+58.7 INDEX_OF Function Signature 1
+
+                       This function returns the first position in the list where p_value is stored. If not found, returns
+                       NULL.
+
+                       Syntax
+
+APEX_STRING.INDEX_OF (
+      p_table IN apex_t_varchar2,
+      p_value IN VARCHAR2 )
+      RETURN NUMBER;
+
+Parameters
+
+Parameter                                              Description
+p_table                                                The table.
+p_value                                                Value that is being searched for.
+
+Returns
+Index of the searched value in the table.
+
+API Reference                                                                             July 24, 2026
+G26651-03                                                                                 Page 8 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                  Chapter 58
+                                                       INDEX_OF Function Signature 2
+
+                       Example
+                       The following example prints the index of the given input string in the table.
+
+                       BEGIN
+                              sys.dbms_output.put_line (
+                                    apex_string.index_of (
+                                          p_table => apex_t_varchar2 (
+                                                                  'Dog',
+                                                                  'Cat',
+                                                                  'Capybara' ),
+                                          p_value => 'Capybara' ) );
+
+                       END;
+                       -> 3
+
+58.8 INDEX_OF Function Signature 2
+
+                       This function returns the first position in the list where p_value is stored. If not found, returns
+                       NULL.
+
+                       Syntax
+
+                       APEX_STRING.INDEX_OF (
+                              p_table IN apex_application_global.vc_arr2,
+                              p_value IN VARCHAR2 )
+                              RETURN NUMBER;
+
+                       Parameters
+
+Parameter                                              Description
+p_table                                                The table.
+p_value                                                Value that is being searched for.
+
+Returns
+Index of the searched value in the table.
+
+Example
+The following example prints the index of the given input string in the table.
+
+DECLARE
+      l_list apex_application_global.vc_arr2;
+
+BEGIN
+      l_list(1) := 'Dog';
+      l_list(2) := 'Capybara';
+      l_list(3) := 'Cat';
+      sys.dbms_output.put_line (
+            apex_string.index_of (
+                   p_table => l_list,
+                   p_value => 'Capybara' ) );
+
+API Reference                                                                             July 24, 2026
+G26651-03                                                                                 Page 9 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                       Chapter 58
+                                                         JOIN_CLOB Function
+
+                       END;
+                       -> 3
+
+58.9 JOIN_CLOB Function
+
+                       Returns the values of the apex_t_varchar2 input table p_table as a concatenated clob,
+                       separated by p_sep.
+
+                       Syntax
+
+                       APEX_STRING.JOIN_CLOB (
+                              p_table IN apex_t_varchar2,
+                              p_sep IN VARCHAR2 DEFAULT apex_application.LF,
+                              p_dur IN PLS_INTEGER DEFAULT sys.dbms_lob.call )
+                              RETURN CLOB
+
+                       Parameters
+
+Parameters                                             Description
+p_table                                                The input table.
+p_sep                                                  The separator, default is line feed.
+p_dur                                                  The duration of the clob, default sys.dbms_lob.call
+
+Example
+Concatenate numbers, separated by ':'.
+
+apex_string.join_clob(apex_t_varchar2('1','2','3'),':')
+-> 1:2:3
+
+58.10 JOIN_CLOBS Function
+
+                       This function returns the values of the apex_t_clob input table p_table as a concatenated
+                       clob, separated by p_sep.
+
+                       Syntax
+
+APEX_STRING.JOIN_CLOBS (
+   p_table IN apex_t_clob,
+   p_sep IN VARCHAR2 DEFAULT apex_application.LF,
+   p_dur IN PLS_INTEGER DEFAULT sys.dbms_lob.call )
+
+RETURN CLOB;
+
+Parameters
+
+Parameter                                              Description
+p_table                                                The input table.
+p_sep                                                  The separator, default is line feed.
+p_dur                                                  The duration of the clob, default sys.dbms_lob.call
+
+API Reference                                                                                               July 24, 2026
+G26651-03                                                                                                   Page 10 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                 Chapter 58
+                                                                                             JOIN Function Signature 1
+
+                       Example
+                       The following example concatenates numbers, separated by ':'.
+
+                       apex_string.join_clobs(apex_t_clob('1','2','3'),':')
+                       -> 1:2:3
+
+58.11 JOIN Function Signature 1
+
+                       Returns the values of the apex_t_varchar2 input table p_table as a concatenated varchar2,
+                       separated by p_sep.
+
+                       Syntax
+
+                       APEX_STRING.JOIN (
+                            p_table IN apex_t_varchar2,
+                            p_sep IN VARCHAR2 DEFAULT apex_application.LF )
+                            RETURN VARCHAR2
+
+                       Parameters
+
+Parameters                                             Description
+p_table                                                The input table.
+p_sep                                                  The separator, default is line feed.
+
+Example
+Concatenate numbers, separated by ':'.
+
+apex_string.join(apex_t_varchar2('a','b','c'),':')
+-> a:b:c
+
+58.12 JOIN Function Signature 2
+
+                       Returns the values of the apex_t_number input table p_table as a concatenated varchar2,
+                       separated by p_sep.
+
+                       Syntax
+
+APEX_STRING.JOIN (
+    p_table IN apex_t_number,
+    p_sep IN VARCHAR2 DEFAULT apex_application.LF )
+    RETURN VARCHAR2
+
+Parameters
+
+Parameters                                             Description
+p_table                                                The input table.
+p_sep                                                  The separator, default is line feed.
+
+API Reference                                                                                July 24, 2026
+G26651-03                                                                                    Page 11 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                Chapter 58
+                                                                               NEXT_CHUNK Function
+
+Example
+Concatenate numbers, separated by ':'.
+
+apex_string.join(apex_t_number(1,2,3),':')
+-> 1:2:3
+
+58.13 NEXT_CHUNK Function
+
+                       This function reads a fixed-length string from a clob. This is just a small wrapper around
+                       DBMS_LOB.READ, however it prevents common errors when incrementing the offset and picking
+                       the maximum chunk size.
+
+                       Syntax
+
+APEX_STRING.NEXT_CHUNK (
+
+p_str IN                                               CLOB,
+
+p_chunk OUT NOCOPY VARCHAR2,
+
+p_offset IN OUT NOCOPY INTEGER,
+
+p_amount IN                                            INTEGER DEFAULT 8191 )
+
+RETURN BOOLEAN;
+
+Parameters
+
+Parameters                                                    Description
+p_str
+p_chunk                                                       The input clob.
+p_offset                                                      The chunk value (in/out).
+                                                              The position in p_str, where the next chunk
+p_amount                                                      should be read from (in/out).
+                                                              The amount of characters that should be read
+                                                              (default 8191).
+
+Returns
+True if another chunk could be read. False if reading past the end of p_str.
+
+Example
+Print chunks of 25 bytes of the input clob.
+
+declare
+      l_input clob := 'The quick brown fox jumps over the lazy dog';
+      l_offset integer;
+      l_chunk varchar2(20);
+
+begin
+      while apex_string.next_chunk (
+                      p_str => l_input,
+                      p_chunk => l_chunk,
+                      p_offset => l_offset,
+                      p_amount => 20 )
+      loop
+           sys.dbms_output.put_line(l_chunk);
+
+API Reference                                                                  July 24, 2026
+G26651-03                                                                      Page 12 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                  Chapter 58
+                                                                                             PLIST_DELETE Procedure
+
+      end loop;
+end;
+
+Output:
+   The quick brown fox
+   jumps over the lazy
+   dog
+
+58.14 PLIST_DELETE Procedure
+
+                       This procedure removes the property list key from the table.
+                       Syntax
+
+PLIST_DELETE (
+
+p_table IN OUT NOCOPY apex_t_varchar2,
+
+p_key IN                                               VARCHAR2 );
+
+Parameters
+
+ Parameters                                                                Description
+p_table                                                                    The input table.
+p_key                                                                      The input key.
+
+Raised Errors
+
+ Parameters                                                                Description
+NO_DATA_FOUND                                                              Given key does not exist in table.
+
+Example
+Remove value of property "key2".
+
+declare
+         l_plist apex_t_varchar2 := apex_t_varchar2('key1','foo','key2','bar');
+
+ begin
+         apex_string.plist_delete(l_plist,'key2');
+         sys.dbms_output.put_line(apex_string.join(l_plist,':'));
+
+ end;
+ -> key1:foo
+
+58.15 PLIST_EXISTS Function
+
+                       Returns whether a key exists in the property list.
+                       Syntax
+
+APEX_STRING.PLIST_EXISTS (
+      p_table IN apex_t_varchar2,
+
+API Reference                                                                                                  July 24, 2026
+G26651-03                                                                                                      Page 13 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                           Chapter 58
+                                                                              PLIST_GET Function
+
+      p_key IN VARCHAR2 )
+      RETURN BOOLEAN;
+
+Parameters
+
+Parameter                                              Description
+p_table                                                The input table.
+p_key                                                  The input key.
+
+Raises
+NO_DATA_FOUND: Given key does not exist in table.
+
+Example
+The following example prints whether properties key1, key2 and key3 exist.
+
+DECLARE
+      l_plist apex_t_varchar2 := apex_t_varchar2('key1','foo','key2','bar');
+
+BEGIN
+      FOR i IN 1 .. 3 LOOP
+            sys.dbms_output.put_line(
+                   'key'||i||': '||
+                   CASE apex_string.plist_exists(l_plist,'key'||i)
+                   WHEN true then 'TRUE'
+                   ELSE 'FALSE'
+                   END);
+      END LOOP;
+
+END;
+-> key1:TRUE
+
+    key2:TRUE
+    key3:FALSE
+
+58.16 PLIST_GET Function
+
+                       This function gets the property list value for a key.
+                       Syntax
+
+APEX_STRING.PLIST_GET (
+      p_table IN apex_t_varchar2,
+      p_key IN VARCHAR2 )
+      RETURN VARCHAR2
+
+Parameters
+
+Parameters                                             Description
+p_table                                                The input table.
+p_key                                                  The input key.
+
+API Reference                                                                 July 24, 2026
+G26651-03                                                                     Page 14 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                              Chapter 58
+                                                                         PLIST_GET_KEY Function
+
+Raised Errors
+
+ Parameters                                            Description
+NO_DATA_FOUND                                          Given key does not exist in table.
+
+Example
+Get value of property "key2".
+
+declare
+      l_plist apex_t_varchar2 := apex_t_varchar2('key1','foo','key2','bar');
+
+begin
+      sys.dbms_output.put_line(apex_string.plist_get(l_plist,'key2'));
+
+end;
+-> bar
+
+58.17 PLIST_GET_KEY Function
+
+                       Gets the first property list key that maps to a given value. Returns NULL if the value can not be
+                       found.
+
+                       Syntax
+
+APEX_STRING.PLIST_GET_KEY (
+      p_table IN apex_t_varchar2,
+      p_value IN VARCHAR2 )
+      RETURN varchar2;
+
+Parameters
+
+Parameter                                              Description
+p_table                                                The input table.
+p_value                                                The input value.
+
+Example
+The following example gets key of property "bar."
+
+DECLARE
+      l_plist apex_t_varchar2 := apex_t_varchar2('key1','foo','key2','bar');
+
+BEGIN
+      sys.dbms_output.put_line(apex_string.plist_get_key(l_plist,'bar'));
+
+END;
+-> key2
+
+58.18 PLIST_PUSH Procedure
+
+                       This procedure appends key/value to the property list, without looking for duplicates.
+
+API Reference                                                                              July 24, 2026
+G26651-03                                                                                  Page 15 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                     Chapter 58
+                                                                                        PLIST_PUT Function
+
+Syntax
+
+APEX_STRING.PLIST_PUSH (
+      p_table IN OUT NOCOPY apex_t_varchar2,
+      p_key IN VARCHAR2,
+      p_value IN VARCHAR2 );
+
+Parameters
+
+Parameters                                                          Description
+p_table                                                             The input table.
+p_key                                                               The input key.
+p_value                                                             The input value.
+
+Example
+The following example demonstrates how to append key2/bar.
+
+declare
+      l_plist apex_t_varchar2 := apex_t_varchar2('key1','foo');
+
+begin
+      apex_string.plist_push(l_plist,'key2','bar');
+      sys.dbms_output.put_line(apex_string.plist_get(l_plist,'key2'));
+
+end;
+ -> bar
+
+58.19 PLIST_PUT Function
+
+                       This function inserts or updates property list value for a key.
+                       Syntax
+
+PLIST_PUT (
+
+p_table IN OUT NOCOPY apex_t_varchar2,
+
+p_key IN                                               VARCHAR2,
+
+p_value IN                                             VARCHAR2 );
+
+Parameters
+
+ Parameters                                                         Description
+p_table                                                             The input table.
+p_key                                                               The input key.
+p_value                                                             The input value.
+
+Example
+Set property value to "key2".
+
+declare
+      l_plist apex_t_varchar2 := apex_t_varchar2('key1','foo');
+
+API Reference                                                                           July 24, 2026
+G26651-03                                                                               Page 16 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                             Chapter 58
+                                                                               PLIST_TO_JSON_CLOB Function
+
+                       begin
+                             apex_string.plist_put(l_plist,'key2','bar');
+                             sys.dbms_output.put_line(apex_string.plist_get(l_plist,'key2'));
+
+                       end;
+                       -> bar
+
+58.20 PLIST_TO_JSON_CLOB Function
+
+                       This function converts a apex_t_varchar2 record to a sys.json_object_t object type and
+                       stringifies it.
+                       Elements with odd numbers are the attribute names.
+                       Elements with even numbers are the attribute values.
+
+                       Syntax
+
+                       APEX_STRING.PLIST_TO_JSON_CLOB (
+                             p_plist IN apex_t_varchar2 )
+
+                       RETURN CLOB;
+
+                       Parameters
+
+Parameter                                              Description
+p_plist                                                The table.
+
+Returns
+CLOB containing a JSON object with keys and values of the given p_plist.
+
+Example
+The following example creates the JSON object {"key1":"foo","key2":"bar"}
+
+DECLARE
+      l_attributes apex_application_page_regions.attributes%type;
+
+BEGIN
+      l_attributes := apex_string.plist_to_json_clob(apex_t_varchar2(
+                                      'key1', 'foo' ,
+                                      'key2', 'bar' ));
+      dbms_output.put_line(l_attributes);
+
+END;
+
+58.21 PUSH Procedure Signature 1
+
+                       This procedure appends value to apex_t_varchar2 table.
+                       Syntax
+
+APEX_STRING.PUSH (
+    p_table IN OUT NOCOPY apex_t_varchar2,
+    p_value IN VARCHAR2 );
+
+API Reference                                                                  July 24, 2026
+G26651-03                                                                      Page 17 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                    Chapter 58
+                                                                             PUSH Procedure Signature 2
+
+Parameters
+
+Parameter                                                              Description
+p_table                                                                Defines the table.
+p_value                                                                Specifies the value to be added.
+
+Example
+The following example demonstrates how to append 2 values, then prints the table.
+
+DECLARE
+      l_table apex_t_varchar2;
+
+BEGIN
+      apex_string.push(l_table, 'a');
+      apex_string.push(l_table, 'b');
+      sys.dbms_output.put_line(apex_string.join(l_table, ':'));
+
+END;
+-> a:b
+
+58.22 PUSH Procedure Signature 2
+
+                       This procedure appends a value to apex_t_clob table.
+                       Syntax
+
+APEX_STRING.PUSH (
+
+p_table IN OUT NOCOPY apex_t_clob,
+
+p_value IN                                             apex_t_clob );
+
+Parameters
+
+Parameter                                                              Description
+p_table                                                                Defines the table.
+p_value                                                                Specifies the value to be added.
+
+Example
+The following example appends two values then prints the table.
+
+DECLARE
+      l_table apex_t_clob;
+
+BEGIN
+      apex_string.push(l_table, 'a');
+      apex_string.push(l_table, 'b');
+      sys.dbms_output.put_line(apex_string.join_clobs(l_table, ':'));
+
+END;
+
+Output:
+-> a:b
+
+API Reference                                                                                            July 24, 2026
+G26651-03                                                                                                Page 18 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                  Chapter 58
+                                                                                           PUSH Procedure Signature 3
+
+58.23 PUSH Procedure Signature 3
+
+                       This procedure appends a value to apex_t_number table.
+                       Syntax
+
+APEX_STRING.PUSH (
+
+p_table IN OUT NOCOPY apex_t_number,
+
+p_value IN                                             NUMBER );
+
+Parameters
+
+Parameter                                                         Description
+p_table                                                           Defines the table.
+p_value                                                           Specifies the value to be added.
+
+Example
+The following example demonstrates how to append two values, then prints the table.
+
+DECLARE
+    l_table apex_t_number;
+
+BEGIN
+    apex_string.push(l_table, 1);
+    apex_string.push(l_table, 2);
+    sys.dbms_output.put_line(apex_string.join(l_table, ':'));
+
+END;
+-> 1:2
+
+58.24 PUSH Procedure Signature 4
+
+                       This procedure appends collection values to apex_t_varchar2 table.
+                       Syntax
+
+APEX_STRING. PUSH (
+
+p_table IN OUT NOCOPY apex_t_varchar2,
+
+p_values IN                                            apex_t_varchar2 );
+
+Parameters
+
+Parameter                                                         Description
+p_table
+p_values                                                          Defines the table.
+                                                                  Specifies the values that should be added to
+                                                                  p_table.
+
+API Reference                                                                                       July 24, 2026
+G26651-03                                                                                           Page 19 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                  Chapter 58
+                                                                                           PUSH Procedure Signature 5
+
+Example
+
+The following example demonstrates how to append a single value and multiple values, then
+prints the table.
+
+DECLARE
+    l_table apex_t_varchar2;
+
+BEGIN
+    apex_string.push(l_table, 'a');
+    apex_string.push(l_table, apex_t_varchar2('1','2','3'));
+    sys.dbms_output.put_line(apex_string.join(l_table, ':'));
+
+END;
+-> a:1:2:3
+
+58.25 PUSH Procedure Signature 5
+
+                       This procedure appends collection values to the apex_t_clob table.
+                       Syntax
+
+APEX_STRING.PUSH (
+
+p_table IN OUT NOCOPY apex_t_clob,
+
+p_values IN                                            apex_t_clob )
+
+Parameters
+
+Parameter                                              Description
+p_table                                                The table.
+p_values                                               Values to be added to p_table.
+
+Example
+The following example appends single value and multiple values, then prints the table.
+
+DECLARE
+    l_table apex_t_clob;
+
+BEGIN
+    apex_string.push(l_table, 'a');
+    apex_string.push(l_table, apex_t_clob('1','2','3'));
+    sys.dbms_output.put_line(apex_string.join_clobs(l_table, ':'));
+
+END;
+-> a:1:2:3
+
+58.26 PUSH Procedure Signature 6
+
+                       This procedure appends values of a PL/SQL table to the apex_t_varchar2 table.
+
+API Reference                                                                                         July 24, 2026
+G26651-03                                                                                             Page 20 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                     Chapter 58
+                                                                                              PUSH Procedure Signature 7
+
+Syntax
+
+APEX_STRING.PUSH (
+
+p_table IN OUT NOCOPY apex_t_varchar2,
+
+p_values IN                                                apex_application_global.vc_arr2 )
+
+Parameters
+
+Parameter                                                  Description
+p_table                                                    The table.
+p_values                                                   Values to add to p_table.
+
+Example
+The following example appends then prints the table.
+
+DECLARE
+    l_table apex_t_varchar2;
+    l_values apex_application_global.vc_arr2;
+
+BEGIN
+    l_values(1) := 'a';
+    l_values(2) := 'b';
+    apex_string.push(l_table, l_values);
+    sys.dbms_output.put_line(apex_string.join(l_table, ':'));
+
+END;
+-> a:b
+
+58.27 PUSH Procedure Signature 7
+
+                       This procedure appends number collection values to the apex_t_varchar2 table.
+                       Syntax
+
+APEX_STRING.PUSH (                                     IN OUT NOCOPY apex_t_varchar2,
+      p_table
+      p_values                                         IN  apex_t_number,
+      p_format_mask
+                                                       IN  VARCHAR2 DEFAULT NULL );
+
+Parameters
+
+Parameter                                                  Description
+p_table                                                    The table.
+p_values                                                   Values that should be added to p_table.
+p_format_mask                                              Format mask to use when converting numbers to strings.
+
+API Reference                                                                                         July 24, 2026
+G26651-03                                                                                             Page 21 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                    Chapter 58
+                                                                                         SHUFFLE Function
+
+                       Example
+                       The following example appends a single value and multiple values, then prints the table.
+
+                       DECLARE
+                              l_table apex_t_varchar2;
+
+                       BEGIN
+                              apex_string.push(l_table, 'a');
+                              apex_string.push(l_table, apex_t_number(1,2,3), 'FM990D00');
+                              sys.dbms_output.put_line(apex_string.join(l_table, ':'));
+
+                       END;
+                       -> a:1.00:2.00:3.00
+
+58.28 SHUFFLE Function
+
+                       Returns the input table values, re-ordered.
+
+                       Syntax
+
+                       APEX_STRING.SHUFFLE (
+                              p_table IN apex_t_varchar2 )
+                              RETURN apex_t_varchar2;
+
+                       Parameters
+
+ Parameters                                            Description
+p_table                                                The input table.
+
+Example
+Shuffle and print l_table.
+
+declare
+      l_table apex_t_varchar2 := apex_string.split('1234567890',null);
+
+begin
+
+sys.dbms_output.put_line(apex_string.join(apex_string.shuffle(l_table),':'));
+end;
+-> a permutation of 1:2:3:4:5:6:7:8:9:0
+
+58.29 SHUFFLE Procedure
+
+                       This procedure randomly re-orders the values of the input table.
+                       Syntax
+
+APEX_STRING.SHUFFLE (
+      p_table IN OUT NOCOPY apex_t_varchar2 );
+
+API Reference                                                                            July 24, 2026
+G26651-03                                                                                Page 22 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                   Chapter 58
+                                                                              SPLIT Function Signature 1
+
+Parameters
+
+ Parameters                                            Description
+p_table                                                The input table, which will be modified by the procedure.
+
+Example
+Shuffle and print l_table.
+
+declare
+      l_table apex_t_varchar2 := apex_string.split('1234567890',null);
+
+begin
+      apex_string.shuffle(l_table);
+      sys.dbms_output.put_line(apex_string.join(l_table,':'));
+
+end;
+-> a permutation of 1:2:3:4:5:6:7:8:9:0
+
+58.30 SPLIT Function Signature 1
+
+                       Use this function to split input string at separator.
+                       Syntax
+
+APEX_STRING.SPLIT (
+      p_str IN VARCHAR2,
+      p_sep IN VARCHAR2 DEFAULT apex_application.LF,
+      p_limit IN PLS_INTEGER DEFAULT NULL )
+      RETURN apex_t_varchar2;
+
+Parameters
+
+ Parameters                                            Description
+p_str
+p_sep                                                  The input string.
+                                                       The separator. Splits at line feed by default.
+p_limit                                                If null, split after each character. If a single character, split at this character.
+                                                       If more than 1 character, split at regular expression (max 512 characters).
+Examples
+                                                       Maximum number of splits, ignored if null. If smaller than the total possible
+                                                       number of splits, the last table element contains the rest.
+
+apex_string.split(1||chr(10)||2||chr(10)||3)
+-> apex_t_varchar2('1','2','3')
+
+apex_string.split('1:2:3',':')
+-> apex_t_varchar2('1','2','3')
+
+apex_string.split('123',null)
+-> apex_t_varchar2('1','2','3')
+
+apex_string.split('1:2:3:4',':',2)
+
+API Reference                                                                                                     July 24, 2026
+G26651-03                                                                                                         Page 23 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                    Chapter 58
+                                                                               SPLIT Function Signature 2
+
+                       -> apex_t_varchar2('1','2:3:4')
+
+                       apex_string.split('key1=val1, key2=val2','\s*[=,]\s*')
+                       -> apex_t_varchar2('key1','val1','key2','val2')
+
+58.31 SPLIT Function Signature 2
+
+                       Use this function to split input clob at separator.
+                       Syntax
+
+                       APEX_STRING.SPLIT (
+                              p_str IN CLOB,
+                              p_sep IN VARCHAR2 DEFAULT apex_application.LF )
+                              RETURN apex_t_varchar2;
+
+                       Parameters
+
+ Parameters                                            Description
+p_str
+p_sep                                                  The input clob.
+                                                       The separator. Splits at line feed by default.
+Example                                                If null, split after each character. If a single character, split at this
+                                                       character. If more than 1 character, split at regular expression
+                                                       (max 512 characters).
+
+apex_string.split('1:2:3',':')
+-> apex_t_varchar2('1','2','3')
+
+58.32 SPLIT_CLOBS Function
+
+                       This function splits input clobs at the separator and returns a table of clobs.
+                       Syntax
+
+APEX_STRING.SPLIT_CLOBS (
+   p_str IN CLOB,
+   p_sep IN VARCHAR2 DEFAULT apex_application.LF,
+   p_limit IN PLS_INTEGER DEFAULT NULL )
+
+RETURN apex_t_clob;
+
+Parameters
+
+Parameter                                              Description
+p_str                                                  The input clob.
+
+API Reference                                                                                           July 24, 2026
+G26651-03                                                                                               Page 24 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                         Chapter 58
+                                                                                                   SPLIT_NUMBERS Function
+
+ Parameter                                             Description
+p_sep
+                                                       The separator. Splits at line feed by default.
+p_limit                                                If null, split after each character. If a single character, split at
+                                                       this character. If more than 1 character, split at regular
+Example                                                expression (max 512 characters).
+
+                                                       Maximum number of splits. Ignored if null.
+                                                       If smaller than the total possible number of splits, the last
+                                                       table element contains the rest.
+
+apex_string.split_clobs('1:2:3',':')
+-> apex_t_clob('1','2','3')
+
+58.33 SPLIT_NUMBERS Function
+
+                       Use this function to split input at separator, values must all be numbers.
+                       Syntax
+
+SPLIT_NUMBERS (
+       p_str IN VARCHAR2,
+       p_sep IN VARCHAR2 DEFAULT apex_application.LF )
+       RETURN apex_t_number;
+
+Parameters
+
+ Parameters                                            Description
+p_str
+p_sep                                                  The input varchar2.
+                                                       The separator. Splits at line feed by default.
+Example                                                If null, split after each character. If a single character, split at this
+                                                       character. If more than 1 character, split at regular expression (max
+                                                       512 characters).
+
+apex_string.split_numbers('1:2:3',':')
+-> apex_t_number(1,2,3)
+
+58.34 STRING_TO_TABLE Function
+
+                       This function returns the split input at separator, returning a vc_arr2.
+                       Syntax
+
+APEX_STRING.STRING_TO_TABLE (
+      p_str IN VARCHAR2,
+
+API Reference                                                                                      July 24, 2026
+G26651-03                                                                                          Page 25 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                   Chapter 58
+                                                              TABLE_TO_CLOB Function
+
+      p_sep IN VARCHAR2 DEFAULT ':' )
+      RETURN apex_application_global.vc_arr2;
+
+Parameters
+
+ Parameters                                            Description
+p_str                                                  The input varchar2.
+p_sep                                                  The separator, no regexp or split at char. Defaults to ':'.
+
+Example
+
+DECLARE
+      l_result apex_application_global.vc_arr2;
+
+BEGIN
+      l_result := apex_string.string_to_table('1:2:3',':');
+      sys.dbms_output.put_line(apex_string.table_to_string(l_result,'-'));
+
+END;
+-> 1-2-3
+
+58.35 TABLE_TO_CLOB Function
+
+                       This function returns the values of the apex_application_global.vc_arr2 input table p_table
+                       as a concatenated clob, separated by p_sep.
+
+                       Syntax
+
+APEX_STRING.TABLE_TO_CLOB (
+
+p_table IN apex_application_global.vc_arr2,
+
+p_sep IN VARCHAR2                                      DEFAULT apex_application.LF,
+
+p_dur IN PLS_INTEGER                                   DEFAULT sys.dbms_lob.call )
+
+RETURN CLOB;
+
+Parameters
+
+Parameter                                              Description
+p_table                                                The input table.
+p_sep                                                  The separator. Default is line feed.
+p_dur                                                  The duration of the clob. Default sys.dbms_lob.call.
+
+Example
+The following example concatenates numbers, separated by ':'
+
+DECLARE
+      l_table apex_application_global.vc_arr2;
+
+BEGIN
+      l_table(1) := '1';
+      l_table(2) := '2';
+      l_table(3) := '3';
+
+      sys.dbms_output.put_line(apex_string.table_to_clob(l_table, ':'));
+
+API Reference                                                                        July 24, 2026
+G26651-03                                                                            Page 26 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                              Chapter 58
+                                                                      TABLE_TO_STRING Function
+
+END;
+-> 1:2:3
+
+58.36 TABLE_TO_STRING Function
+
+                       This function returns the values of the apex_application_global.vc_arr2 input table p_table
+                       as a concatenated varchar2, separated by p_sep.
+
+                       Syntax
+
+APEX_STRING.TABLE_TO_STRING (
+
+p_table IN apex_application_global.vc_arr2,
+
+p_sep IN VARCHAR2                                      DEFAULT ':' )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameters                                             Description
+p_table                                                The input table, assumes no holes and index starts at 1.
+p_sep                                                  The separator, default is ':'.
+
+Example
+Concatenate numbers, separated by ':'.
+
+declare
+      l_table apex_application_global.vc_arr2;
+
+begin
+      l_table(1) := 'a';
+      l_table(2) := 'b';
+      l_table(3) := 'c';
+      sys.dbms_output.put_line(apex_string.table_to_string(l_table));
+
+end;
+-> a:b:c
+
+API Reference                                                                                                    July 24, 2026
+G26651-03                                                                                                        Page 27 of 27
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+59

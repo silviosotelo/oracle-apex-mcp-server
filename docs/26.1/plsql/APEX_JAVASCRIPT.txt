@@ -1,0 +1,706 @@
+# APEX_JAVASCRIPT (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 42457-43160)
+
+APEX_JAVASCRIPT
+
+                       The APEX_JAVASCRIPT package provides utility functions for adding dynamic JavaScript code to
+                       HTTP output. This package is usually used for plug-in development.
+                       � Data Types
+                       � ADD_3RD_PARTY_LIBRARY_FILE Procedure (Deprecated)
+                       � ADD_ATTRIBUTE Function Signature 1
+                       � ADD_ATTRIBUTE Function Signature 2
+                       � ADD_ATTRIBUTE Function Signature 3
+                       � ADD_ATTRIBUTE Function Signature 4
+                       � ADD_INLINE_CODE Procedure
+                       � ADD_JET Procedure
+                       � ADD_LIBRARY Procedure
+                       � ADD_REQUIREJS Procedure
+                       � ADD_REQUIREJS_DEFINE Procedure
+                       � ADD_ONLOAD_CODE Procedure
+                       � ADD_VALUE Function Signature 1
+                       � ADD_VALUE Function Signature 2
+                       � ADD_VALUE Function Signature 3
+                       � ADD_VALUE Function Signature 4
+                       � Escape Function
+
+39.1 Data Types
+
+                       The APEX_JAVASCRIPT package uses the following data types.
+
+                       Function Type
+
+subtype t_function_type is pls_integer range 1..3;
+
+c_type_function                                        constant t_function_type := 1; -- Returns the input code
+
+without modification.
+
+c_type_function_body constant t_function_type := 2; -- Wraps the input code
+
+in a function body.
+
+c_type_expression constant t_function_type := 3; -- Wraps the input code
+
+in a function with a return statement.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 1 of 12
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                           Chapter 39
+                                                                                    ADD_3RD_PARTY_LIBRARY_FILE Procedure (Deprecated)
+
+39.2 ADD_3RD_PARTY_LIBRARY_FILE Procedure
+(Deprecated)
+
+                              Caution
+                                 This API is deprecated and will be removed in a future release.
+
+This procedure adds the script tag to load a third-party JavaScript library file and also takes
+into account the specified CDN (content delivery network) for the application.
+Supported libraries include:
+� jQuery
+� jQueryUI
+
+Syntax
+
+APEX_JAVASCRIPT.ADD_3RD_PARTY_LIBRARY_FILE (
+      p_library IN VARCHAR2,
+      p_file_name IN VARCHAR2 DEFAULT NULL,
+      p_directory IN VARCHAR2 DEFAULT NULL,
+      p_version IN VARCHAR2 DEFAULT NULL,
+      p_attributes IN VARCHAR2 DEFAULT NULL );
+
+Parameters
+
+Parameters                                             Description
+p_library
+p_file_name                                            Use one of the c_library_* constants.
+                                                       Specifies the file name excluding version, .min,
+p_directory                                            and .js.
+                                                       (Optional) Directory where the file p_file_name is
+p_version                                              located.
+                                                       (Optional) If no value is provided, then uses the same
+p_attributes                                           version shipped with APEX.
+                                                       Extra attributes to add to the script tag.
+
+                                                       Note
+
+                                                       Callers are responsible
+                                                       for escaping this
+                                                       parameter.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 2 of 12
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                           Chapter 39
+                                                       ADD_ATTRIBUTE Function Signature 1
+
+                       Example
+                       This example loads the JavaScript file of the Draggable feature of jQuery UI.
+
+                       apex_javascript.add_3rd_party_library_file (
+                               p_library => apex_javascript.c_library_jquery_ui,
+                               p_file_name => 'jquery.ui.draggable' )
+
+39.3 ADD_ATTRIBUTE Function Signature 1
+
+                       This function returns the attribute and the attribute's escaped text surrounded by double
+                       quotation marks.
+
+                              Note
+                                 This function does not escape HTML tags. It only prevents HTML tags from breaking
+                                 the JavaScript object attribute assignment. To prevent XSS (cross site scripting)
+                                 attacks, you must also call SYS.HTF.ESCAPE_SC to prevent embedded JavaScript code
+                                 from being executed when you inject the string into the HTML page.
+
+Syntax
+
+APEX_JAVASCRIPT.ADD_ATTRIBUTE (
+
+p_name            IN VARCHAR2,
+
+p_value           IN VARCHAR2,
+
+p_omit_null IN BOOLEAN:=TRUE,
+
+p_add_comma IN BOOLEAN:=TRUE )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_name
+p_value                                                Name of the JavaScript object attribute.
+p_omit_null                                            Text to be assigned to the JavaScript object attribute.
+                                                       If p_omit_null is TRUE and p_value is NULL, the function returns
+p_add_comma                                            nothing. If p_omit_null is FALSE and p_value is NULL, the value
+                                                       null is returned (for example, test:null).
+                                                       If set to TRUE, a trailing comma is added when a value is returned.
+
+Example
+
+Adds a call to the addEmployee JavaScript function and passes in a JavaScript object with
+different attribute values. The output of this call looks like:
+
+addEmployee(
+   {"FirstName":"John",
+    "LastName":"Doe",
+    "Salary":2531.29,
+    "Birthday":new Date(1970,1,15,0,0,0),
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 3 of 12
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                            Chapter 39
+                                                                                        ADD_ATTRIBUTE Function Signature 2
+
+ "isSalesman":true
+});
+
+As the last attribute you should use the parameter combination FALSE (p_omit_null), FALSE
+(p_add_comma) so that the last attribute is always generated. This avoids that you have to check
+for the other parameters if a trailing comma should be added or not.
+
+apex_javascript.add_onload_code (
+      'addEmployee('||
+            '{'||
+            apex_javascript.add_attribute('FirstName',
+
+sys.htf.escape_sc(l_first_name))||
+            apex_javascript.add_attribute('LastName',
+
+sys.htf.escape_sc(l_last_name))||
+            apex_javascript.add_attribute('Salary', l_salary)||
+            apex_javascript.add_attribute('Birthday', l_birthday)||
+            apex_javascript.add_attribute('isSalesman', l_is_salesman, false,
+
+false)||
+            '});' );
+
+39.4 ADD_ATTRIBUTE Function Signature 2
+
+                       This function returns the attribute and the attribute's number.
+                       Syntax
+
+APEX_JAVASCRIPT.ADD_ATTRIBUTE (
+
+p_name            IN VARCHAR2,
+
+p_value           IN NUMBER,
+
+p_omit_null IN BOOLEAN:=TRUE,
+
+p_add_comma IN BOOLEAN:=TRUE )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_name
+p_value                                                Name of the JavaScript object attribute.
+p_omit_null                                            Number which should be assigned to the JavaScript object attribute.
+                                                       If p_omit_null is TRUE and p_value is NULL, the function returns
+p_add_comma                                            nothing. If p_omit_null is FALSE and p_value is NULL, the value
+                                                       null is returned (for example, test:null).
+                                                       If set to TRUE, a trailing comma is added when a value is returned.
+
+                       Example
+                       See example for ADD_ATTRIBUTE Function Signature 1.
+
+39.5 ADD_ATTRIBUTE Function Signature 3
+
+This function returns the attribute and a JavaScript boolean of TRUE, FALSE, or NULL.
+
+API Reference                                                                           July 24, 2026
+G26651-03                                                                               Page 4 of 12
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                Chapter 39
+                                                                            ADD_ATTRIBUTE Function Signature 4
+
+Syntax
+
+APEX_JAVASCRIPT.ADD_ATTRIBUTE (
+
+p_name            IN VARCHAR2,
+
+p_value           IN BOOLEAN,
+
+p_omit_null IN BOOLEAN:=TRUE,
+
+p_add_comma IN BOOLEAN:=TRUE )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_name
+p_value                                                Name of the JavaScript object attribute.
+p_omit_null                                            Boolean assigned to the JavaScript object attribute.
+                                                       If p_omit_null is TRUE and p_value is NULL, the function returns
+p_add_comma                                            nothing. If p_omit_null is FALSE and p_value is NULL, the value
+                                                       null is returned (for example, test:null).
+                                                       If set to TRUE a trailing comma is added when a value is returned.
+
+                       Example
+                       See example for ADD_ATTRIBUTE Function Signature 1.
+
+39.6 ADD_ATTRIBUTE Function Signature 4
+
+This function returns the attribute and the attribute's date.
+Syntax
+
+APEX_JAVASCRIPT.ADD_ATTRIBUTE (
+
+p_name            IN VARCHAR2,
+
+p_value           IN DATE,
+
+p_omit_null IN BOOLEAN:=TRUE,
+
+p_add_comma IN BOOLEAN:=TRUE )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_name
+p_value                                                Name of the JavaScript object attribute.
+p_omit_null                                            Date assigned to the JavaScript object attribute.
+                                                       If p_omit_null is TRUE and p_value is NULL the function returns
+p_add_comma                                            nothing. If p_omit_null is FALSE and p_value is NULL, the value
+                                                       null is returned (for example, test:null).
+                                                       If set to TRUE a trailing comma is added when a value is returned.
+
+Example
+See example for ADD_ATTRIBUTE Function Signature 1.
+
+API Reference                                                               July 24, 2026
+G26651-03                                                                   Page 5 of 12
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                           Chapter 39
+                                                                                                                   ADD_INLINE_CODE Procedure
+
+39.7 ADD_INLINE_CODE Procedure
+
+                       This procedure adds a code snippet that is included inline into the HTML output. For example,
+                       you can use this procedure to add new functions or global variable declarations.
+
+                              Note
+                                 If you want to execute code you should use ADD_ONLOAD_CODE Procedure.
+
+Syntax
+
+APEX_JAVASCRIPT.ADD_INLINE_CODE (
+
+p_code      IN VARCHAR2,
+
+p_key       IN VARCHAR2 DEFAULT NULL )
+
+Parameters
+
+Parameter                                              Description
+p_code
+p_key                                                  JavaScript code snippet. For example: $s('P1_TEST',123);
+                                                       Identifier for the code snippet. If specified and a code snippet with the
+                                                       same name has already been added, the new code snippet is ignored.
+                                                       If p_key is NULL the snippet is always added.
+
+Example
+
+The following example includes the JavaScript function initMySuperWidget in the HTML
+output. If the plug-in is used multiple times on the page and the add_inline_code is called
+multiple times, it is added once to the HTML output because all calls have the same value for
+p_key.
+
+apex_javascript.add_inline_code (
+      p_code => 'function initMySuperWidget(){'||chr(10)||
+                      ' // do something'||chr(10)||
+                      '};',
+      p_key => 'my_super_widget_function' );
+
+39.8 ADD_JET Procedure
+
+                       This procedure adds the script tag to load the Oracle JET library.
+                       Syntax
+
+APEX_JAVASCRIPT.ADD_JET;
+
+API Reference                                                                              July 24, 2026
+G26651-03                                                                                  Page 6 of 12
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                           Chapter 39
+                                                                                                       ADD_LIBRARY Procedure
+
+Example
+
+The following example demonstrates how to only load the Oracle JET library if the widget isn't
+rendered as a native browser input field.
+
+if l_display_as <> 'NATIVE' then
+      apex_javascript.add_jet;
+
+end if;
+
+39.9 ADD_LIBRARY Procedure
+
+                       This procedure adds the script tag to load a JavaScript library. If a library has been added, it is
+                       not added a second time.
+
+                       Syntax
+
+APEX_JAVASCRIPT.ADD_LIBRARY (
+
+     p_name                                            IN VARCHAR2,
+
+     p_directory                                       IN VARCHAR2,
+
+     p_version                                         IN VARCHAR2 DEFAULT NULL,
+
+     p_check_to_add_minified IN BOOLEAN DEFAULT FALSE,
+
+     p_skip_extension                                  IN BOOLEAN DEFAULT FALSE,
+
+     p_ie_condition                                    IN VARCHAR2 DEFAULT NULL,
+
+     p_requirejs_module                                IN VARCHAR2 DEFAULT NULL,
+
+     p_requirejs_js_expression IN VARCHAR2 DEFAULT NULL,
+
+     p_requirejs_required                              IN BOOLEAN DEFAULT FALSE,
+
+     p_is_module                                       IN BOOLEAN DEFAULT FALSE,
+
+     p_is_async                                        IN BOOLEAN DEFAULT FALSE,
+
+     p_is_defer                                        IN BOOLEAN DEFAULT FALSE,
+
+     p_attributes                                      IN VARCHAR2 DEFAILT NULL,
+
+     p_key                                             IN VARCHAR2 DEFAULT NULL )
+
+Parameters
+
+Parameter                                              Description
+
+p_name                                                 Name of the JavaScript file. Must not use .js when specifying.
+
+p_directory                                            Directory where JavaScript library is loaded. Must have a trailing slash.
+
+p_version                                              Version identifier.
+
+p_check_to_add_minifie If TRUE, the procedure tests if it is appropriate to add .min extension and
+
+d                                                      add it if appropriate. This is added if an application is not running in
+
+                                                       DEBUG mode, and omitted when in DEBUG mode.
+
+p_skip_extension                                       If TRUE, the extension .js is NOT added.
+
+p_ie_condition                                         Condition which is used as Internet Explorer condition.
+
+p_requirejs_module                                     Module name which is used to expose the library to RequireJS.
+
+p_requirejs_js_express JavaScript expression which is used to expose the library to the
+
+ion                                                    RequireJS module.
+
+p_requirejs_required This has to be true if the library uses RequireJS in its code to loading
+                                        other JavaScript files.
+
+p_key                                                  If not specified, defaults to p_directory||p_name||p_version.
+
+p_is_module                                            If true, adds type="module" to the script tag.
+
+API Reference                                                                                                   July 24, 2026
+G26651-03                                                                                                       Page 7 of 12
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                  Chapter 39
+                                                                                          ADD_REQUIREJS Procedure
+
+Parameter                                              Description
+p_is_async                                             If true, adds attribute async to the script tag.
+p_is_defer                                             If true adds attribute defer to the script tag.
+                                                       defer cannot be used in combination with async.
+p_attributes                                           defer should not be used in combination with type="module" as
+                                                       module scripts defer by default.
+                                                       Extra attributes to add to the script tag.
+
+                                                                                    Note
+
+                                                                                          Callers are responsible for escaping this
+                                                                                          parameter.
+
+Example
+
+The following example includes the JavaScript library file named hammer-2.0.4.min.js (if the
+application has not been started from the Builder), or hammer-2.0.4.js (if the application has
+been started from the Builder or is running in DEBUG mode), from the directory specified by
+p_plugin.file_prefix. Since p_skip_extension is not specified, this defaults to .js. Also,
+since p_key is not specified, the key defaults to p_plugin.file_prefix||hammer-2.0.4.
+Hammer is a JavaScript library which exposes itself to RequireJS using hammerjs as module
+name.
+
+apex_javascript.add_library (
+
+p_name                                                 => 'hammer-2.0.4#MIN#',
+
+p_directory                                            => p_plugin.file_prefix,
+
+p_requirejs_module                                     => 'hammerjs',
+
+p_requirejs_js_expression => 'Hammer' );
+
+39.10 ADD_REQUIREJS Procedure
+
+                       This procedure adds the script tag to load the RequireJS library.
+                       Syntax
+
+APEX_JAVASCRIPT.ADD_REQUIREJS;
+
+39.11 ADD_REQUIREJS_DEFINE Procedure
+
+                       This procedure adds a RequireJS define after RequireJS has been loaded to let it know about
+                       the existence of a library.
+
+                       Syntax
+
+APEX_JAVASCRIPT.ADD_REQUIREJS_DEFINE (
+
+p_module                                               IN VARCHAR2,
+
+p_js_expression IN VARCHAR2 )
+
+API Reference                                                                             July 24, 2026
+G26651-03                                                                                 Page 8 of 12
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                Chapter 39
+                                                                                   ADD_ONLOAD_CODE Procedure
+
+Parameters
+
+ Parameter                                             Description
+p_module
+p_js_expression                                        The module name under which the library is registered in RequireJS.
+                                                       The JavaScript expression whose value is exposed as the export of
+Example                                                p_module.
+
+apex_javascript.add_requirejs_define (
+
+p_module                                               => 'hammerjs',
+
+p_js_expression => 'Hammer' );
+
+39.12 ADD_ONLOAD_CODE Procedure
+
+                       This procedure adds a JavaScript code snippet to the HTML output which the onload event
+                       executes. If an entry with the same key exists, it is ignored. If p_key is NULL the snippet is
+                       always added.
+
+                       Syntax
+
+APEX_JAVASCRIPT.ADD_ONLOAD_CODE (
+
+p_code                                                 IN VARCHAR2,
+
+p_key                                                  IN VARCHAR2 DEFAULT NULL )
+
+Parameters
+
+Parameter                                              Description
+p_code
+p_key                                                  JavaScript code snippet to execute during the onload event.
+                                                       Any name to identify the specified code snippet. If specified, the code
+                                                       snippet is added if there has been no other call with the same p_key. If
+                                                       p_key is NULL the code snippet is always added.
+
+Example
+
+Adds the JavaScript call initMySuperWidget( to the onload buffer. If the plug-in is used
+multiple times on the page and the add_onload_code is called multiple times, it is added once
+to the HTML output because all calls have the same value for p_key.
+
+apex_javascript.add_onload_code (
+      p_code => 'initMySuperWidget();',
+      p_key => 'my_super_widget' );
+
+39.13 ADD_VALUE Function Signature 1
+
+                       This function returns the escaped text surrounded by double quotation marks. For example,
+                       this string could be returned "That\'s a test".
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 9 of 12
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                      Chapter 39
+                                                                               ADD_VALUE Function Signature 2
+
+Note
+This function does not escape HTML tags. It only prevents HTML tags from breaking
+the JavaScript object attribute assignment. To prevent XSS (cross site scripting)
+attacks, you must also call SYS.HTF.ESCAPE_SC to prevent embedded JavaScript code
+from being executed when you inject the string into the HTML page.
+
+Syntax
+
+APEX_JAVASCRIPT.ADD_VALUE (
+
+p_value                                                IN VARCHAR2,
+
+p_add_comma                                            IN BOOLEAN :=TRUE )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_value                                                Text to be escaped and wrapped by double quotation marks.
+p_add_comma                                            If p_add_comma is TRUE a trailing comma is added.
+
+Example
+
+This example adds some JavaScript code to the onload buffer. The value of
+p_item.attribute_01 is first escaped with htf.escape_sc to prevent XSS attacks and then
+assigned to the JavaScript variable lTest by calling apex_javascript.add_value. Add_value
+takes care of properly escaping the value and wrapping it with double quotation marks.
+Because commas are not wanted, p_add_comma is set to FALSE.
+
+apex_javascript.add_onload_code (
+      'var lTest = '||
+
+apex_javascript.add_value(sys.htf.escape_sc(p_item.attribute_01),
+FALSE)||';'||chr(10)||
+
+      'showMessage(lTest);' );
+
+39.14 ADD_VALUE Function Signature 2
+
+                       This function returns p_value as JavaScript number, if p_value is NULL the value null is
+                       returned.
+
+                       Syntax
+
+APEX_JAVASCRIPT.ADD_VALUE (
+
+p_value                                                IN NUMBER,
+
+p_add_comma                                            IN BOOLEAN :=TRUE )
+
+RETURN VARCHAR2;
+
+API Reference                                                               July 24, 2026
+G26651-03                                                                   Page 10 of 12
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                          Chapter 39
+                                                                            ADD_VALUE Function Signature 3
+
+Parameters
+
+Parameter                                              Description
+p_value                                                Number which should be returned as JavaScript number.
+p_add_comma                                            If p_add_comma is TRUE a trailing comma is added. Default is TRUE.
+
+                       Example
+                       See example for ADD_VALUE Function Signature 1.
+
+39.15 ADD_VALUE Function Signature 3
+
+This function returns p_value as JavaScript boolean. If p_value is NULL the value null is
+returned.
+
+Syntax
+
+APEX_JAVASCRIPT.ADD_VALUE (
+
+p_value                                                IN BOOLEAN,
+
+p_add_comma                                            IN BOOLEAN :=TRUE )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_value                                                Boolean which should be returned as JavaScript boolean.
+p_add_comma                                            If p_add_comma is TRUE a trailing comma is added. Default is TRUE.
+
+                       Example
+                       See example for ADD_VALUE Function Signature 1.
+
+39.16 ADD_VALUE Function Signature 4
+
+This function returns p_value as JavaScript date object, if p_value is NULL the value null is
+returned.
+
+Syntax
+
+APEX_JAVASCRIPT.ADD_VALUE (
+
+p_value                                                IN DATE,
+
+p_add_comma                                            IN BOOLEAN :=TRUE )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_value                                                Date which should be returned as JavaScript date object.
+p_add_comma                                            If p_add_comma is TRUE a trailing comma is added. Default is TRUE.
+
+API Reference                                                               July 24, 2026
+G26651-03                                                                   Page 11 of 12
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                    Chapter 39
+                                                                            Escape Function
+
+                       Example
+
+                       See example for ADD_VALUE Function Signature 1.
+
+39.17 Escape Function
+
+                       This function escapes text to be used in JavaScript. This function uses
+                       APEX_ESCAPE.JS_LITERAL to escape characters and provide a reference to that other API.
+
+                              Note
+                                 This function prevents HTML tags from breaking the JavaScript object attribute
+                                 assignment and also escapes the HTML tags '<' and '>'. It does not escape other
+                                 HTML tags, therefore to be sure to prevent XSS (cross site scripting) attacks, you
+                                 must also call SYS.HTF.ESCAPE_SC to prevent embedded JavaScript code from being
+                                 executed when you inject the string into the HTML page.
+
+Syntax
+
+APEX_JAVASCRIPT.ESCAPE (
+      p_text IN VARCHAR2 )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_text                                                 Text to be escaped.
+
+Example
+
+Adds some JavaScript code to the onload buffer. The value of p_item.attribute_01 is first
+escaped with htf.escape_sc to prevent XSS attacks and then escaped with
+apex_javascript.escape to prevent special characters like a quotation mark from breaking the
+JavaScript code.
+
+apex_javascript.add_onload_code (
+      'var lTest = "'||
+
+apex_javascript.escape(sys.htf.escape_sc(p_item.attribute_01))||'";'||
+chr(10)||
+
+      'showMessage(lTest);' );
+
+API Reference                                                               July 24, 2026
+G26651-03                                                                   Page 12 of 12
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+40                                                                                    July 24, 2026
+                                                                                      Page 1 of 45

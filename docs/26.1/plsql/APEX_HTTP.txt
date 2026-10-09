@@ -1,0 +1,124 @@
+# APEX_HTTP (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 33766-33888)
+
+APEX_HTTP
+
+                       The APEX_HTTP package provides APIs to download files.
+                       � DOWNLOAD Procedure Signature 1
+                       � DOWNLOAD Procedure Signature 2
+
+32.1 DOWNLOAD Procedure Signature 1
+
+                       This procedure downloads a BLOB to the client.
+
+Note
+
+Clears any previous output to the HTP buffer. APEX_APPLICATION.STOP_APEX_ENGINE is
+called after downloading the file.
+
+Syntax
+
+APEX_HTTP.DOWNLOAD (                                   IN OUT NOCOPY      BLOB,      DEFAULT NULL,
+      p_blob                                           IN                 VARCHAR2,  DEFAULT FALSE )
+      p_content_type                                   IN                 VARCHAR2
+      p_filename                                       IN                 BOOLEAN
+      p_is_inline
+
+Parameters
+
+Parameter                                              Description
+p_blob
+p_content_type                                         The BLOB value to download.
+p_filename                                             The mime type of the file.
+p_is_inline                                            Name of the file.
+                                                       If FALSE (default), the browser displays a file download
+                                                       dialog to save the file.
+                                                       If TRUE, displays the file inline in the browser window.
+
+Example
+The following example downloads a file stored in a table.
+
+DECLARE                                                blob;
+      l_file                                           varchar2( 4000 );
+      l_content_type                                   varchar2( 4000 );
+      l_filename
+
+BEGIN
+
+SELECT blob_content,
+
+API Reference                                                                                         July 24, 2026
+G26651-03                                                                                               Page 1 of 3
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                 Chapter 32
+                                                                                 DOWNLOAD Procedure Signature 2
+
+               mime_type,
+               filename
+       INTO l_file,
+               l_content_type,
+               l_filename
+       FROM apex_application_temp_files
+      WHERE name = :P1_FILE;
+
+apex_http.download(                                    => l_file,
+      p_blob                                           => l_content_type,
+      p_content_type                                   => l_filename );
+      p_filename
+
+END;
+
+32.2 DOWNLOAD Procedure Signature 2
+
+                       This procedure downloads a CLOB to the client.
+
+      Note
+
+      Clears any previous output to the HTP buffer. APEX_APPLICATION.STOP_APEX_ENGINE is
+      called after downloading the file.
+
+Syntax
+
+APEX_HTTP.DOWNLOAD (                                   IN OUT NOCOPY  CLOB,      DEFAULT NULL,
+      p_clob                                           IN             VARCHAR2,  DEFAULT FALSE )
+      p_content_type                                   IN             VARCHAR2
+      p_filename                                       IN             BOOLEAN
+      p_is_inline
+
+Parameters
+
+Parameter                                              Description
+p_clob
+p_content_type                                         The CLOB value to download.
+p_filename                                             The mime type of the file.
+p_is_inline                                            Name of the file.
+                                                       If FALSE (default), the browser displays a file download
+                                                       dialog to save the file.
+                                                       If TRUE, displays the file inline in the browser window.
+
+Example
+The following example downloads a text.
+
+DECLARE       clob;
+      l_text
+
+BEGIN
+
+      l_text := 'Hello World';
+
+API Reference                                                                                     July 24, 2026
+G26651-03                                                                                           Page 2 of 3
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                          Chapter 32
+                                                                          DOWNLOAD Procedure Signature 2
+
+apex_http.download(                                    => l_text,
+      p_clob                                           => 'text/plain',
+      p_content_type                                   => 'hello.txt' );
+      p_filename
+
+END;
+
+API Reference                                                             July 24, 2026
+G26651-03                                                                   Page 3 of 3
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+33

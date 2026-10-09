@@ -1,0 +1,1200 @@
+# APEX_WORKFLOW (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 75662-76860)
+
+APEX_WORKFLOW
+
+                       The APEX_WORKFLOW package provides API's for the management of Workflows in Oracle
+                       APEX. This package is part of the APEX Workflow functionality. This package requires a valid
+                       APEX session.
+
+                              Note
+                                 The CREATE JOB privilege must be granted to the application's parsing schema to use
+                                 workflows and tasks.
+
+                       � Constants and Data Types
+                       � CONTINUE_ACTIVITY Procedure Signature 1
+                       � CONTINUE_ACTIVITY Procedure Signature 2
+                       � DELETE_WORKFLOWS Procedure
+                       � GET_LOV_ACTIVITY_STATE Function
+                       � GET_LOV_WORKFLOW_STATE Function
+                       � GET_NEXT_PURGE_TIMESTAMP Function
+                       � GET_VARIABLE_CLOB_VALUE Function
+                       � GET_VARIABLE_VALUE Function
+                       � GET_WORKFLOW_STATE Function
+                       � GET_WORKFLOWS Function
+                       � IS_ADMIN Function
+                       � IS_ALLOWED Function
+                       � IS_OF_PARTICIPANT_TYPE Function
+                       � REFRESH_PARTICIPANTS Procedure
+                       � REMOVE_DEVELOPMENT_INSTANCES Procedure
+                       � RESUME Procedure
+                       � RETRY Procedure
+                       � SET_ACTIVITY_DUE_DATE Procedure
+                       � SET_LOG_LEVEL Procedure
+                       � START_WORKFLOW Function
+                       � SUSPEND Procedure
+                       � TERMINATE Procedure
+                       � TERMINATE_FAULTED_WORKFLOWS Procedure
+                       � UPDATE_VARIABLES Procedure
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 1 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                          Chapter 65
+                                                                                      Constants and Data Types
+
+65.1 Constants and Data Types
+
+Constants
+The APEX_WORKFLOW package uses the following constants.
+
+c_workflow_system_user constant varchar2(8) := 'system';
+
+Workflow and Activity (Instance) States
+
+c_state_active                                         constant t_workflow_state := 'ACTIVE';
+c_state_terminated                                     constant t_workflow_state := 'TERMINATED';
+c_state_completed                                      constant t_workflow_state := 'COMPLETED';
+c_state_faulted                                        constant t_workflow_state := 'FAULTED';
+c_state_suspended                                      constant t_workflow_state := 'SUSPENDED';
+c_state_waiting                                        constant t_workflow_state := 'WAITING';
+
+Workflow (Instance) Operations
+
+c_workflow$_op_suspend                                 constant t_workflow_operation  := 'SUSPEND';
+c_workflow$_op_resume                                  constant t_workflow_operation  := 'RESUME';
+c_workflow$_op_retry                                   constant t_workflow_operation  := 'RETRY';
+c_workflow$_op_update_var                              constant t_workflow_operation  :=
+'UPDATE_VARIABLE';
+c_workflow$_op_terminate                               constant t_workflow_operation  := 'TERMINATE';
+
+Workflow Substitution Strings
+
+c_workflow_id                                          constant varchar2(30)  := 'APEX$WORKFLOW_ID';
+                                                                              :=
+c_workflow_activity_id                                 constant varchar2(30)  :=
+                                                                              :=
+'APEX$WORKFLOW_ACTIVITY_ID';                                                  :=
+                                                                              :=
+c_workflow_initiator                                   constant varchar2(30)
+
+'APEX$WORKFLOW_INITIATOR';
+
+c_workflow_state                                       constant varchar2(30)
+
+'APEX$WORKFLOW_STATE';
+
+c_workflow_detail_pk                                   constant varchar2(30)
+
+'APEX$WORKFLOW_DETAIL_PK';
+
+c_workflow_created_on                                  constant varchar2(30)
+
+'APEX$WORKFLOW_CREATED_ON';
+
+Workflow Activity (Instance) Status
+
+c_activity_status_success                              constant t_activity_status := 'SUCCESS';
+c_activity_status_failure                              constant t_activity_status := 'FAILURE';
+
+Workflow Parameters Default
+
+c_empty_workflow_parameters t_workflow_parameters;
+
+API Reference                                                                                      July 24, 2026
+G26651-03                                                                                          Page 2 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                             Chapter 65
+                                                                                         Constants and Data Types
+
+Workflow Participant Types
+
+c_workflow_owner                                       constant t_workflow_participant_type := 'OWNER';
+c_workflow_admin                                       constant t_workflow_participant_type := 'ADMIN';
+
+Workflow List Context Types
+
+c_context_my_workflows                                 constant t_workflow_list_context :=
+'MY_WORKFLOWS';                                        constant t_workflow_list_context :=
+c_context_admin_workflows                              constant t_workflow_list_context :=
+'ADMIN_WORKFLOWS';                                     constant t_workflow_list_context :=
+c_context_initiated_by_me
+'INITIATED_BY_ME';
+c_context_single_workflow
+'SINGLE_WORKFLOW';
+
+Data Types
+The APEX_WORKFLOW package uses the following data types.
+Global Data Types
+
+subtype t_workflow_state                                               is varchar2(10);
+
+subtype t_activity_status                                              is varchar2(15);
+
+subtype t_workflow_participant_type is varchar2(15);
+
+subtype t_workflow_list_context is varchar2(15);
+
+subtype t_workflow_operation                                           is varchar2(30);
+
+Workflow Parameters (Value)
+
+Value                                                                  Description
+static_id
+                                                                       The static ID of the parameter. This ID must match
+value                                                                  the static ID of the corresponding parameter in the
+string_value                                                           workflow definition.
+format_mask
+                                                                       The value of the parameter as a session state
+                                                                       value.
+
+                                                                       (Deprecated) The value of the parameter as a
+                                                                       string.
+
+                                                                       (Optional) Format mask for the parameter.
+
+type t_workflow_parameter is record (
+
+static_id                                              varchar2(255),
+
+value                                                  apex_session_state.t_value,
+
+string_value varchar2(32767),
+
+format_mask varchar2(255));
+
+Collection of Workflow Parameter Values
+
+type t_workflow_parameters is table of t_workflow_parameter index by
+pls_integer;
+
+API Reference                                                                               July 24, 2026
+G26651-03                                                                                   Page 3 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                 Chapter 65
+                                                                     CONTINUE_ACTIVITY Procedure Signature 1
+
+Collection of Workflow Participant Types
+
+type t_workflow_participant_types is table of t_workflow_participant_type
+      index by pls_integer;
+
+65.2 CONTINUE_ACTIVITY Procedure Signature 1
+
+                       This procedure continues the Workflow at the given activity. The workflow activity must be in
+                       the "WAITING" state.
+
+                       Syntax
+
+APEX_WORKFLOW.CONTINUE_ACTIVITY (
+
+      p_instance_id                                    IN NUMBER,
+
+      p_static_id                                      IN VARCHAR2,
+
+      p_activity_params                                IN wwv_flow_global.vc_map,
+
+      p_activity_status                                IN t_activity_status DEFAULT
+
+                                                                   c_activity_status_success );
+
+Parameters
+
+Parameter                                              Description
+p_instance_id
+p_static_id                                            ID of the Workflow.
+p_activity_params
+                                                       Static ID of the activity.
+p_activity_status
+                                                       The parameters returned as part of the activity execution. If
+                                                       these parameters correspond to workflow variables, the
+                                                       values of those variables will get updated with what is
+                                                       provided here, before the workflow continues to the next
+                                                       activity.
+                                                       The status of the activity. Default SUCCESS.
+
+Example
+The following example continues a Workflow activity.
+
+DECLARE
+
+l_activity_params apex_global.vc_map;
+
+BEGIN
+
+l_activity_result('TASK_OUTCOME'):='APPROVED';
+
+apex_workflow.continue_activity(
+
+         p_instance_id                                 => 1234,
+
+         p_static_id                                   => 'REQUEST_LEAVE_APPROVAL',
+
+         p_activity_params                             => l_activity_params);
+
+END;
+
+65.3 CONTINUE_ACTIVITY Procedure Signature 2
+
+                       This procedure continues the Workflow at the given activity. The activity must be in "WAITING"
+                       state.
+
+API Reference                                                                                    July 24, 2026
+G26651-03                                                                                        Page 4 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                  Chapter 65
+                                                                                   DELETE_WORKFLOWS Procedure
+
+Syntax
+
+APEX_WORKFLOW.CONTINUE_ACTIVITY (
+
+      p_instance_id                                    IN NUMBER,
+
+      p_activity_instance_id IN NUMBER,
+
+      p_activity_params                                IN wwv_flow_global.vc_map,
+
+      p_activity_status                                IN t_activity_status DEFAULT
+
+                                                                   c_activity_status_success);
+
+Parameters
+
+Parameter                                              Description
+p_instance_id
+p_activity_instance_id                                 ID of the Workflow.
+p_activity_params
+                                                       ID of the activity instance.
+p_activity_status
+                                                       The parameters returned as part of the activity execution. If
+                                                       these parameters correspond to Workflow variables, the
+                                                       values of those variables are updated with what is provided
+                                                       here before the workflow continues to the next activity.
+                                                       The status of the activity. Default SUCCESS.
+
+Example
+The following example continues a Workflow Activity.
+
+DECLARE
+
+l_activity_params apex_global.vc_map;
+
+BEGIN
+
+l_activity_result('TASK_OUTCOME'):='APPROVED';
+
+apex_workflow.continue_activity(
+
+         p_instance_id                                 => 1234,
+
+         p_activity_instance_id => 1,
+
+         p_activity_params                             => l_activity_params);
+
+END;
+
+65.4 DELETE_WORKFLOWS Procedure
+
+                       This procedure removes workflow instances for a given application.
+                       This procedure should invoked with caution and only as a data clean-up measure.
+                       Syntax
+
+PROCEDURE apex_workflow.delete_workflows (
+
+      p_application_id                                 IN NUMBER                 DEFAULT
+
+apex_application.g_flow_id,                                                      DEFAULT NULL,
+                                                                           DEFAULT NULL,
+      p_static_id                                      IN VARCHAR2
+                                                                                 DEFAULT FALSE );
+      p_states                                         IN apex_t_varchar2
+
+      p_include_all_versions IN BOOLEAN
+
+API Reference                                                                                           July 24, 2026
+G26651-03                                                                                               Page 5 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                   Chapter 65
+                                                                GET_LOV_ACTIVITY_STATE Function
+
+Parameters
+
+Parameter                                                       Description
+p_application_id
+p_static_id                                                     The application ID. Defaults to the currently running
+p_states                                                        application.
+
+p_include_all_versions                                          Static ID of the workflow. If omitted, the deletion
+                                                                applies to all workflows in the application
+
+                                                                (Optional) State(s) of the workflow instances. If
+                                                                provided, only those workflow instances which
+                                                                belong to the specified state(s), will be deleted
+
+                                                                If false, only instances created from Inactive
+                                                                workflow versions will be deleted . Default is false.
+
+Example
+
+The following example removes all workflow instances for application 100 which are in Faulted
+or Terminated state.
+
+begin
+
+apex_workflow.delete_workflows(
+
+p_application_id                                       => 100,
+
+p_states                                               => apex_t_varchar2(apex_workflow.c_state_faulted,
+
+apex_workflow.c_state_terminated),
+
+p_include_all_versions => true);
+
+end;
+
+65.5 GET_LOV_ACTIVITY_STATE Function
+
+                       This function gets the list of value data for the activity instance attribute state.
+                       Syntax
+
+APEX_WORKFLOW.GET_LOV_ACTIVITY_STATE
+RETURN apex_t_temp_lov_data;
+
+Parameters
+None.
+Returns
+A table of apex_t_temp_lov_data.
+Example
+
+select disp,
+           val
+
+   from table ( apex_workflow.get_lov_activity_state )
+
+65.6 GET_LOV_WORKFLOW_STATE Function
+
+                       This function gets the list of value data for the workflow instance attribute state.
+
+API Reference                                                                                                July 24, 2026
+G26651-03                                                                                                    Page 6 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                           Chapter 65
+                                                                                                     GET_NEXT_PURGE_TIMESTAMP Function
+
+                       Syntax
+
+                       APEX_WORKFLOW.GET_LOV_WORKFLOW_STATE
+                       RETURN apex_t_temp_lov_data;
+
+                       Parameters
+                       None.
+                       Returns
+                       A table of apex_t_temp_lov_data.
+                       Example
+
+                       select disp,
+                                  val
+
+                          from table ( apex_workflow.get_lov_workflow_state )
+
+65.7 GET_NEXT_PURGE_TIMESTAMP Function
+
+                       This function retrieves the timestamp of the next purge.
+                       Syntax
+
+                       APEX_WORKFLOW.GET_NEXT_PURGE_TIMESTAMP
+                       RETURN timestamp with time zone;
+
+                       Parameters
+                       None.
+                       Returns
+                       Returns the timestamp of the next purge.
+                       Example
+
+                       DECLARE
+                              l_next_purge_job_ts timestamp with time zone;
+
+                       BEGIN
+                              l_next_purge_job_ts := apex_workflow.get_next_purge_timestamp();
+
+                       END;
+
+65.8 GET_VARIABLE_CLOB_VALUE Function
+
+                       This function gets the CLOB value of a workflow variable. It returns the VARCHAR2 value if the
+                       data type of the variable is VARCHAR2. It returns NULL if the variable is not of CLOB or
+                       VARCHAR2 datatype.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 7 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                Chapter 65
+                                                                                   GET_VARIABLE_VALUE Function
+
+Syntax
+
+APEX_WORKFLOW.GET_VARIABLE_CLOB_VALUE (
+
+p_instance_id                                          IN NUMBER,
+
+p_variable_static_id IN VARCHAR2 )
+
+RETURN CLOB;
+
+Parameters
+
+Parameter                                              Description
+p_instance_id                                          ID of the Workflow.
+p_variable_static_id                                   Static ID of the variable.
+
+Returns
+CLOB
+
+Example
+The following example returns the value of the Workflow variable called "REST_RESPONSE."
+
+BEGIN
+      apex_workflow.get_variable_clob_value(
+                 p_instance_id => 1234,
+                 p_variable_static_id => 'REST_RESPONSE');
+
+END;
+
+65.9 GET_VARIABLE_VALUE Function
+
+                       This function gets the string value of a workflow variable.
+
+                       If the workflow variable has a format mask set, the same format mask is applied to the value
+                       being returned.
+
+                       If the workflow variable is of CLOB data type and the data length is greater than VARCHAR2
+                       max length then an exception is thrown if p_raise is set to TRUE.
+
+                       Syntax
+
+APEX_WORKFLOW.GET_VARIABLE_VALUE (
+
+p_instance_id                                          IN NUMBER,
+
+p_variable_static_id IN VARCHAR2 )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_instance_id                                          ID of the Workflow.
+p_variable_static_id                                   Static ID of the variable.
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 8 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                              Chapter 65
+                                                                              GET_WORKFLOW_STATE Function
+
+Returns
+VARCHAR2.
+Example
+The following example returns the value of Workflow Variable called "NEW_SALARY."
+
+BEGIN
+      apex_workflow.get_variable_value(
+                 p_instance_id => 1234,
+                 p_variable_static_id => 'NEW_SALARY');
+
+END;
+
+65.10 GET_WORKFLOW_STATE Function
+
+                       This function gets the current state of the workflow.
+                       Syntax
+
+APEX_WORKFLOW.GET_WORKFLOW_STATE (
+
+p_instance_id                                          IN NUMBER )
+
+RETURN t_workflow_state;
+
+Parameters
+
+Parameter                                              Description
+p_instance_id                                          ID of the Workflow.
+
+Returns
+
+t_workflow_state
+
+Example
+The following example gets the current state of the Workflow Instance.
+
+BEGIN
+      return apex_workflow.get_workflow_state(
+                      p_instance_id => 1234);
+
+END;
+
+65.11 GET_WORKFLOWS Function
+
+                       This function gets the workflows of a user depending on the given context. Context can be
+                       MY_WORKFLOWS, ADMIN_WORKFLOWS, or SINGLE_WORKFLOW.
+
+API Reference                                                                 July 24, 2026
+G26651-03                                                                     Page 9 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                        Chapter 65
+                                                                                GET_WORKFLOWS Function
+
+Note
+
+The function only returns data in the context of a valid Oracle APEX session. It returns
+no data in SQL Workshop.
+
+Syntax
+
+APEX_WORKFLOW.GET_WORKFLOWS (
+
+p_context                                              IN VARCHAR2 DEFAULT
+
+                                                       apex_workflow_api.c_context_my_workflows,
+
+p_user                                                 IN VARCHAR2 DEFAULT apex_security.g_user,
+
+p_workflow_id                                          IN NUMBER DEFAULT NULL,
+
+p_application_id IN NUMBER DEFAULT NULL )
+
+RETURN apex_t_workflow_instances pipelined;
+
+Parameters
+
+Parameter                                              Description
+p_context
+p_user                                                 The list context. Default is MY_WORKFLOWS.
+                                                       The user to check for. Default is logged-in user. Needs
+p_workflow_id                                          p_context set to MY_WORKFLOWS, ADMIN_WORKFLOWS or
+p_application_id                                       INITIATED_BY_ME.
+                                                       Filter for a workflow ID instead of a user. Default is NULL.
+                                                       Needs p_context set to SINGLE_WORKFLOW.
+                                                       Filter for an application. Default is NULL (all applications).
+
+Returns
+A table of workflows (type apex_t_workflow_instances) containing the following columns:
+
+� badge_css_classes varchar2(255)
+� badge_state varchar2(255)
+� badge_text varchar2(255)
+� created_ago varchar2(255)
+� created_ago_hours number
+� created_by varchar2(255)
+� created_on timestamp with time zone
+� duration_seconds number
+� end_time timestamp with time zone
+� initiator varchar2(255)
+� initiator_lower varchar2(255)
+� is_completed varchar2(1)
+� is_dev_mode varchar2(1)
+� is_terminated varchar2(1)
+� last_updated_by varchar2(255)
+� last_updated_on timestamp with time zone
+
+API Reference                                                                                     July 24, 2026
+G26651-03                                                                                         Page 10 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                              Chapter 65
+                                                                                                  IS_ADMIN Function
+
+� parent_activity_id number
+� parent_id number
+� start_time timestamp with time zone
+� state varchar2(255)
+� state_code varchar2(32)
+� tenant_id varchar2(32)
+� title varchar2(4000)
+� workflow_def_app_id number
+� workflow_def_app_name varchar2(255)
+� workflow_def_id number
+� workflow_def_name varchar2(255)
+� workflow_def_static_id varchar2(255)
+� workflow_id number
+� workflow_version varchar2(255)
+� workflow_version_id number
+
+Example
+
+select *
+   from table ( apex_workflow.get_workflows (
+                              p_context => 'MY_WORKFLOWS' ) )
+
+65.12 IS_ADMIN Function
+
+                       This function checks whether the given user is a business administrator for at least one
+                       workflow in this application.
+
+                       Syntax
+
+APEX_WORKFLOW.IS_ADMIN (
+
+p_user                                                 IN VARCHAR2 DEFAULT apex_security.g_user,
+
+p_application_id IN NUMBER DEFAULT NULL )
+
+RETURN BOOLEAN;
+
+Parameters
+
+Parameter                                              Description
+p_user
+p_application_id                                       The user to check for. Default is logged-in user.
+                                                       The application to check for. Default behavior checks
+                                                       against all applications in the workspace.
+
+Returns
+
+TRUE if the user given by p_user is defined as a Business Admin for at least one workflow in
+the given application. Otherwise FALSE.
+
+API Reference                                                                                     July 24, 2026
+G26651-03                                                                                         Page 11 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                    Chapter 65
+                                                                    IS_ALLOWED Function
+
+Example
+
+declare
+      l_is_admin boolean;
+
+begin
+      l_is_admin := apex_workflow.is_admin(
+            p_user => 'stiger'
+      );
+      if l_is_admin then
+            dbms_output.put_line('stiger is a business administrator');
+      end if;
+
+end;
+
+65.13 IS_ALLOWED Function
+
+                       This function checks whether the given user is allowed to perform a certain operation on a
+                       Workflow.
+
+                       Syntax
+
+APEX_WORKFLOW.IS_ALLOWED (                             IN NUMBER,
+      p_instance_id                                    IN wwv_flow_workflow_api.t_workflow_operation,
+      p_operation                                      IN VARCHAR2 DEFAULT wwv_flow_security.g_user )
+      p_user
+
+RETURN BOOLEAN;
+
+Parameters
+
+Parameter                                              Description
+p_instance_id                                          The Workflow ID.
+p_operation                                            The operation to check.
+p_user                                                 The user to check for. Default is logged-in user.
+
+Returns
+
+TRUE if the user given by p_user is allowed to perform the operation given by p_operation.
+Otherwise FALSE.
+
+Example
+
+DECLARE
+
+l_is_allowed boolean;
+
+BEGIN
+
+l_is_allowed := apex_workflow.is_allowed(
+
+         p_instance_id => 1234,
+
+         p_operation                                   => apex_workflow.c_workflow_op_suspend,
+
+         p_user                                        => 'STIGER'
+
+);
+
+IF l_is_allowed THEN
+
+         dbms_output.put_line('STIGER is a allowed to suspend the workflow
+
+1234');
+
+API Reference                                                                                             July 24, 2026
+G26651-03                                                                                                 Page 12 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                  Chapter 65
+                                                                               IS_OF_PARTICIPANT_TYPE Function
+
+      END IF;
+END;
+
+65.14 IS_OF_PARTICIPANT_TYPE Function
+
+                       This function checks whether the given user is of a certain participant type for a Workflow.
+                       Syntax
+
+APEX_WORKFLOW.IS_OF_PARTICIPANT_TYPE (
+
+      p_instance_id                                    IN NUMBER,
+
+      p_participant_type                               IN t_workflow_participant_type,
+
+      p_user                                           IN VARCHAR2 )
+
+RETURN BOOLEAN;
+
+Parameters
+
+Parameter                                              Description
+p_instance_id                                          The Workflow ID.
+p_participant_type                                     The participant type.
+p_user                                                 The user to check for.
+
+Returns
+
+TRUE if the user given by p_user is a participant of given participant type for a given workflow.
+Otherwise FALSE.
+
+Example
+
+The following example checks if if the user STIGER is of participant type OWNER for Workflow
+1234.
+
+DECLARE
+
+l_is_owner boolean;
+
+BEGIN
+
+l_is_owner := apex_workflow.is_of_participant_type(
+
+         p_instance_id                                 => 1234,
+
+         p_participant_type => apex_workflow.c_workflow_owner,
+
+         p_user                                        => 'STIGER'
+
+);
+
+IF l_is_owner THEN
+
+         dbms_output.put_line('STIGER is an owner for workflow 1234');
+
+END IF;
+
+END;
+
+65.15 REFRESH_PARTICIPANTS Procedure
+
+                       This procedure refreshes the participants for this workflow instance.
+
+API Reference                                                                                 July 24, 2026
+G26651-03                                                                                     Page 13 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                    Chapter 65
+                                                                REMOVE_DEVELOPMENT_INSTANCES Procedure
+
+Syntax
+
+APEX_WORKFLOW.REFRESH_PARTICIPANTS (
+      p_instance_id IN NUMBER );
+
+Parameters
+
+ Parameter                                             Description
+p_instance_id                                          The Workflow ID.
+
+Example
+
+BEGIN
+
+apex_workflow.refresh_participants(
+
+       p_instance_id                                   => 1234
+
+);
+
+END;
+
+65.16 REMOVE_DEVELOPMENT_INSTANCES Procedure
+
+                       This procedure removes workflow instances created in "DEV" mode. This API can be used by
+                       a developer to remove any workflow instances that have been started from App Builder in DEV
+                       mode.
+
+                       Syntax
+
+APEX_WORKFLOW.REMOVE_DEVELOPMENT_INSTANCES (
+
+      p_application_id                                 IN NUMBER DEFAULT apex_application.g_flow_id,
+
+      p_static_id                                      IN VARCHAR2 DEFAULT NULL );
+
+Parameters
+
+ Parameter                                             Description
+p_application_id
+p_static_id                                            The application ID.
+                                                       Static ID of the workflow. If omitted, removes all
+Example                                                development workflow instances of the application.
+
+BEGIN
+   apex_workflow.remove_development_instances(
+      p_application_id => 100);
+
+END;
+
+65.17 RESUME Procedure
+
+                       This procedure resumes a Workflow. Only suspended Workflow Instances can be resumed.
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 14 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                  Chapter 65
+                                                                                        RETRY Procedure
+
+If the application is running in a runtime-only session, only Workflow Administrators can
+perform this operation.
+
+Syntax
+
+APEX_WORKFLOW.RESUME (                                     IN NUMBER,
+      p_instance_id                                        IN VARCHAR2 DEFAULT NULL );
+      p_activity_static_id
+
+Parameters
+
+Parameter                                                  Description
+p_instance_id
+p_activity_static_id                                       ID of the Workflow.
+                                                           Static ID of the Activity to resume the Workflow or NULL if to
+                                                           resume at current activity.
+
+Example
+
+Below example resumes a Workflow Instance at activity "UPDATE_JOB_LEVEL." Only
+suspended Workflow Instances can be resumed.
+
+begin
+
+apex_workflow.resume(
+
+            p_instance_id                                  => 1234,
+
+            p_activity_static_id => 'update_job_level');
+
+end;
+
+65.18 RETRY Procedure
+
+                       This procedure retries a Workflow.
+                       Syntax
+
+APEX_WORKFLOW.RETRY (                                      IN NUMBER );
+      p_instance_id
+
+Parameters
+
+Parameter                                                  Description
+p_instance_id                                              ID of the Workflow.
+
+Example
+
+The following example retries a faulted Workflow Instance. The activity at which the fault was
+encountered is the point where the API retries execution.
+
+BEGIN
+      apex_workflow.retry(
+                 p_instance_id => 1234);
+
+END;
+
+API Reference                                                                           July 24, 2026
+G26651-03                                                                               Page 15 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                 Chapter 65
+                                                                             SET_ACTIVITY_DUE_DATE Procedure
+
+65.19 SET_ACTIVITY_DUE_DATE Procedure
+
+                       Sets the due date of an activity instance. To change the due date of an activity instance, the
+                       workflow instance must be in a faulted or suspended state.
+
+                       Syntax
+
+APEX_WORKFLOW.SET_ACTIVITY_DUE_DATE (
+
+p_instance_id                                          IN            NUMBER,
+                                                                     VARCHAR2,
+p_activity_static_id IN                                              TIMESTAMP WITH TIME ZONE);
+
+p_due_date                                             IN
+
+Parameters
+
+Parameter                                                            Description
+p_instance_id                                                        ID of the workflow instance.
+p_activity_static_id                                                 Static ID of the activity instance.
+p_due_date                                                           The due date value.
+
+Example
+
+The following example changes the due date for the activity "WAIT_ACTIVITY_1" within the
+workflow instance with ID 1234. The new due date is set to one day after the current date.
+
+apex_workflow.set_activity_due_date(
+
+p_instance_id                                              => 1234,
+
+p_activity_static_id => 'WAIT_ACTIVITY_1',
+
+p_due_date                                                 => sysdate + 1);
+
+65.20 SET_LOG_LEVEL Procedure
+
+                       This procedure sets the debug log level for the Workflow instance. When set, this overrides the
+                       debug log level settings for the Workflow version.
+                       Available values:
+                       � 1 - apex_debug_api.c_log_level_error
+                       � 2 - apex_debug_api.c_log_level_warn
+                       � 4 - apex_debug_api.c_log_level_info
+                       � 5 - apex_debug_api.c_log_level_enter
+                       � 6 - apex_debug_api.c_log_level_app_trace
+
+                       Syntax
+
+APEX_WORKFLOW.SET_LOG_LEVEL (
+
+p_instance_id                                          IN NUMBER,
+
+p_debug_level                                          IN apex_debug_api.t_log_level );
+
+API Reference                                                                                             July 24, 2026
+G26651-03                                                                                                 Page 16 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                       Chapter 65
+                                                                                              START_WORKFLOW Function
+
+Parameters
+
+Parameter                                              Description
+p_instance_id                                          ID of the Workflow.
+p_debug_level                                          The debug level to use.
+
+Example
+The following example sets the debug level of a Workflow instance.
+
+BEGIN
+      apex_workflow.set_log_level (
+            p_instance_id => 1,
+            p_debug_level => apex_debug_api.c_log_level_app_trace);
+
+END;
+
+65.21 START_WORKFLOW Function
+
+                       This function starts a new Workflow given the Workflow definition ID.
+                       Syntax
+
+APEX_WORKFLOW.START_WORKFLOW (
+
+p_application_id                                       IN NUMBER
+
+                                                       DEFAULT apex_application.g_flow_id,
+
+p_static_id                                            IN VARCHAR2,
+
+p_parameters                                           IN t_workflow_parameters
+
+                                                       DEFAULT c_empty_workflow_parameters,
+
+p_initiator                                            IN VARCHAR2                            DEFAULT NULL,
+
+p_detail_pk                                            IN VARCHAR2                            DEFAULT NULL,
+
+p_debug_level                                          IN apex_debug_api.t_log_level DEFAULT NULL )
+
+RETURN NUMBER;
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+p_static_id                                            The application ID that creates the Workflow.
+p_parameters                                           Static ID of the Workflow definition.
+p_initiator                                            Optional workflow parameters.
+p_detail_pk                                            (Optional) Initiator information for the workflow.
+p_debug_level                                          (Optional) Detail Primary Key.
+                                                       (Optional) Debug log level for the Workflow instance being
+                                                       started.
+
+Returns
+The ID of the newly started workflow.
+
+API Reference                                                                                 July 24, 2026
+G26651-03                                                                                     Page 17 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                Chapter 65
+                                                                                  SUSPEND Procedure
+
+Example
+The following example starts a Workflow for a given requisition.
+
+BEGIN
+
+l_workflow_id := apex_workflow.start_workflow (
+
+       p_application_id => 110,
+
+       p_static_id                                     => 'REQUISITIONWORKFLOW',
+
+       p_parameters => apex_workflow.t_workflow_parameters(
+
+            1 => apex_workflow.t_workflow_parameter(static_id => 'REQ_DATE',
+
+string_value => sysdate),
+
+            3 => apex_workflow.t_workflow_parameter(static_id =>
+
+'REQ_AMOUNT', string_value => l_req_amount),
+
+            4 => apex_workflow.t_workflow_parameter(static_id => 'REQ_ITEM',
+
+string_value => l_req_item),
+
+            5 => apex_workflow.t_workflow_parameter(static_id => 'REQ_ID',
+
+string_value => l_req_id)),
+
+       p_debug_level => apex_debug_api.c_log_level_info );
+
+END;
+
+65.22 SUSPEND Procedure
+
+                       This procedure suspends a Workflow. Only Active or Faulted Workflow instances can be
+                       suspended.
+
+                       Syntax
+
+APEX_WORKFLOW.SUSPEND (                                IN NUMBER );
+      p_instance_id
+
+Parameters
+
+Parameter                                              Description
+p_instance_id                                          ID of the Workflow.
+
+Example
+The following example suspends a Workflow instance.
+
+BEGIN
+      apex_workflow.suspend(
+                 p_instance_id => 1234);
+
+END;
+
+65.23 TERMINATE Procedure
+
+                       This procedure terminates a Workflow. Only Active, Suspended, or Faulted Workflow instances
+                       can be terminated.
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 18 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                       Chapter 65
+                                                                     TERMINATE_FAULTED_WORKFLOWS Procedure
+
+Syntax
+
+APEX_WORKFLOW.TERMINATE (                              IN NUMBER );
+      p_instance_id
+
+Parameters
+
+Parameter                                              Description
+p_instance_id                                          ID of the Workflow.
+
+Example
+The following example terminates a Workflow Instance.
+
+BEGIN
+      apex_workflow.terminate(
+                 p_instance_id => 1234);
+
+END;
+
+65.24 TERMINATE_FAULTED_WORKFLOWS Procedure
+
+                       This procedure terminates all faulted workflow instances for an application.
+                       Syntax
+
+APEX_WORKFLOW.TERMINATE_FAULTED_WORKFLOWS (
+
+p_application_id                                       IN NUMBER );
+
+Parameters
+
+Parameter                                              Description
+p_application_id                                       ID of the application.
+
+Example
+The following example terminates all faulted Workflow Instances.
+
+BEGIN
+      apex_workflow.terminate_faulted_workflows(
+                 p_application_id => 110);
+
+END;
+
+65.25 UPDATE_VARIABLES Procedure
+
+                       This procedure updates workflow variables of the workflow instance. If the Workflow variable
+                       has a format mask set, the same mask is applied to the value being passed here.
+
+                       The logged-in user must be a Workflow Administrator to execute this API. This procedure can
+                       only run for workflows in Suspended or Faulted states.
+
+API Reference                                                                                        July 24, 2026
+G26651-03                                                                                            Page 19 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                Chapter 65
+                                                                                    UPDATE_VARIABLES Procedure
+
+Syntax
+
+APEX_WORKFLOW.UPDATE_VARIABLES (
+
+p_instance_id                                          IN NUMBER,
+
+p_changed_params                                       IN t_workflow_parameters );
+
+Parameters
+
+Parameter                                              Description
+p_instance_id                                          ID of the Workflow.
+p_changed_params                                       Table of Workflow variables to be updated.
+
+Example
+The following example updates a Workflow variable value.
+
+BEGIN
+      apex_workflow.update_variables(
+                 p_instance_id => 1234,
+                 p_changed_params => apex_workflow.t_workflow_parameters(
+                       1 => apex_workflow.t_workflow_parameter(static_id =>
+
+'NEW_SALARY', string_value => '2,560.50')));
+END;
+
+API Reference                                                                                      July 24, 2026
+G26651-03                                                                                          Page 20 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+66

@@ -1,0 +1,168 @@
+# APEX_CSS (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 16424-16590)
+
+APEX_CSS
+
+                       The APEX_CSS package provides utility functions for adding CSS styles to HTTP output. This
+                       package is usually used for plug-in development.
+                       � ADD Procedure
+                       � ADD_3RD_PARTY_LIBRARY_FILE Procedure (Deprecated)
+                       � ADD_FILE Procedure
+
+17.1 ADD Procedure
+
+                       This procedure adds a CSS style snippet that is included inline in the HTML output. Use this
+                       procedure to add new CSS style declarations.
+
+                       Syntax
+
+                       APEX_CSS.ADD (
+                             p_css IN VARCHAR2,
+                             p_key IN VARCHAR2 DEFAULT NULL )
+
+                       Parameters
+
+Parameter                                              Description
+p_css
+p_key                                                  The CSS style snippet. For example, #test {color:#fff}
+                                                       Identifier for the style snippet. If specified and a style snippet with the
+                                                       same name has already been added the new style snippet will be
+                                                       ignored.
+
+Example
+
+Adds an inline CSS definition for the class autocomplete into the HTML page. The key
+autocomplete_widget prevents the definition from being included another time if the
+apex_css.add is called another time.
+
+apex_css.add (
+      p_css => '.autocomplete { color:#ffffff }',
+      p_key => 'autocomplete_widget' );
+
+17.2 ADD_3RD_PARTY_LIBRARY_FILE Procedure
+(Deprecated)
+
+                       This procedure adds the link tag to load a third-party CSS file and also takes into account the
+                       specified CDN (content delivery network) for the application.
+
+                       Supported libraries include:
+
+API Reference                                          July 24, 2026
+G26651-03                                                Page 1 of 3
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                Chapter 17
+                                                                                  ADD_FILE Procedure
+
+� jQuery
+� jQueryUI
+If a library has already been added, it is not added a second time.
+
+Syntax
+
+APEX_CSS.ADD_3RD_PARTY_LIBRARY_FILE (
+
+p_library                                              IN VARCHAR2,
+
+p_file_name IN VARCHAR2 DEFAULT NULL,
+
+p_directory IN VARCHAR2 DEFAULT NULL,
+
+p_version                                              IN VARCHAR2 DEFAULT NULL,
+
+p_media_query IN VARCHAR2 DEFAULT NULL,
+
+p_attributes IN VARCHAR2 DEFAULT NULL )
+
+Parameters
+
+Parameters                                                 Description
+p_library
+p_file_name                                                Use one of the c_library_* constants.
+p_directory                                                Specifies the file name excluding version, .min, and .css.
+p_version                                                  (Optional) Directory where the file p_file_name is located.
+                                                           (Optional) If no value is provided, then uses the same version
+p_media_query                                              shipped with APEX.
+p_attributes                                               (Optional) Value that is set as media query.
+                                                           Extra attributes to add to the link tag.
+
+                                                                                  Note
+
+                                                                                  Callers are responsible for escaping this
+                                                                                  parameter.
+
+Example
+
+The following example loads the Cascading Style Sheet file of the Accordion component of the
+jQuery UI.
+
+apex_css.add_3rd_party_library_file (
+      p_library => apex_css.c_library_jquery_ui,
+      p_file_name => 'jquery.ui.accordion' )
+
+17.3 ADD_FILE Procedure
+
+                       This procedure adds the link tag to load a CSS library. If a library has already been added, it
+                       will not be added a second time.
+
+                       Syntax
+
+APEX_CSS.ADD_FILE (
+
+p_name                                                 IN  VARCHAR2,
+                                                           VARCHAR2 DEFAULT
+p_directory                                            IN
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                           Page 2 of 3
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                Chapter 17
+                                                                                  ADD_FILE Procedure
+
+apex_application.g_image_prefix||'css/',
+
+p_version                                              IN VARCHAR2 DEFAULT NULL,
+
+p_skip_extension IN BOOLEAN DEFAULT FALSE,
+
+p_media_query IN VARCHAR2 DEFAULT NULL,
+
+-- p_ie_condition is desupported and has no effect
+
+p_ie_condition IN VARCHAR2 DEFAULT NULL,
+
+p_attributes IN VARCHAR2 DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_name
+p_directory                                            Name of the CSS file.
+                                                       Begin of the URL where the CSS file should be read from. If you use this
+p_version                                              function for a plug-in, set this parameter to p_plugin.file_prefix
+                                                       Identifier of the version of the CSS file. The version will be added to the CSS
+p_skip_extension                                       filename. In most cases you should use the default of NULL as the value.
+                                                       The function automatically adds .css to the CSS filename. If set to TRUE, the
+p_media_query                                          function ignores this addition.
+p_ie_condition                                         Value set as media query.
+p_attributes                                           (Desupported) Condition used as Internet Explorer condition.
+                                                       Extra attributes to add to the link tag.
+
+                                                       Note
+
+                                                       Callers are responsible for escaping this
+                                                       parameter.
+
+Example
+
+Adds the CSS filejquery.autocomplete.css in the directory specified by
+p_plugin.file_prefix to the HTML output of the page and makes sure that it will only be
+included once if apex_css.add_file is called multiple times with that name.
+
+apex_css.add_file (
+            p_name => 'jquery.autocomplete',
+
+    p_directory => p_plugin.file_prefix );
+
+API Reference                                                                                     July 24, 2026
+G26651-03                                                                                           Page 3 of 3
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+18

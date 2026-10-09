@@ -1,0 +1,2347 @@
+# APEX_COLLECTION (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 13145-15490)
+
+APEX_COLLECTION
+
+                       Collections enable you to temporarily capture one or more nonscalar values. You can use
+                       collections to store rows and columns currently in session state so they can be accessed,
+                       manipulated, or processed during a user's specific session. You can think of a collection as a
+                       bucket in which you temporarily store and name rows of information.
+
+                       � About the APEX_COLLECTION API
+                       � ADD_MEMBER Procedure
+                       � ADD_MEMBER Function
+                       � ADD_MEMBERS Procedure
+                       � COLLECTION_EXISTS Function
+                       � COLLECTION_HAS_CHANGED Function
+                       � COLLECTION_MEMBER_COUNT Function
+                       � CREATE_COLLECTION Procedure
+                       � CREATE_COLLECTION_FROM_QUERY Procedure
+                       � CREATE_COLLECTION_FROM_QUERY2 Procedure
+                       � CREATE_COLLECTION_FROM_QUERY_B Procedure
+                       � CREATE_COLLECTION_FROM_QUERY_B Procedure (No bind version)
+                       � CREATE_COLLECTION_FROM_QUERYB2 Procedure
+                       � CREATE_COLLECTION_FROM_QUERYB2 Procedure (No bind version)
+                       � CREATE_OR_TRUNCATE_COLLECTION Procedure
+                       � DELETE_ALL_COLLECTIONS Procedure
+                       � DELETE_ALL_COLLECTIONS_SESSION Procedure
+                       � DELETE_COLLECTION Procedure
+                       � DELETE_MEMBER Procedure
+                       � DELETE_MEMBERS Procedure
+                       � GET_MEMBER_MD5 Function
+                       � MERGE_MEMBERS Procedure
+                       � MOVE_MEMBER_DOWN Procedure
+                       � MOVE_MEMBER_UP Procedure
+                       � RESEQUENCE_COLLECTION Procedure
+                       � RESET_COLLECTION_CHANGED Procedure
+                       � RESET_COLLECTION_CHANGED_ALL Procedure
+                       � SORT_MEMBERS Procedure
+                       � TRUNCATE_COLLECTION Procedure
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 1 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                       Chapter 15
+                                                       About the APEX_COLLECTION API
+
+                       � UPDATE_MEMBER Procedure
+
+                       � UPDATE_MEMBERS Procedure
+
+                       � UPDATE_MEMBER_ATTRIBUTE Procedure Signature 1
+
+                       � UPDATE_MEMBER_ATTRIBUTE Procedure Signature 2
+
+                       � UPDATE_MEMBER_ATTRIBUTE Procedure Signature 3
+
+                       � UPDATE_MEMBER_ATTRIBUTE Procedure Signature 4
+
+                       � UPDATE_MEMBER_ATTRIBUTE Procedure Signature 5
+
+                       � UPDATE_MEMBER_ATTRIBUTE Procedure Signature 6
+
+15.1 About the APEX_COLLECTION API
+
+                       Every collection contains a named list of data elements (or members) which can have up to 50
+                       character attributes (VARCHAR2(4000)), five number attributes, five date attributes, one XML
+                       Type attribute, one large binary attribute (BLOB), and one large character attribute (CLOB). You
+                       insert, update, and delete collection information using the PL/SQL API APEX_COLLECTION.
+
+                       The following are examples of when you might use collections:
+
+                       � When you are creating a data-entry wizard in which multiple rows of information first need
+                             to be collected within a logical transaction. You can use collections to temporarily store the
+                             contents of the multiple rows of information, before performing the final step in the wizard
+                             when both the physical and logical transactions are completed.
+
+                       � When your application includes an update page on which a user updates multiple detail
+                             rows on one page. The user can make many updates, apply these updates to a collection
+                             and then call a final process to apply the changes to the database.
+
+                       � When you are building a wizard where you are collecting an arbitrary number of attributes.
+                             At the end of the wizard, the user then performs a task that takes the information
+                             temporarily stored in the collection and applies it to the database.
+
+                       Beginning in Oracle AI Database 12c, database columns of data type VARCHAR2 can be defined
+                       up to 32,767 bytes. This requires that the database initialization parameter MAX_STRING_SIZE
+                       has a value of EXTENDED. If Oracle APEX was installed in Oracle AI Database 12c and with
+                       MAX_STRING_SIZE=EXTENDED, then the tables for the APEX collections will be defined to support
+                       up 32,767 bytes for the character attributes of a collection. For the methods in the
+                       APEX_COLLECTION API, all references to character attributes (c001 through c050) can
+                       support up to 32,767 bytes.
+
+                       � Accessing a Collection
+
+                       � Determining Collection Status
+
+                       � Clearing Collection Session State
+
+15.1.1 Accessing a Collection
+
+                       You can access the members of a collection by querying the database view
+                       APEX_COLLECTIONS. Collection names are always converted to uppercase. When querying the
+                       APEX_COLLECTIONS view, always specify the collection name in all uppercase. The
+                       APEX_COLLECTIONS view has the following definition:
+
+COLLECTION_NAME NOT NULL VARCHAR2(255)
+
+SEQ_ID  NOT NULL NUMBER
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 2 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                       Chapter 15
+                                                       About the APEX_COLLECTION API
+
+C001          VARCHAR2(4000)
+C002          VARCHAR2(4000)
+C003          VARCHAR2(4000)
+C004          VARCHAR2(4000)
+C005          VARCHAR2(4000)
+...
+C050          VARCHAR2(4000)
+N001          NUMBER
+N002          NUMBER
+N003          NUMBER
+N004          NUMBER
+N005          NUMBER
+D001          DATE
+D002          DATE
+D003          DATE
+D004          DATE
+D005          DATE
+CLOB001       CLOB
+BLOB001       BLOB
+XMLTYPE001    XMLTYPE
+MD5_ORIGINAL  VARCHAR2(4000)
+
+Use the APEX_COLLECTIONS view in an application just as you would use any other table or view
+in an application, for example:
+
+SELECT c001, c002, c003, n001, d001, clob001
+    FROM APEX_collections
+
+ WHERE collection_name = 'DEPARTMENTS'
+
+15.1.2 Determining Collection Status
+
+                       The p_generate_md5 parameter determines if the MD5 message digests are computed for
+                       each member of a collection. The collection status flag is set to FALSE immediately after you
+                       create a collection. If any operations are performed on the collection (such as add, update,
+                       truncate, and so on), this flag is set to TRUE.
+
+                       You can reset this flag manually by calling RESET_COLLECTION_CHANGED.
+
+                       Once this flag has been reset, you can determine if a collection has changed by calling
+                       COLLECTION_HAS_CHANGED.
+
+                       When you add a new member to a collection, an MD5 message digest is computed against all
+                       50 attributes and the CLOB attribute if the p_generated_md5 parameter is set to YES. You can
+                       access this value from the MD5_ORIGINAL column of the view APEX_COLLECTION. You can
+                       access the MD5 message digest for the current value of a specified collection member by
+                       using the function GET_MEMBER_MD5.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 3 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                           Chapter 15
+                                                                                                                         ADD_MEMBER Procedure
+
+                              See Also
+                                 � "RESET_COLLECTION_CHANGED Procedure"
+                                 � "COLLECTION_HAS_CHANGED Function"
+                                 � "GET_MEMBER_MD5 Function"
+
+15.1.3 Clearing Collection Session State
+
+                       Clearing the session state of a collection removes the collection members. A shopping cart is a
+                       good example of when you might need to clear collection session state. When a user requests
+                       to empty the shopping cart and start again, you must clear the session state for a collection.
+                       You can remove session state of a collection by calling the TRUNCATE_COLLECTION method or by
+                       using f?p syntax.
+                       Calling the TRUNCATE_COLLECTION method deletes the existing collection and then recreates it,
+                       for example:
+
+                       APEX_COLLECTION.TRUNCATE_COLLECTION(
+                              p_collection_name => collection name);
+
+                       You can also use the sixth f?p syntax argument to clear session state, for example:
+
+                       f?p=App:Page:Session::NO:collection name
+
+See Also
+TRUNCATE_COLLECTION Procedure
+
+15.2 ADD_MEMBER Procedure
+
+                       Adds a new member to an existing collection. An error occurs if the specified collection does
+                       not exist for the current user in the same session for the current application ID.
+
+                       Gaps are not used when adding a new member, so an existing collection with members of
+                       sequence IDs (1,2,5,8) adds the new member with a sequence ID of 9.
+
+                       Syntax
+
+APEX_COLLECTION.ADD_MEMBER (
+
+p_collection_name IN VARCHAR2,
+
+p_c001                                                 IN VARCHAR2 DEFAULT NULL,
+
+...
+
+p_c050                                                 IN VARCHAR2 DEFAULT NULL,
+
+p_n001                                                 IN NUMBER DEFAULT NULL,
+
+p_n002                                                 IN NUMBER DEFAULT NULL,
+
+p_n003                                                 IN NUMBER DEFAULT NULL,
+
+p_n004                                                 IN NUMBER DEFAULT NULL,
+
+p_n005                                                 IN NUMBER DEFAULT NULL,
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 4 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+      p_d001                                                                                                                                 Chapter 15
+      p_d002                                                                                                      ADD_MEMBER Procedure
+      p_d003
+      p_d004                                           IN DATE DEFAULT NULL,
+      p_d005                                           IN DATE DEFAULT NULL,
+      p_clob001                                        IN DATE DEFAULT NULL,
+      p_blob001                                        IN DATE DEFAULT NULL,
+      p_xmltype001                                     IN DATE DEFAULT NULL,
+      p_generate_md5                                   IN CLOB DEFAULT empty_clob(),
+                                                       IN BLOB DEFAULT empty_blob(),
+Parameters                                             IN XMLTYPE DEFAULT NULL,
+                                                       IN VARCHAR2 DEFAULT 'NO' )
+
+      Note
+      Any character attribute exceeding 4,000 characters is truncated to 4,000 characters.
+
+ Parameter                                             Description
+p_collection_name
+                                                       The name of an existing collection. Maximum length is 255 bytes.
+p_c001 through p_c050                                  Collection names are not case-sensitive and are converted to upper
+                                                       case.
+p_n001 through p_n005                                  Attribute value of the member to be added. Maximum length is 4,000
+p_d001 through p_d005                                  bytes. Any character attribute exceeding 4,000 characters is truncated
+p_clob001                                              to 4,000 characters.
+p_blob001                                              Attribute value of the numeric attributes to be added.
+p_xmltype001
+p_generate_md5                                         Attribute value of the date attribute.
+
+Example                                                Use for collection member attributes that exceed 4,000 characters.
+
+                                                       Use for binary collection member attributes.
+
+                                                       Use to store well-formed XML.
+
+                                                       Valid values include YES and NO. YES to specify if the message digest
+                                                       of the data of the collection member should be computed. Use this
+                                                       parameter to compare the MD5 of the collection member with another
+                                                       member or to see if that member has changed.
+
+APEX_COLLECTION.ADD_MEMBER(
+
+      p_collection_name => 'GROCERIES'
+
+      p_c001                                           => 'Grapes',
+
+      p_c002                                           => 'Imported',
+
+      p_n001                                           => 125,
+
+      p_d001                                           => sysdate );
+
+END;
+
+      See Also
+      � GET_MEMBER_MD5 Function
+
+API Reference                                                          July 24, 2026
+G26651-03                                                              Page 5 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                        Chapter 15
+                                                                                      ADD_MEMBER Function
+
+15.3 ADD_MEMBER Function
+
+                       Adds a new member to an existing collection. Calling this function returns the sequence ID of
+                       the newly added member. An error occurs if the specified collection does not exist for the
+                       current user in the same session for the current application ID.
+
+                       Gaps are not used when adding a new member, so an existing collection with members of
+                       sequence IDs (1,2,5,8) adds the new member with a sequence ID of 9.
+
+                       Syntax
+
+APEX_COLLECTION.ADD_MEMBER (
+
+p_collection_name IN VARCHAR2,
+
+p_c001                                                 IN VARCHAR2 DEFAULT NULL,
+
+...
+
+p_c050                                                 IN VARCHAR2 DEFAULT NULL,
+
+p_n001                                                 IN NUMBER DEFAULT NULL,
+
+p_n002                                                 IN NUMBER DEFAULT NULL,
+
+p_n003                                                 IN NUMBER DEFAULT NULL,
+
+p_n004                                                 IN NUMBER DEFAULT NULL,
+
+p_n005                                                 IN NUMBER DEFAULT NULL,
+
+p_d001                                                 IN DATE DEFAULT NULL,
+
+p_d002                                                 IN DATE DEFAULT NULL,
+
+p_d003                                                 IN DATE DEFAULT NULL,
+
+p_d004                                                 IN DATE DEFAULT NULL,
+
+p_d005                                                 IN DATE DEFAULT NULL,
+
+p_clob001                                              IN CLOB DEFAULT empty_clob(),
+
+p_blob001                                              IN BLOB DEFAULT empty_blob(),
+
+p_xmltype001                                           IN XMLTYPE DEFAULT NULL,
+
+p_generate_md5                                         IN VARCHAR2 DEFAULT 'NO' )
+
+RETURN NUMBER;
+
+Parameters
+
+Note
+Any character attribute exceeding 4,000 characters is truncated to 4,000 characters.
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of an existing collection. Maximum length is 255 bytes.
+p_c001 through p_c050                                  Collection names are not case sensitive and are converted to upper
+                                                       case.
+p_n001 through p_n005                                  Attribute value of the member to be added. Maximum length is 4,000
+p_d001 through p_d005                                  bytes. Any character attribute exceeding 4,000 characters is truncated
+p_clob001                                              to 4,000 characters.
+p_blob001                                              Attribute value of the numeric attributes to be added.
+p_xmltype001
+                                                       Attribute value of the date attribute to be added.
+
+                                                       Use for collection member attributes that exceed 4,000 characters.
+
+                                                       Use for binary collection member attributes.
+
+                                                       Use to store well-formed XML.
+
+API Reference                                                                         July 24, 2026
+G26651-03                                                                             Page 6 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                  Chapter 15
+                                                                                            ADD_MEMBERS Procedure
+
+ Parameter                                             Description
+p_generate_md5
+                                                       Valid values include YES and NO. YES to specify if the message digest
+Example                                                of the data of the collection member should be computed. Use this
+                                                       parameter to compare the MD5 of the collection member with another
+                                                       member or to see if that member has changed.
+
+DECLARE
+
+l_seq number;
+
+BEGIN
+
+l_seq := APEX_COLLECTION.ADD_MEMBER(
+
+                p_collection_name => 'GROCERIES'
+
+                p_c001                                 => 'Grapes',
+
+                p_c002                                 => 'Imported',
+
+                p_n001                                 => 125,
+
+                p_d001                                 => sysdate );
+
+END;
+
+       See Also
+       � GET_MEMBER_MD5 Function
+
+15.4 ADD_MEMBERS Procedure
+
+                       Adds an array of members to a collection. An error occurs if the specified collection does not
+                       exist for the current user in the same session for the current application ID.
+
+                       Gaps are not used when adding a new member, so an existing collection with members of
+                       sequence IDs (1,2,5,8) adds the new member with a sequence ID of 9.
+
+                       The count of elements in the p_c001 PL/SQL table is used as the total number of items across
+                       all PL/SQL tables. For example, if p_c001.count is 2 and p_c002.count is 10, only 2 members
+                       are added. If p_c001 is NULL, an application error occurs.
+
+                       Syntax
+
+APEX_COLLECTION.ADD_MEMBERS (
+
+p_collection_name IN VARCHAR2,
+
+p_c001                                                 IN apex_application_global.vc_arr2,
+
+p_c002                                                 IN apex_application_global.vc_arr2 DEFAULT empty_vc_arr,
+
+p_c003                                                 IN apex_application_global.vc_arr2 DEFAULT empty_vc_arr,
+
+...
+
+p_c050                                                 IN apex_application_global.vc_arr2 DEFAULT empty_vc_arr,
+
+p_n001                                                 IN apex_application_global.n_arr DEFAULT empty_n_arr,
+
+p_n002                                                 IN apex_application_global.n_arr DEFAULT empty_n_arr,
+
+p_n003                                                 IN apex_application_global.n_arr DEFAULT empty_n_arr,
+
+p_n004                                                 IN apex_application_global.n_arr DEFAULT empty_n_arr,
+
+p_n005                                                 IN apex_application_global.n_arr DEFAULT empty_n_arr,
+
+p_d001                                                 IN apex_application_global.d_arr DEFAULT empty_d_arr,
+
+API Reference                                                                               July 24, 2026
+G26651-03                                                                                   Page 7 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                     Chapter 15
+                                                                                         COLLECTION_EXISTS Function
+
+p_d002                                                 IN apex_application_global.d_arr  DEFAULT empty_d_arr,
+p_d003                                                 IN apex_application_global.d_arr  DEFAULT empty_d_arr,
+p_d004                                                 IN apex_application_global.d_arr  DEFAULT empty_d_arr,
+p_d005                                                 IN apex_application_global.d_arr  DEFAULT empty_d_arr,
+p_generate_md5                                         IN VARCHAR2                       DEFAULT 'NO' )
+
+Parameters
+
+Note
+
+Any character attribute exceeding 4,000 characters is truncated to 4,000 characters.
+The number of members added is based on the number of elements in the first array.
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of an existing collection. Maximum length is 255 bytes.
+p_c001 through p_c050                                  Collection names are not case sensitive and are converted to upper
+p_n001 through p_n005                                  case.
+p_d001 through p_d005                                  Array of character attribute values to be added.
+p_generate_md5
+                                                       Array of numeric attribute values to be added.
+
+                                                       Array of date attribute values to be added.
+
+                                                       Valid values include YES and NO. YES to specify if the message digest
+                                                       of the data of the collection member should be computed. Use this
+                                                       parameter to compare the MD5 of the collection member with another
+                                                       member or to see if that member has changed.
+
+Example
+The following example adds two new members to the EMPLOYEE table.
+
+BEGIN
+      APEX_COLLECTION.ADD_MEMBERS(
+            p_collection_name => 'EMPLOYEE',
+            p_c001 => l_arr1,
+            p_c002 => 1_arr2);
+
+END;
+
+                              See Also
+                                 � GET_MEMBER_MD5 Function
+
+15.5 COLLECTION_EXISTS Function
+
+                       Determines if a collection exists. Returns TRUE if the specified collection exists for the current
+                       user in the current session for the current application ID, otherwise FALSE.
+
+API Reference                                                                            July 24, 2026
+G26651-03                                                                                Page 8 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                              Chapter 15
+                                                       COLLECTION_HAS_CHANGED Function
+
+Syntax
+
+APEX_COLLECTION.COLLECTION_EXISTS (
+      p_collection_name IN VARCHAR2 )
+
+RETURN BOOLEAN;
+
+Parameters
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of the collection. Maximum length is 255 bytes. The
+                                                       collection name is not case-sensitive and is converted to upper case.
+
+Example
+The following example determines if the collection named EMPLOYEES exists.
+
+BEGIN
+      l_exists := APEX_COLLECTION.COLLECTION_EXISTS (
+            p_collection_name => 'EMPLOYEES');
+
+END;
+
+15.6 COLLECTION_HAS_CHANGED Function
+
+                       Determines if a collection has changed since it was created or since the collection changed
+                       flag was reset.
+
+                       Syntax
+
+APEX_COLLECTION.COLLECTION_HAS_CHANGED (
+      p_collection_name IN VARCHAR2 )
+
+RETURN BOOLEAN;
+
+Parameters
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of the collection. An error is returned if this collection does
+                                                       not exist with the specified name of the current user and in the same
+                                                       session.
+
+Example
+
+The following example determines if the EMPLOYEES collection has changed since it was created
+or last reset.
+
+BEGIN
+      l_exists := APEX_COLLECTION.COLLECTION_HAS_CHANGED (
+           p_collection_name => 'EMPLOYEES');
+
+END;
+
+API Reference                                                               July 24, 2026
+G26651-03                                                                   Page 9 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                             Chapter 15
+                                                                                    COLLECTION_MEMBER_COUNT Function
+
+15.7 COLLECTION_MEMBER_COUNT Function
+
+                       Retrieves the total number of members for the named collection. If gaps exist, the total
+                       member count returned is not equal to the highest sequence ID in the collection.
+                       If the named collection does not exist for the current user in the current session, no error
+                       occurs.
+
+                       Syntax
+
+                       APEX_COLLECTION.COLLECTION_MEMBER_COUNT (
+                              p_collection_name IN VARCHAR2 )
+
+                       RETURN NUMBER;
+
+                       Parameters
+
+Parameter                                              Description
+p_collection_name                                      The name of the collection.
+
+Example
+This example retrieves the total number of members in the DEPARTMENTS collection.
+
+BEGIN
+      l_count := APEX_COLLECTION.COLLECTION_MEMBER_COUNT( p_collection_name =>
+
+'DEPARTMENTS');
+END;
+
+15.8 CREATE_COLLECTION Procedure
+
+                       Creates an empty collection that does not already exist. If a collection exists with the same
+                       name for the current user in the same session for the current application ID, an application
+                       error occurs.
+
+                       Syntax
+
+APEX_COLLECTION.CREATE_COLLECTION (
+
+p_collection_name                                      IN VARCHAR2,
+
+p_truncate_if_exists IN VARCHAR2 DEFAULT 'NO' )
+
+Parameters
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of the collection. The maximum length is 255 characters. An
+p_truncate_if_exists                                   error is returned if this collection exists with the specified name of the
+                                                       current user and in the same session.
+
+                                                       If YES, then members of the collection are first truncated if the
+                                                       collection exists and no error occurs. If NO (or not YES), and the
+                                                       collection exists, an error occurs.
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 10 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                 Chapter 15
+                                                                     CREATE_COLLECTION_FROM_QUERY Procedure
+
+Example
+This example creates an empty collection named EMPLOYEES.
+
+BEGIN
+      APEX_COLLECTION.CREATE_COLLECTION(
+            p_collection_name => 'EMPLOYEES');
+
+END;
+
+    See Also
+    � GET_MEMBER_MD5 Function
+
+15.9 CREATE_COLLECTION_FROM_QUERY Procedure
+
+                       Creates a collection from a supplied query. The query is parsed as the application owner.
+
+                       This method can be used with a query with up to 50 columns in the SELECT clause. These
+                       columns in the SELECT clause populate the 50 character attributes of the collection (C001
+                       through C050).
+
+                       If a collection exists with the same name for the current user in the same session for the
+                       current Application ID, an application error occurs.
+
+                       Syntax
+
+APEX_COLLECTION.CREATE_COLLECTION_FROM_QUERY (
+
+    p_collection_name                                  IN VARCHAR2,
+
+    p_query                                            IN VARCHAR2,
+
+    p_generate_md5                                     IN VARCHAR2 DEFAULT 'NO',
+
+    p_truncate_if_exists IN VARCHAR2 DEFAULT 'NO' )
+
+Parameters
+
+Parameter           Description
+
+p_collection_name The name of the collection. The maximum length is 255 characters. An error is
+                                 returned if this collection exists with the specified name of the current user and
+                                 in the same session.
+
+p_query             Query to execute to populate the members of the collection.
+
+p_generate_md5      Valid values include YES and NO. YES to specify if the message digest of the
+                    data of the collection member should be computed. Use this parameter to
+                    compare the MD5 of the collection member with another member or to see if
+                    that member has changed.
+
+p_truncate_if_exis If YES, then members of the collection are first truncated if the collection exists
+
+ts                  and no error occurs. If NO (or not YES), and the collection exists, an error
+
+                    occurs.
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 11 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                 Chapter 15
+                                                                   CREATE_COLLECTION_FROM_QUERY2 Procedure
+
+Example
+The following example creates a collection named AUTO and populates it with data from the
+AUTOS table. Because p_generate_md5 is YES, the MD5 checksum is computed to enable
+comparisons to determine change status.
+
+BEGIN
+      l_query := 'select make, model, year from AUTOS';
+      APEX_COLLECTION.CREATE_COLLECTION_FROM_QUERY (
+            p_collection_name => 'AUTO',
+            p_query => l_query,
+            p_generate_md5 => 'YES');
+
+END;
+
+See Also
+� GET_MEMBER_MD5 Function
+
+15.10 CREATE_COLLECTION_FROM_QUERY2 Procedure
+
+                       Creates a collection from a supplied query.
+
+                       This method is identical to CREATE_COLLECTION_FROM_QUERY, however, the first 5 columns of the
+                       SELECT clause must be numeric and the next 5 must be date. After the numeric and date
+                       columns, there can be up to 50 character columns in the SELECT clause. The query is parsed
+                       as the application owner.
+
+                       If a collection exists with the same name for the current user in the same session for the
+                       current application ID, an application error is raised.
+
+                       Syntax
+
+APEX_COLLECTION.CREATE_COLLECTION_FROM_QUERY2 (
+
+p_collection_name                                      IN VARCHAR2,
+
+p_query                                                IN VARCHAR2,
+
+p_generate_md5                                         IN VARCHAR2 DEFAULT 'NO',
+
+p_truncate_if_exists IN VARCHAR2 DEFAULT 'NO' )
+
+Parameters
+
+Parameter       Description
+
+p_collection_name The name of the collection. The maximum length is 255 characters. An error is
+                               returned if this collection exists with the specified name of the current user and in
+                               the same session.
+
+p_query         Query to execute to populate the members of the collection.
+
+p_generate_md5  Valid values include YES and NO. YES to specify if the message digest of the data
+                of the collection member should be computed. Use this parameter to compare
+                the MD5 of the collection member with another member or to see if that member
+                has changed.
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 12 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                            Chapter 15
+                                                                     CREATE_COLLECTION_FROM_QUERY_B Procedure
+
+Parameter      Description
+
+p_truncate_if_exi If YES, then members of the collection will first be truncated if the collection exists
+
+sts            and no error will be raised. If NO (or not YES), and the collection exists, an error
+
+               will be raised.
+
+Example
+
+The following example creates a collection named EMPLOYEE and populates it with data from
+the EMP table. The first five columns (mgr, sal, comm, deptno, and null) are all numeric.
+Because p_generate_md5 is NO, the MD5 checksum is not computed.
+
+BEGIN
+      APEX_COLLECTION.CREATE_COLLECTION_FROM_QUERY2 (
+            p_collection_name => 'EMPLOYEE',
+            p_query => 'select empno, sal, comm, deptno, null, hiredate, null,
+
+null, null, null, ename, job, mgr from emp',
+            p_generate_md5 => 'NO');
+
+END;
+
+     See Also
+     � GET_MEMBER_MD5 Function
+
+15.11 CREATE_COLLECTION_FROM_QUERY_B Procedure
+
+                       Creates a collection from a supplied query using bulk operations.
+
+                       This method offers significantly faster performance than the CREATE_COLLECTION_FROM_QUERY
+                       method. The query is parsed as the application owner. If a collection exists with the same
+                       name for the current user in the same session for the current application ID, an application
+                       error occurs.
+
+                       This procedure uses bulk dynamic SQL to perform the fetch and insert operations into the
+                       named collection. Two limitations are imposed by this procedure:
+
+                       1. The MD5 checksum for the member data is not computed.
+
+                       2. No column value in query p_query can exceed 2,000 bytes. If a row is encountered that
+                             has a column value of more than 2,000 bytes, an error is raised during execution. In Oracle
+                             Database 11g Release 2 (11.2.0.1) or later, this column limit is 4,000 bytes.
+
+                       Syntax
+
+APEX_COLLECTION.CREATE_COLLECTION_FROM_QUERY_B (
+
+     p_collection_name                                 IN VARCHAR2,
+
+     p_query                                           IN VARCHAR2,
+
+     p_names                                           IN apex_application_global.vc_arr2,
+
+     p_values                                          IN apex_application_global.vc_arr2,
+
+     p_max_row_count                                   IN NUMBER DEFAULT NULL,
+
+     p_truncate_if_exists IN VARCHAR2 DEFAULT 'NO' )
+
+API Reference                                                                               July 24, 2026
+G26651-03                                                                                   Page 13 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                    Chapter 15
+                                                       CREATE_COLLECTION_FROM_QUERY_B Procedure (No bind version)
+
+Parameters
+
+Parameter                                              Description
+
+p_collection_name                                      The name of the collection. The maximum length is 255 characters. An error
+                                                       is returned if this collection exists with the specified name of the current user
+                                                       and in the same session.
+
+p_query                                                Query to execute to populate the members of the collection.
+
+p_names                                                Array of bind variable names used in the query statement.
+
+p_values                                               Array of bind variable values used in the bind variables in the query
+                                                       statement.
+
+p_max_row_count                                        Maximum number of rows returned from the query in p_query to add to the
+                                                       collection.
+
+p_truncate_if_exist If YES, then members of the collection are truncated first if the collection
+
+s                                                      exists and no error occurs. If NO (or not YES), and the collection exists, an
+
+                                                       error occurs.
+
+Example
+
+The following example creates a collection named EMPLOYEES and populates it with data from
+the EMP table.
+
+DECLARE
+      l_query varchar2(4000);
+
+BEGIN
+      l_query := 'select empno, ename, job, sal from emp where deptno = :b1';
+      APEX_COLLECTION.CREATE_COLLECTION_FROM_QUERY_B (
+            p_collection_name => 'EMPLOYEES',
+                            p_query => l_query,
+                            p_names => apex_util.string_to_table('b1'),
+                           p_values => apex_util.string_to_table('10'));
+
+END;
+
+                              See Also
+                                 � GET_MEMBER_MD5 Function
+
+15.12 CREATE_COLLECTION_FROM_QUERY_B Procedure
+(No bind version)
+
+                       Creates a collection from a supplied query using bulk operations.
+                       This method offers significantly faster performance than the CREATE_COLLECTION_FROM_QUERY
+                       method. The query is parsed as the application owner. If a collection exists with the same
+                       name for the current user in the same session for the current application ID, an application
+                       error occurs.
+                       This procedure uses bulk dynamic SQL to perform the fetch and insert operations into the
+                       named collection. Two limitations are imposed by this procedure:
+
+API Reference                                                                                                       July 24, 2026
+G26651-03                                                                                                           Page 14 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                            Chapter 15
+                                                                     CREATE_COLLECTION_FROM_QUERYB2 Procedure
+
+1. The MD5 checksum for the member data is not computed.
+
+2. No column value in query p_query can exceed 2,000 bytes. If a row is encountered that
+     has a column value of more than 2,000 bytes, an error occurs during execution. In Oracle
+     Database 11g Release 2 (11.2.0.1) or later, this column limit is 4,000 bytes.
+
+Syntax
+
+APEX_COLLECTION.CREATE_COLLECTION_FROM_QUERY_B (
+
+p_collection_name IN VARCHAR2,
+
+p_query                                                IN VARCHAR2,
+
+p_max_row_count IN NUMBER DEFAULT NULL )
+
+Parameters
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of the collection. The maximum length is 255 characters. An
+p_query                                                error is returned if this collection exists with the specified name of the
+p_max_row_count                                        current user and in the same session.
+                                                       Query to execute to populate the members of the collection.
+
+                                                       Maximum number of rows returned from the query in p_query to be
+                                                       added to the collection.
+
+Example
+
+The following example creates a collection named EMPLOYEES and populates it with data from
+the EMP table.
+
+DECLARE
+      l_query varchar2(4000);
+
+BEGIN
+      l_query := 'select empno, ename, job, sal from emp';
+      APEX_COLLECTION.CREATE_COLLECTION_FROM_QUERY_B (
+            p_collection_name => 'EMPLOYEES',
+                            p_query => l_query );
+
+END;
+
+                              See Also
+                                 � GET_MEMBER_MD5 Function
+
+15.13 CREATE_COLLECTION_FROM_QUERYB2 Procedure
+
+                       Creates a collection from a supplied query using bulk operations.
+                       This method offers significantly faster performance than the CREATE_COLLECTION_FROM_QUERY_2
+                       method. The query is parsed as the application owner. If a collection exists with the same
+                       name for the current user in the same session for the current application ID, an application
+                       error occurs.
+
+API Reference                                                        July 24, 2026
+G26651-03                                                            Page 15 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                            Chapter 15
+                                                                     CREATE_COLLECTION_FROM_QUERYB2 Procedure
+
+This procedure is identical to CREATE_COLLECTION_FROM_QUERY_B except the first five columns
+of the SELECT clause must be numeric and the next five columns must be a date. After the date
+columns, there can be up to 50 character columns in the SELECT clause.
+
+This procedure uses bulk dynamic SQL to perform the fetch and insert operations into the
+named collection. Two limitations are imposed by this procedure:
+
+1. The MD5 checksum for the member data is not computed.
+
+2. No column value in query p_query can exceed 2,000 bytes. If a row is encountered that
+     has a column value of more than 2,000 bytes, an error is raised during execution. In Oracle
+     Database 11g Release 2 (11.2.0.1) or later, this column limit is 4,000 bytes.
+
+Syntax
+
+APEX_COLLECTION.CREATE_COLLECTION_FROM_QUERYB2 (
+
+p_collection_name                                      IN VARCHAR2,
+
+p_query                                                IN VARCHAR2,
+
+p_names                                                IN apex_application_global.vc_arr2,
+
+p_values                                               IN apex_application_global.vc_arr2,
+
+p_max_row_count                                        IN NUMBER DEFAULT NULL,
+
+p_truncate_if_exists IN VARCHAR2 DEFAULT 'NO' )
+
+Parameters
+
+Parameter                                              Description
+
+p_collection_name                                      The name of the collection. The maximum length is 255 characters. An error
+                                                       is returned if this collection exists with the specified name of the current user
+p_query                                                and in the same session.
+p_names
+p_values                                               Query to execute to populate the members of the collection.
+
+p_max_row_count                                        Array of bind variable names used in the query statement.
+
+p_truncate_if_exist                                    Array of bind variable values used in the bind variables in the query
+s                                                      statement.
+
+                                                       Maximum number of rows returned from the query in p_query to be added
+                                                       to the collection.
+
+                                                       If YES, then members of the collection are first truncated if the collection
+                                                       exists. If NO (or not YES), and the collection exists, an error occurs.
+
+Example
+
+The following example shows how to use the CREATE_COLLECTION_FROM_QUERYB2 procedure to
+create a collection named EMPLOYEES and populate it with data from the EMP table. The first five
+columns (mgr, sal, comm, deptno, and null) are all numeric and the next five are all date.
+
+DECLARE
+      l_query varchar2(4000);
+
+BEGIN
+      l_query := 'select empno, sal, comm, deptno, null, hiredate, null,
+            null, null, null, ename, job, mgr from emp where deptno = :b1';
+      APEX_COLLECTION.CREATE_COLLECTION_FROM_QUERYB2 (
+            p_collection_name => 'EMPLOYEES',
+                            p_query => l_query,
+                            p_names => apex_util.string_to_table('b1'),
+                           p_values => apex_util.string_to_table('10'));
+
+END;
+
+API Reference                                                                               July 24, 2026
+G26651-03                                                                                   Page 16 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                    Chapter 15
+                                                       CREATE_COLLECTION_FROM_QUERYB2 Procedure (No bind version)
+
+See Also
+� GET_MEMBER_MD5 Function
+
+15.14 CREATE_COLLECTION_FROM_QUERYB2 Procedure
+(No bind version)
+
+                       Creates a collection from a supplied query using bulk operations.
+
+                       This method offers significantly faster performance than the CREATE_COLLECTION_FROM_QUERY_2
+                       method. The query is parsed as the application owner. If a collection exists with the same
+                       name for the current user in the same session for the current application ID, an application
+                       error occurs.
+
+                       This procedure is identical to CREATE_COLLECTION_FROM_QUERY_B except the first five columns
+                       of the SELECT clause must be numeric and the next five columns must be a date. After the date
+                       columns, there can be up to 50 character columns in the SELECT clause.
+
+                       This procedure uses bulk dynamic SQL to perform the fetch and insert operations into the
+                       named collection. Two limitations are imposed by this procedure:
+
+                       1. The MD5 checksum for the member data is not computed.
+
+                       2. No column value in query p_query can exceed 2,000 bytes. If a row is encountered that
+                             has a column value of more than 2,000 bytes, an error is raised during execution. In Oracle
+                             Database 11g Release 2 (11.2.0.1) or later, this column limit is 4,000 bytes.
+
+                       Syntax
+
+APEX_COLLECTION.CREATE_COLLECTION_FROM_QUERYB2 (
+
+p_collection_name IN VARCHAR2,
+
+p_query                                                IN VARCHAR2,
+
+p_max_row_count IN NUMBER DEFAULT )
+
+Parameters
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of the collection. The maximum length is 255 characters. An
+p_query                                                error is returned if this collection exists with the specified name of the
+p_max_row_count                                        current user and in the same session.
+                                                       Query to execute to populate the members of the collection.
+
+                                                       Maximum number of rows returned from the query in p_query to be
+                                                       added to the collection.
+
+API Reference                                                        July 24, 2026
+G26651-03                                                            Page 17 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                 Chapter 15
+                                                                    CREATE_OR_TRUNCATE_COLLECTION Procedure
+
+Example
+
+The following example creates a collection named EMPLOYEES and populates it with data from
+the EMP table. The first five columns (mgr, sal, comm, deptno, and null) are all numeric and the
+next five are all dates. Because p_generate_md5 is NO, the MD5 checksum is not computed.
+
+DECLARE
+      l_query varchar2(4000);
+
+BEGIN
+      l_query := 'select empno, sal, comm, deptno, null, hiredate, null,
+            null, null, null, ename, job, mgr from emp where deptno = 10';
+      APEX_COLLECTION.CREATE_COLLECTION_FROM_QUERYB2 (
+            p_collection_name => 'EMPLOYEES',
+                            p_query => l_query);
+
+END;
+
+See Also
+� GET_MEMBER_MD5 Function
+
+15.15 CREATE_OR_TRUNCATE_COLLECTION Procedure
+
+                       Creates a collection. If a collection exists with the same name for the current user in the same
+                       session for the current application ID, all members of the collection are removed (the named
+                       collection is truncated).
+
+                       Syntax
+
+                       APEX_COLLECTION.CREATE_OR_TRUNCATE_COLLECTION (
+                             p_collection_name IN VARCHAR2 )
+
+                       Parameters
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of the collection. The maximum length is 255 characters. All
+                                                       members of the named collection are removed if the named collection
+                                                       exists for the current user in the current session.
+
+Example
+This example removes all members in an existing collection named EMPLOYEES.
+
+BEGIN
+      APEX_COLLECTION.CREATE_OR_TRUNCATE_COLLECTION(
+            p_collection_name => 'EMPLOYEES');
+
+END;
+
+API Reference                                                                July 24, 2026
+G26651-03                                                                    Page 18 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                           Chapter 15
+                                                                                                        DELETE_ALL_COLLECTIONS Procedure
+
+                              See Also
+                                 � GET_MEMBER_MD5 Function
+
+15.16 DELETE_ALL_COLLECTIONS Procedure
+
+                       Use this procedure to delete all collections that belong to the current user in the current Oracle
+                       APEX session for the current Application ID.
+                       Syntax
+
+                       APEX_COLLECTION.DELETE_ALL_COLLECTIONS;
+
+                       Parameters
+                       None.
+                       Example
+                       This example shows how to use the DELETE_ALL_COLLECTIONS procedure to remove all
+                       collections that belong to the current user in the current session and Application ID.
+
+                       BEGIN
+                              APEX_COLLECTION.DELETE_ALL_COLLECTIONS;
+
+                       END;
+
+15.17 DELETE_ALL_COLLECTIONS_SESSION Procedure
+
+                       Use this procedure to delete all collections that belong to the current user in the current Oracle
+                       APEX session regardless of the Application ID.
+                       Syntax
+
+                       APEX_COLLECTION.DELETE_ALL_COLLECTIONS_SESSION;
+
+                       Parameters
+                       None.
+                       Example
+                       This example shows how to use the DELETE_ALL_COLLECTIONS_SESSION procedure to remove
+                       all collections that belong to the current user in the current session regardless of Application
+                       ID.
+
+                       BEGIN
+                              APEX_COLLECTION.DELETE_ALL_COLLECTIONS_SESSION;
+
+                       END;
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 19 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                     Chapter 15
+                                                                      DELETE_COLLECTION Procedure
+
+15.18 DELETE_COLLECTION Procedure
+
+                       Deletes a named collection. All members that belong to the collection are removed and the
+                       named collection is dropped.
+                       If the named collection does not exist for the same user in the current session for the current
+                       application ID, an application error occurs.
+
+                       Syntax
+
+                       APEX_COLLECTION.DELETE_COLLECTION (
+                             p_collection_name IN VARCHAR2 )
+
+                       Parameters
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of the collection to remove all members from and drop. An
+                                                       error is returned if this collection does not exist with the specified name
+                                                       of the current user and in the same session.
+
+Example
+This example removes the EMPLOYEE collection.
+
+BEGIN
+      APEX_COLLECTION.DELETE_COLLECTION(
+            p_collection_name => 'EMPLOYEE');
+
+END;
+
+15.19 DELETE_MEMBER Procedure
+
+                       Deletes a specified member from a given named collection.
+                       If the named collection does not exist for the same user in the current session for the current
+                       application ID, an application error occurs.
+
+                       Syntax
+
+APEX_COLLECTION.DELETE_MEMBER (
+
+p_collection_name IN VARCHAR2,
+
+p_seq                                                  IN VARCHAR2 )
+
+Parameters
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of the collection to delete the specified member from. The
+p_seq                                                  maximum length is 255 characters. Collection names are not case-
+                                                       sensitive and are converted to upper case. An error is returned if this
+                                                       collection does not exist for the current user in the same session.
+
+                                                       This is the sequence ID of the collection member to be deleted.
+
+API Reference                                                         July 24, 2026
+G26651-03                                                             Page 20 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                 Chapter 15
+                                                                      DELETE_MEMBERS Procedure
+
+Example
+This example removes the member with a sequence ID of 2 from the EMPLOYEES collection.
+
+BEGIN
+      APEX_COLLECTION.DELETE_MEMBER(
+            p_collection_name => 'EMPLOYEES',
+            p_seq => '2');
+
+END;
+
+15.20 DELETE_MEMBERS Procedure
+
+                       Deletes all members from a given named collection where the attribute specified by the
+                       attribute number equals the supplied value.
+
+                       If the named collection does not exist for the same user in the current session for the current
+                       application ID, an application error occurs.
+
+                       If the attribute number specified is invalid or outside the range of 1 to 50, an error occurs.
+
+                       If the supplied attribute value is NULL, then all members of the named collection are deleted
+                       where the attribute, specified by p_attr_number, is NULL.
+
+                       Syntax
+
+APEX_COLLECTION.DELETE_MEMBERS (
+
+p_collection_name IN VARCHAR2,
+
+p_attr_number                                          IN NUMBER,
+
+p_attr_value                                           IN VARCHAR2 )
+
+Parameters
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of the collection to delete the specified members from. The
+p_attr_number                                          maximum length is 255 characters. Collection names are not case-
+p_attr_value                                           sensitive and are converted to upper case. An error is returned if this
+                                                       collection does not exist for the current user in the same session.
+
+                                                       Attribute number of the member attribute used to match for the
+                                                       specified attribute value for deletion. Valid values are 1 through 50 and
+                                                       NULL.
+
+                                                       Attribute value of the member attribute used to match for deletion.
+                                                       Maximum length can be 4,000 bytes. The attribute value is truncated to
+                                                       4,000 bytes if greater than this amount.
+
+Example
+
+The following example deletes all members of the GROCERIES collection where the 5th
+character attribute is APPLE.
+
+BEGIN
+
+apex_collection.delete_members(
+
+       p_collection_name => 'GROCERIES'
+
+       p_attr_number => 5,
+
+       p_attr_value                                    => 'APPLE' );
+
+API Reference                                                         July 24, 2026
+G26651-03                                                             Page 21 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                             Chapter 15
+                                                                    GET_MEMBER_MD5 Function
+
+      COMMIT;
+END;
+
+15.21 GET_MEMBER_MD5 Function
+
+                       Computes and returns the message digest of the attributes for the member specified by the
+                       sequence ID. This computation of message digest is equal to the computation performed
+                       natively by collections. The result of this function can be compared to the MD5_ORIGINAL
+                       column of the view APEX_COLLECTIONS.
+
+                       If a collection does not exist with the specified name for the current user in the same session
+                       and for the current application ID, an application error occurs.
+
+                       If the member specified by sequence ID p_seq does not exist, an application error occurs.
+
+                       Syntax
+
+APEX_COLLECTION.GET_MEMBER_MD5 (
+
+p_collection_name IN VARCHAR2,
+
+p_seq                                                  IN NUMBER )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of the collection to add this array of members to. An error is
+p_seq                                                  returned if this collection does not exist with the specified name of the
+                                                       current user and in the same session.
+                                                       Sequence ID of the collection member.
+
+Example
+The following example computes the MD5 for the 10th member of the GROCERIES collection.
+
+DECLARE
+
+l_md5 varchar2(4000);
+
+BEGIN
+
+l_md5 := apex_collection.get_member_md5(
+
+         p_collection_name => 'GROCERIES'
+
+         p_seq                                         => 10 );
+
+END;
+
+       See Also
+       � COLLECTION_HAS_CHANGED Function
+       � RESET_COLLECTION_CHANGED Procedure
+       � RESET_COLLECTION_CHANGED_ALL Procedure
+
+API Reference                                                       July 24, 2026
+G26651-03                                                           Page 22 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                             Chapter 15
+                                                                                   MERGE_MEMBERS Procedure
+
+15.22 MERGE_MEMBERS Procedure
+
+                       Merges members of the given named collection with the values passed in the arrays.
+                       If the named collection does not exist, one is created.
+                       If a p_init_query is provided, the collection is created from the supplied SQL query.
+                       If the named collection exists, the following occurs:
+                       1. Rows in the collection and not in the arrays are deleted.
+                       2. Rows in the collections and in the arrays are updated.
+                       3. Rows in the arrays and not in the collection are inserted.
+                       The count of elements in the p_c001 PL/SQL table is used as the total number of items across
+                       all PL/SQL tables. For example, if p_c001.count is 2 and p_c002.count is 10, only two
+                       members are merged.
+                       If p_c001 is NULL, an application error occurs.
+
+                       Syntax
+
+APEX_COLLECTION.MERGE_MEMBERS (
+
+p_collection_name IN VARCHAR2,
+
+p_seq                                                  IN apex_application_global.vc_arr2 DEFAULT
+
+empty_vc_arr,
+
+p_c001                                                 IN apex_application_global.vc_arr2 DEFAULT
+
+empty_vc_arr,
+
+p_c002                                                 IN apex_application_global.vc_arr2 DEFAULT
+
+empty_vc_arr,
+
+p_c003                                                 IN apex_application_global.vc_arr2 DEFAULT
+
+empty_vc_arr,
+
+...
+
+p_c050                                                 IN apex_application_global.vc_arr2 DEFAULT
+
+empty_vc_arr,
+
+p_null_index                                           IN NUMBER DEFAULT 1,
+
+p_null_value                                           IN VARCHAR2 DEFAULT NULL,
+
+p_init_query                                           IN VARCHAR2 DEFAULT NULL )
+
+Parameters
+
+Note
+
+Any character attribute exceeding 4,000 characters is truncated to 4,000 characters.
+Also, the number of members added is based on the number of elements in the first
+array.
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of the collection. Maximum length is 255 bytes. Collection
+                                                       names are not case-sensitive and are converted to upper case.
+
+API Reference                                                                                      July 24, 2026
+G26651-03                                                                                          Page 23 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                 Chapter 15
+                                                       MERGE_MEMBERS Procedure
+
+Parameter                                              Description
+p_c001 through p_c050
+                                                       Array of attribute values to be merged. Maximum length is 4,000 bytes.
+p_c0xx                                                 Any character attribute exceeding 4,000 characters is truncated to
+p_seq                                                  4,000 characters. The count of the p_c001 array is used across all
+p_null_index                                           arrays. If no values are provided, then no actions are performed.
+
+p_null_value                                           Attribute of NN attributes values to be merged. Maximum length can be
+p_init_query                                           4,000 bytes. The attribute value is truncated to 4,000 bytes if greater
+                                                       than this amount.
+
+                                                       Identifies the sequence number of the collection member to be merged.
+
+                                                       If the element identified by this value is NULL, then treat this row as a
+                                                       NULL row. For example, if p_null_index is 3, then p_c003 is treated
+                                                       as a NULL row. The merge function then ignores this row. This results
+                                                       in removing NULL rows from the collection. The NULL index works with
+                                                       the NULL value. If the value of the p_cXXX argument is equal to the
+                                                       p_null_value, then the row is treated as NULL.
+
+                                                       Used with the p_null_index argument. Identifies the NULL value. If
+                                                       used, this value must not be NULL. A typical value for this argument is
+                                                       0.
+
+                                                       If the collection does not exist, the collection is created using this
+                                                       query.
+
+Example
+
+The following example creates a collection on the table of employees, and then merges the
+contents of the local arrays with the collection, updating the job of two employees.
+
+DECLARE
+      l_seq APEX_APPLICATION_GLOBAL.VC_ARR2;
+      l_c001 APEX_APPLICATION_GLOBAL.VC_ARR2;
+      l_c002 APEX_APPLICATION_GLOBAL.VC_ARR2;
+      l_c003 APEX_APPLICATION_GLOBAL.VC_ARR2;
+
+BEGIN
+      l_seq(1) := 1;
+      l_c001(1) := 7369;
+      l_c002(1) := 'SMITH';
+      l_c003(1) := 'MANAGER';
+      l_seq(2) := 2;
+      l_c001(2) := 7499;
+      l_c002(2) := 'ALLEN';
+      l_c003(2) := 'CLERK';
+
+      APEX_COLLECTION.MERGE_MEMBERS(
+            p_collection_name => 'EMPLOYEES',
+            p_seq => l_seq,
+            p_c001 => l_c001,
+            p_c002 => l_c002,
+            p_c003 => l_c003,
+            p_init_query => 'select empno, ename, job from emp order by empno');
+
+END;
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 24 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                     Chapter 15
+                                                                    MOVE_MEMBER_DOWN Procedure
+
+15.23 MOVE_MEMBER_DOWN Procedure
+
+                       Adjusts the sequence ID of a specified member in the given named collection down by one
+                       (subtract one), swapping sequence ID with the one it is replacing. For example, 3 becomes 2
+                       and 2 becomes 3.
+
+                       If a collection does not exist with the specified name for the current user in the same session
+                       and for the current application ID, an application error is raised.
+
+                       If the member specified by sequence ID p_seq does not exist, an application error occurs.
+
+                       If the member specified by sequence ID p_seq is the lowest sequence in the collection, an
+                       application error is NOT returned.
+
+                       Syntax
+
+APEX_COLLECTION.MOVE_MEMBER_DOWN (
+
+p_collection_name IN VARCHAR2,
+
+p_seq                                                  IN NUMBER )
+
+Parameters
+
+Parameter   Description
+
+p_collection_name The name of the collection. Maximum length is 255 bytes. Collection names are
+                                not case-sensitive and are converted to upper case. An error is returned if this
+                                collection does not exist with the specified name of the current user in the same
+                                session.
+
+p_seq       Identifies the sequence number of the collection member to be moved down by
+            one.
+
+Example
+
+This example shows how to move a member of the EMPLOYEES collection down one position.
+After executing this example, sequence ID 5 becomes sequence ID 4 and sequence ID 4
+becomes sequence ID 5.
+
+BEGIN
+      APEX_COLLECTION.MOVE_MEMBER_DOWN(
+            p_collection_name => 'EMPLOYEES',
+            p_seq => '5' );
+
+END;
+
+15.24 MOVE_MEMBER_UP Procedure
+
+                       Adjusts the sequence ID of specified member in the given named collection up by one (add
+                       one), swapping sequence ID with the one it is replacing. For example, 2 becomes 3 and 3
+                       becomes 2.
+
+                       If a collection does not exist with the specified name for the current user in the same session
+                       and for the current application ID, an application error occurs.
+
+                       If the member specified by sequence ID p_seq does not exist, an application error occurs.
+
+API Reference                                                       July 24, 2026
+G26651-03                                                           Page 25 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                           Chapter 15
+                                                                    RESEQUENCE_COLLECTION Procedure
+
+If the member specified by sequence ID p_seq is the highest sequence in the collection, an
+application error is not returned.
+
+Syntax
+
+APEX_COLLECTION.MOVE_MEMBER_UP (
+
+p_collection_name IN VARCHAR2,
+
+p_seq                                                  IN NUMBER )
+
+Parameters
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of the collection. Maximum length is 255 bytes. Collection
+p_seq                                                  names are not case sensitive and are converted to upper case. An
+                                                       error is returned if this collection does not exist with the specified name
+                                                       of the current user in the same session.
+
+                                                       Identifies the sequence number of the collection member to be moved
+                                                       up by one.
+
+Example
+
+This example moves a member of the EMPLOYEES collection up one position. After executing
+this example, sequence ID 5 becomes sequence ID 6 and sequence ID 6 becomes sequence
+ID 5.
+
+BEGIN
+      APEX_COLLECTION.MOVE_MEMBER_UP(
+            p_collection_name => 'EMPLOYEES',
+            p_seq => '5' );
+
+END;
+
+15.25 RESEQUENCE_COLLECTION Procedure
+
+                       For a named collection, updates the seq_id value of each member so that no gaps exist in the
+                       sequencing. For example, a collection with the following set of sequence IDs (1,2,3,5,8,9)
+                       becomes (1,2,3,4,5,6).
+
+                       If a collection does not exist with the specified name for the current user in the same session
+                       and for the current application ID, an application error occurs.
+
+                       Syntax
+
+APEX_COLLECTION.RESEQUENCE_COLLECTION (
+      p_collection_name IN VARCHAR2);
+
+Parameters
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of the collection to resequence. An error is returned if this
+                                                       collection does not exist with the specified name of the current user
+                                                       and in the same session.
+
+API Reference                                                       July 24, 2026
+G26651-03                                                           Page 26 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                 Chapter 15
+                                                                           RESET_COLLECTION_CHANGED Procedure
+
+Example
+This example resequences the DEPARTMENTS collection to remove gaps in the sequence IDs.
+
+BEGIN
+      APEX_COLLECTION.RESEQUENCE_COLLECTION (
+            p_collection_name => 'DEPARTMENTS');
+
+END;
+
+See Also
+� MOVE_MEMBER_DOWN Procedure
+� MOVE_MEMBER_UP Procedure
+
+15.26 RESET_COLLECTION_CHANGED Procedure
+
+                       Resets the collection changed flag (mark as not changed) for a given collection.
+                       If a collection does not exist with the specified name for the current user in the same session
+                       and for the current application ID, an application error occurs.
+                       Syntax
+
+                       APEX_COLLECTION.RESET_COLLECTION_CHANGED (
+                             p_collection_name IN VARCHAR2 )
+
+                       Parameters
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of the collection to reset the collection changed flag. An
+                                                       error is returned if this collection does not exist with the specified name
+                                                       of the current user and in the same session.
+
+Example
+This example shows how to reset the changed flag for the DEPARTMENTS collection.
+
+BEGIN
+      APEX_COLLECTION.RESET_COLLECTION_CHANGED (
+            p_collection_name => 'DEPARTMENTS');
+
+END;
+
+15.27 RESET_COLLECTION_CHANGED_ALL Procedure
+
+                       Resets the collection changed flag (mark as not changed) for all collections in the user's
+                       current session.
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 27 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                             Chapter 15
+                                                                     SORT_MEMBERS Procedure
+
+Syntax
+
+APEX_COLLECTION.RESET_COLLECTION_CHANGED_ALL;
+
+Parameters
+None.
+Example
+This example resets the changed flag for all collections in the user's current session.
+
+BEGIN
+      APEX_COLLECTION.RESET_COLLECTION_CHANGED_ALL;
+
+END;
+
+15.28 SORT_MEMBERS Procedure
+
+                       Reorders the members of a given collection by the column number specified by
+                       p_sort_on_column_number. This sorts the collection by a particular column or attribute in the
+                       collection and reassigns the sequence IDs of each number such that no gaps exist.
+
+                       If a collection does not exist with the specified name for the current user in the same session
+                       and for the current application ID, an application error occurs.
+
+                       Syntax
+
+APEX_COLLECTION.SORT_MEMBERS (
+
+p_collection_name                                      IN VARCHAR2,
+
+p_sort_on_column_number IN NUMBER )
+
+Parameters
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of the collection to sort. An error is returned if this
+p_sort_on_column_number                                collection does not exist with the specified name of the current user
+                                                       and in the same session.
+
+                                                       The column number used to sort the collection. The domain of
+                                                       possible values is 1 to 50.
+
+Example
+
+In this example, column 2 of the DEPARTMENTS collection is the department location. The
+collection is reordered according to the department location.
+
+BEGIN
+      APEX_COLLECTION.SORT_MEMBERS (
+            p_collection_name => 'DEPARTMENTS',
+            p_sort_on_column_number => '2';
+
+END;
+
+API Reference                                                        July 24, 2026
+G26651-03                                                            Page 28 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                          Chapter 15
+                                                       TRUNCATE_COLLECTION Procedure
+
+15.29 TRUNCATE_COLLECTION Procedure
+
+                       Removes all members from a named collection.
+                       If a collection does not exist with the specified name for the current user in the same session
+                       and for the current application ID, an application error occurs.
+                       Syntax
+
+                       APEX_COLLECTION.TRUNCATE_COLLECTION (
+                              p_collection_name IN VARCHAR2 )
+
+                       Parameters
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of the collection to truncate. An error is returned if this
+                                                       collection does not exist with the specified name of the current user
+                                                       and in the same session.
+
+Example
+This example removes all members from the DEPARTMENTS collection.
+
+BEGIN
+      APEX_COLLECTION.TRUNCATE_COLLECTION(
+            p_collection_name => 'DEPARTMENTS');
+
+END;
+
+                              See Also
+                                 CREATE_OR_TRUNCATE_COLLECTION Procedure
+
+15.30 UPDATE_MEMBER Procedure
+
+                       Updates the specified member in the given named collection.
+                       If a collection does not exist with the specified name for the current user in the same session
+                       and for the current application ID, an application error occurs.
+                       If the member specified by sequence ID p_seq does not exist, an application error occurs.
+
+                              Note
+                                 Using this procedure sets the columns identified and nullifies any columns not
+                                 identified. To update specific columns, without affecting the values of other columns,
+                                 use UPDATE_MEMBER_ATTRIBUTE Procedure Signature 1.
+
+API Reference                                                      July 24, 2026
+G26651-03                                                          Page 29 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                               Chapter 15
+                                                                                      UPDATE_MEMBER Procedure
+
+Syntax
+
+APEX_COLLECTION.UPDATE_MEMBER (
+
+p_collection_name IN VARCHAR2,
+
+p_seq                                                  IN VARCHAR2 DEFAULT NULL,
+
+p_c001                                                 IN VARCHAR2 DEFAULT NULL,
+
+p_c002                                                 IN VARCHAR2 DEFAULT NULL,
+
+p_c003                                                 IN VARCHAR2 DEFAULT NULL,
+
+...
+
+p_c050                                                 IN VARCHAR DEFAULT NULL,
+
+p_n001                                                 IN NUMBER DEFAULT NULL,
+
+p_n002                                                 IN NUMBER DEFAULT NULL,
+
+p_n003                                                 IN NUMBER DEFAULT NULL,
+
+p_n004                                                 IN NUMBER DEFAULT NULL,
+
+p_n005                                                 IN NUMBER DEFAULT NULL,
+
+p_d001                                                 IN DATE DEFAULT NULL,
+
+p_d002                                                 IN DATE DEFAULT NULL,
+
+p_d003                                                 IN DATE DEFAULT NULL,
+
+p_d004                                                 IN DATE DEFAULT NULL,
+
+p_d005                                                 IN DATE DEFAULT NULL,
+
+p_clob001                                              IN CLOB DEFAULT empty_clob(),
+
+p_blob001                                              IN BLOB DEFAULT empty-blob(),
+
+p_xmltype001                                           IN XMLTYPE DEFAULT NULL )
+
+Parameters
+
+     Note
+
+     Any character attribute exceeding 4,000 characters is truncated to 4,000 characters.
+     Also, the number of members added is based on the number of elements in the first
+     array.
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of the collection to update. Maximum length is 255 bytes.
+p_seq                                                  Collection names are not case-sensitive and are converted to upper
+p_c001through p_c050                                   case.
+                                                       Identifies the sequence number of the collection member to be
+p_n001 through p_n005                                  updated.
+p_d001 through p_d005                                  Attribute value of the member to be added. Maximum length is 4,000
+p_clob001                                              bytes. Any character attribute exceeding 4,000 characters is truncated
+p_blob001                                              to 4,000 characters.
+p_xmltype001                                           Attribute value of the numeric attributes to be added or updated.
+
+                                                       Attribute value of the date attributes to be added or updated.
+
+                                                       Use p_clob001 for collection member attributes that exceed 4,000
+                                                       characters.
+                                                       Use p_blob001 for binary collection member attributes.
+
+                                                       Use p_xmltype001 to store well-formed XML.
+
+API Reference                                                                         July 24, 2026
+G26651-03                                                                             Page 30 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                  Chapter 15
+                                                       UPDATE_MEMBERS Procedure
+
+Example
+
+This example updates the second member of the collection Departments so that the first
+member attribute becomes Engineering and the second member attribute becomes Sales.
+
+BEGIN
+      APEX_COLLECTION.UPDATE_MEMBER (
+            p_collection_name => 'Departments',
+            p_seq => '2',
+            p_c001 => 'Engineering',
+            p_c002 => 'Sales');
+
+END;
+
+15.31 UPDATE_MEMBERS Procedure
+
+                       Updates the array of members for the given named collection.
+
+                       If a collection does not exist with the specified name for the current user in the same session
+                       and for the current application ID, an application error occurs.
+
+                       The count of elements in the p_seq PL/SQL table is used as the total number of items across
+                       all PL/SQL tables. If p_seq.count = 2 and p_c001.count = 10, only two members are
+                       updated.
+
+                       If p_seq is NULL, an application error occurs.
+
+                       If the member specified by sequence ID p_seq does not exist, an application error occurs.
+
+                       Syntax
+
+APEX_COLLECTION.UPDATE_MEMBERS (
+
+p_collection_name IN VARCHAR2,
+
+p_seq                                                  IN apex_application_global.vc_arr2 DEFAULT empty_vc_arr,
+
+p_c001                                                 IN apex_application_global.vc_arr2 DEFAULT empty_vc_arr,
+
+p_c002                                                 IN apex_application_global.vc_arr2 DEFAULT empty_vc_arr,
+
+p_c003                                                 IN apex_application_global.vc_arr2 DEFAULT empty_vc_arr,
+
+...
+
+p_c050                                                 IN apex_application_global.vc_arr2 DEFAULT empty_vc_arr,
+
+p_n001                                                 IN apex_application_global.n_arr DEFAULT empty_n_arr,
+
+p_n002                                                 IN apex_application_global.n_arr DEFAULT empty_n_arr,
+
+p_n003                                                 IN apex_application_global.n_arr DEFAULT empty_n_arr,
+
+p_n004                                                 IN apex_application_global.n_arr DEFAULT empty_n_arr,
+
+p_n005                                                 IN apex_application_global.n_arr DEFAULT empty_n_arr,
+
+p_d001                                                 IN apex_application_global.d_arr DEFAULT empty_d_arr,
+
+p_d002                                                 IN apex_application_global.d_arr DEFAULT empty_d_arr,
+
+p_d003                                                 IN apex_application_global.d_arr DEFAULT empty_d_arr,
+
+p_d004                                                 IN apex_application_global.d_arr DEFAULT empty_d_arr,
+
+p_d005                                                 IN apex_application_global.d_arr DEFAULT empty_d_arr )
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 31 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                 Chapter 15
+                                                                UPDATE_MEMBER_ATTRIBUTE Procedure Signature 1
+
+Parameters
+
+        Note
+         Any character attribute exceeding 4,000 characters is truncated to 4,000 characters.
+         Also, the number of members added is based on the number of elements in the first
+         array.
+
+ Parameter                                             Description
+p_collection_name
+                                                       The name of the collection to update. Maximum length is 255 bytes.
+p_seq                                                  Collection names are not case-sensitive and are converted to upper
+                                                       case.
+p_c001 through p_c050                                  Array of member sequence IDs to be updated. The count of the p_seq
+p_n001 through p_n005                                  array is used across all arrays.
+p_d001 through p_d005                                  Array of attribute values to be updated.
+Example                                                Array of numeric attribute values to be updated.
+                                                       Array of date attribute values to be updated.
+
+DECLARE
+      l_seq apex_application_global.vc_arr2;
+      l_carr apex_application_global.vc_arr2;
+      l_narr apex_application_global.n_arr;
+      l_darr apex_application_global.d_arr;
+
+BEGIN
+      l_seq(1) := 10;
+      l_seq(2) := 15;
+      l_carr(1) := 'Apples';
+      l_carr(2) := 'Grapes';
+      l_narr(1) := 100;
+      l_narr(2) := 150;
+      l_darr(1) := sysdate;
+      l_darr(2) := sysdate;
+
+      APEX_COLLECTION.UPDATE_MEMBERS (
+            p_collection_name => 'Groceries',
+            p_seq => l_seq,
+            p_c001 => l_carr,
+            p_n001 => l_narr,
+            p_d001 => l_darr);
+
+END;
+
+15.32 UPDATE_MEMBER_ATTRIBUTE Procedure Signature 1
+
+                       Updates the specified member attribute in the given named collection.
+                       If a collection does not exist with the specified name for the current user in the same session
+                       for the current application ID, an application error occurs.
+                       If the member specified by sequence ID p_seq does not exist, an application error occurs.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 32 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                               Chapter 15
+                                                                      UPDATE_MEMBER_ATTRIBUTE Procedure Signature 2
+
+If the attribute number specified is invalid or outside the range 1-50, an error occurs.
+Any attribute value exceeding 4,000 bytes are truncated to 4,000 bytes.
+Syntax
+
+APEX_COLLECTION.UPDATE_MEMBER_ATTRIBUTE (
+
+p_collection_name IN VARCHAR2,
+
+p_seq                                                  IN NUMBER,
+
+p_attr_number                                          IN NUMBER,
+
+p_attr_value                                           IN VARCHAR2 )
+
+Parameters
+
+Note
+
+Any character attribute exceeding 4,000 characters is truncated to 4,000 characters.
+Also, the number of members added is based on the number of elements in the first
+array.
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of the collection. Maximum length is 255 bytes. Collection
+p_seq                                                  names are case-insensitive and are converted to upper case. An error
+p_attr_number                                          is returned if this collection does not exist with the specified name of
+p_attr_value                                           the current user and in the same session.
+                                                       Sequence ID of the collection member to be updated.
+
+                                                       Attribute number of the member attribute to be updated. Valid values
+                                                       are 1 through 50. Any number outside of this range is ignored.
+                                                       Attribute value of the member attribute to be updated.
+
+Example
+
+This example updates the second member of the collection Departments, updating the first
+member attribute to Engineering.
+
+BEGIN
+      APEX_COLLECTION.UPDATE_MEMBER_ATTRIBUTE (
+            p_collection_name => 'Departments',
+                               p_seq => 2,
+                   p_attr_number => 1,
+                    p_attr_value => 'Engineering');
+
+END;
+
+15.33 UPDATE_MEMBER_ATTRIBUTE Procedure Signature 2
+
+                       Updates the specified CLOB member attribute in the given named collection.
+                       If a collection does not exist with the specified name for the current user in the same session
+                       for the current application ID, an application error occurs.
+                       If the member specified by sequence ID p_seq does not exist, an application error occurs.
+
+API Reference                                                         July 24, 2026
+G26651-03                                                             Page 33 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                            Chapter 15
+                                                                   UPDATE_MEMBER_ATTRIBUTE Procedure Signature 3
+
+If the attribute number specified is invalid or outside the valid range (currently only 1 for
+CLOB), an error occurs.
+
+Syntax
+
+APEX_COLLECTION.UPDATE_MEMBER_ATTRIBUTE (
+
+p_collection_name IN VARCHAR2,
+
+p_seq                                                  IN NUMBER,
+
+p_clob_number                                          IN NUMBER,
+
+p_clob_value                                           IN CLOB )
+
+Parameters
+
+Note
+
+Any character attribute exceeding 4,000 characters is truncated to 4,000 characters.
+Also, the number of members added is based on the number of elements in the first
+array.
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of the collection. Maximum length can be 255 bytes.
+p_seq                                                  Collection names are case-insensitive and are converted to upper
+p_clob_number                                          case. An error is returned if this collection does not exist with the
+p_clob_value                                           specified name of the current user and in the same session.
+                                                       Sequence ID of the collection member to be updated.
+
+                                                       Attribute number of the CLOB member attribute to be updated. Valid
+                                                       value is 1. Any number outside of this range is ignored.
+                                                       Attribute value of the CLOB member attribute to be updated.
+
+Example
+
+The following example sets the first and only CLOB attribute of collection sequence number 2
+in the collection named Departments to a value of Engineering.
+
+BEGIN
+      APEX_COLLECTION.UPDATE_MEMBER_ATTRIBUTE (
+            p_collection_name => 'Departments',
+                               p_seq => 2,
+                   p_clob_number => 1,
+                    p_clob_value => 'Engineering');
+
+END;
+
+15.34 UPDATE_MEMBER_ATTRIBUTE Procedure Signature 3
+
+                       Updates the specified BLOB member attribute in the given named collection.
+                       If a collection does not exist with the specified name for the current user in the same session
+                       for the current application ID, an application error occurs.
+                       If the member specified by sequence ID p_seq does not exist, an application error occurs.
+
+API Reference                                                      July 24, 2026
+G26651-03                                                          Page 34 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                            Chapter 15
+                                                                   UPDATE_MEMBER_ATTRIBUTE Procedure Signature 4
+
+If the attribute number specified is invalid or outside the valid range (currently only 1 for BLOB),
+an error occurs.
+
+Syntax
+
+APEX_COLLECTION.UPDATE_MEMBER_ATTRIBUTE (
+
+p_collection_name IN VARCHAR2,
+
+p_seq                                                  IN NUMBER,
+
+p_blob_number                                          IN NUMBER,
+
+p_blob_value                                           IN BLOB )
+
+Parameters
+
+Note
+
+Any character attribute exceeding 4,000 characters is truncated to 4,000 characters.
+Also, the number of members added is based on the number of elements in the first
+array.
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of the collection. Maximum length is 255 bytes. Collection
+p_seq                                                  names are case-insensitive and are converted to upper case. An error
+p_blob_number                                          is returned if this collection does not exist with the specified name of
+p_blob_value                                           the current user and in the same session.
+                                                       Sequence ID of the collection member to be updated.
+
+                                                       Attribute number of the BLOB member attribute to be updated. Valid
+                                                       value is 1. Any number outside of this range is ignored.
+                                                       Attribute value of the BLOB member attribute to be updated.
+
+Example
+
+The following example sets the first and only BLOB attribute of collection sequence number 2
+in the collection Departments to a value of the BLOB variable l_blob_content.
+
+BEGIN
+      APEX_COLLECTION.UPDATE_MEMBER_ATTRIBUTE (
+            p_collection_name => 'Departments',
+                               p_seq => 2,
+                   p_blob_number => 1,
+                    p_blob_value => l_blob_content);
+
+END;
+
+15.35 UPDATE_MEMBER_ATTRIBUTE Procedure Signature 4
+
+                       Updates the specified XMLTYPE member attribute in the given named collection.
+                       If a collection does not exist with the specified name for the current user in the same session
+                       for the current application ID, an application error occurs.
+                       If the member specified by sequence ID p_seq does not exist, an application error occurs.
+
+API Reference                                                      July 24, 2026
+G26651-03                                                          Page 35 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                            Chapter 15
+                                                                   UPDATE_MEMBER_ATTRIBUTE Procedure Signature 5
+
+If the attribute number specified is invalid or outside the valid range (currently only 1 for
+XMLTYPE), an error occurs.
+
+Syntax
+
+APEX_COLLECTION.UPDATE_MEMBER_ATTRIBUTE (
+
+p_collection_name IN VARCHAR2,
+
+p_seq                                                  IN NUMBER,
+
+p_xmltype_number IN NUMBER,
+
+p_xmltype_value IN SYS.XMLTYPE )
+
+Parameters
+
+Note
+
+Any character attribute exceeding 4,000 characters is truncated to 4,000 characters.
+Also, the number of members added is based on the number of elements in the first
+array.
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of the collection. Maximum length can be 255 bytes.
+p_seq                                                  Collection names are case-insensitive and are converted to upper
+p_xmltype_number                                       case. An error is returned if this collection does not exist with the
+p_xmltype_value                                        specified name of the current user and in the same session.
+                                                       Sequence ID of the collection member to be updated.
+
+                                                       Attribute number of the XMLTYPE member attribute to be updated.
+                                                       Valid value is 1. Any number outside of this range is ignored.
+                                                       Attribute value of the XMLTYPE member attribute to be updated.
+
+Example
+
+The following example sets the first and only XML attribute of collection sequence number 2 in
+the collection named Departments to a value of the XMLType variable l_xmltype_content.
+
+BEGIN
+      APEX_COLLECTION.UPDATE_MEMBER_ATTRIBUTE (
+            p_collection_name => 'Departments',
+                               p_seq => 2,
+              p_xmltype_number => 1,
+               p_xmltype_value => l_xmltype_content);
+
+END;
+
+15.36 UPDATE_MEMBER_ATTRIBUTE Procedure Signature 5
+
+                       Updates the specified NUMBER member attribute in the given named collection.
+
+                       If a collection does not exist with the specified name for the current user in the same session
+                       for the current application ID, an application error occurs.
+                       If the member specified by sequence ID p_seq does not exist, an application error occurs.
+
+API Reference                                                      July 24, 2026
+G26651-03                                                          Page 36 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                            Chapter 15
+                                                                   UPDATE_MEMBER_ATTRIBUTE Procedure Signature 6
+
+If the attribute number specified is invalid or outside the valid range (currently only 1 through 5
+for NUMBER), an error occurs.
+
+Syntax
+
+APEX_COLLECTION.UPDATE_MEMBER_ATTRIBUTE (
+
+p_collection_name IN VARCHAR2,
+
+p_seq                                                  IN NUMBER,
+
+p_attr_number IN NUMBER,
+
+p_number_value IN NUMBER )
+
+Parameters
+
+Note
+
+Any character attribute exceeding 4,000 characters is truncated to 4,000 characters.
+The number of members added is based on the number of elements in the first array.
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of the collection. Maximum length can be 255 bytes.
+p_seq                                                  Collection names are case-insensitive and are converted to upper
+p_attr_number                                          case. An error is returned if this collection does not exist with the
+p_number_value                                         specified name of the current user and in the same session.
+                                                       Sequence ID of the collection member to be updated.
+
+                                                       Attribute number of the NUMBER member attribute to be updated. Valid
+                                                       value is 1 through 5. Any number outside of this range is ignored.
+                                                       Attribute value of the NUMBER member attribute to be updated.
+
+Example
+
+The following example sets the first numeric attribute of collection sequence number 2 in the
+collection named Departments to a value of 3000.
+
+BEGIN
+      APEX_COLLECTION.UPDATE_MEMBER_ATTRIBUTE (
+            p_collection_name => 'Departments',
+                               p_seq => 2,
+                   p_attr_number => 1,
+                 p_number_value => 3000);
+
+END;
+
+15.37 UPDATE_MEMBER_ATTRIBUTE Procedure Signature 6
+
+                       Updates the specified DATE member attribute in the given named collection.
+
+                       If a collection does not exist with the specified name for the current user in the same session
+                       for the current application ID, an application error occurs.
+
+                       If the member specified by sequence ID p_seq does not exist, an application error occurs.
+
+                       If the attribute number specified is invalid or outside the valid range (currently only 1 through 5
+                       for DATE), an error occurs.
+
+API Reference                                                      July 24, 2026
+G26651-03                                                          Page 37 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                            Chapter 15
+                                                                   UPDATE_MEMBER_ATTRIBUTE Procedure Signature 6
+
+Syntax
+
+APEX_COLLECTION.UPDATE_MEMBER_ATTRIBUTE (
+
+p_collection_name IN VARCHAR2,
+
+p_seq                                                  IN NUMBER,
+
+p_attr_number                                          IN NUMBER,
+
+p_date_value                                           IN DATE )
+
+Parameters
+
+Note
+
+Any character attribute exceeding 4,000 characters is truncated to 4,000 characters.
+Also, the number of members added is based on the number of elements in the first
+array.
+
+Parameter                                              Description
+p_collection_name
+                                                       The name of the collection. Maximum length can be 255 bytes.
+p_seq                                                  Collection names are case-insensitive and are converted to upper
+p_attr_number                                          case. An error is returned if this collection does not exist with the
+p_date_value                                           specified name of the current user and in the same session.
+                                                       Sequence ID of the collection member to be updated.
+
+                                                       Attribute number of the DATE member attribute to be updated. Valid
+                                                       value is 1 through 5. Any number outside of this range is ignored.
+                                                       Attribute value of the DATE member attribute to be updated.
+
+Example
+
+This example updates the first date attribute of the second collection member in collection
+named Departments and sets it to the value of sysdate.
+
+BEGIN
+      APEX_COLLECTION.UPDATE_MEMBER_ATTRIBUTE (
+            p_collection_name => 'Departments',
+                               p_seq => 2,
+                   p_attr_number => 1,
+                    p_date_value => sysdate );
+
+END;
+
+API Reference                                                      July 24, 2026
+G26651-03                                                          Page 38 of 38
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+16

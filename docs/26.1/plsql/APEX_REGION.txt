@@ -1,0 +1,966 @@
+# APEX_REGION (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 57130-58094)
+
+APEX_REGION
+
+                       The APEX_REGION package is the public API for handling regions.
+
+                       � CLEAR Procedure Signature 1
+                       � CLEAR Procedure Signature 2
+                       � EXPORT_DATA Function
+                       � GET_CACHE_DATE Function
+                       � GET_ID Function Signature 1
+                       � GET_ID Function Signature 2
+                       � IS_READ_ONLY Function
+                       � OPEN_QUERY_CONTEXT Function Signature 1
+                       � OPEN_QUERY_CONTEXT Function Signature 2
+                       � PURGE_CACHE Procedure Signature 1
+                       � PURGE_CACHE Procedure Signature 2
+                       � RESET Procedure Signature 1
+                       � RESET Procedure Signature 2
+
+51.1 CLEAR Procedure Signature 1
+
+                       This procedure clears region settings (classic report and interactive report pagination,
+                       interactive report report settings).
+
+                       For interactive report regions, this procedure clears the following settings: control break,
+                       aggregate, flashback, chart, number of rows to display, filter, highlight, computation, and group
+                       by. However, it does not clear the following: display column list, sorting, report preference (such
+                       as view mode, display nulls in detail view, expand/collapse of report settings).
+
+                       Syntax
+
+APEX_REGION.CLEAR (
+
+p_application_id IN NUMBER DEFAULT apex_application.g_flow_id,
+
+p_page_id                                              IN NUMBER,
+
+p_region_id                                            IN NUMBER,
+
+p_component_id IN NUMBER DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_application_id                                       ID of the application where the region is on.
+p_page_id                                              ID of the page where the region is on.
+p_region_id                                            ID of a specific region.
+
+API Reference                                                                                         July 24, 2026
+G26651-03                                                                                             Page 1 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                      Chapter 51
+                                                                             CLEAR Procedure Signature 2
+
+Parameter                                              Description
+p_component_id
+                                                       Region component ID to use. For interactive reports, this is the saved
+                                                       report ID within the current application page.
+
+Example
+This example clears the given saved report on application 100, page 1.
+
+BEGIN
+
+      APEX_REGION.CLEAR (
+
+       p_application_id => 100,
+
+       p_page_id                                       => 1,
+
+       p_region_id                                     => 2505704029884282,
+
+       p_component_id => 880629800374638220);
+
+END;
+
+51.2 CLEAR Procedure Signature 2
+
+                       This procedure clears region settings (classic report and interactive report pagination,
+                       interactive report report settings) using the region static ID.
+
+                       For interactive report regions, this procedure clears the following settings: control break,
+                       aggregate, flashback, chart, number of rows to display, filter, highlight, computation, and group
+                       by. However, it does not clear the following: display column list, sorting, report preference (such
+                       as view mode, display nulls in detail view, expand/collapse of report settings).
+
+                       Syntax
+
+APEX_REGION.CLEAR (
+
+p_application_id IN NUMBER DEFAULT apex_application.g_flow_id,
+
+p_page_id                                              IN NUMBER,
+
+p_static_id                                            IN VARCHAR2,
+
+p_component_id IN NUMBER DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+p_page_id                                              ID of the application that the region is on.
+p_static_id                                            ID of the page that the region is on.
+p_component_id                                         Static ID of a specific region.
+                                                       Region component ID to use. For interactive reports, this is the saved
+                                                       report ID within the current application page.
+
+Example
+This example clears the given saved report on application 100, page 1.
+
+BEGIN
+
+      APEX_REGION.CLEAR (
+
+       p_application_id => 100,
+
+       p_page_id                                       => 1,
+
+API Reference                                                                July 24, 2026
+G26651-03                                                                    Page 2 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                        Chapter 51
+                                                                                      EXPORT_DATA Function
+
+        p_static_id                                    => 'group-region',
+
+        p_component_id => 880629800374638220);
+
+END;
+
+51.3 EXPORT_DATA Function
+
+                       This function exports current region data.
+
+        Note
+        The APEX_REGION.EXPORT_DATA function only supports native regions at this time.
+
+Syntax
+
+APEX_REGION.EXPORT_DATA (
+
+p_format                                               IN apex_data_export.t_format,
+
+--
+
+p_page_id                                              IN NUMBER,
+
+p_region_id                                            IN NUMBER,
+
+p_component_id                                         IN NUMBER                          DEFAULT
+                                                                                          DEFAULT
+NULL,                                                                                     DEFAULT
+                                                                                          DEFAULT
+p_view_mode                                            IN VARCHAR2                        DEFAULT
+                                                                                          DEFAULT
+NULL,                                                                                     DEFAULT
+                                                                                          DEFAULT
+--                                                                                        DEFAULT
+                                                                                          DEFAULT
+p_additional_filters                                   IN apex_exec.t_filters             DEFAULT
+                                                                                          DEFAULT
+apex_exec.c_empty_filters,
+
+--
+
+p_max_rows                                             IN NUMBER
+
+NULL,
+
+p_parent_column_values                                 IN apex_exec.t_parameters
+
+apex_exec.c_empty_parameters,
+
+--
+
+p_as_clob                                              IN BOOLEAN
+
+FALSE,
+
+--
+
+p_file_name                                            IN VARCHAR2
+
+NULL,
+
+p_page_size                                            IN apex_data_export.t_size
+
+apex_data_export.c_size_letter,
+
+p_orientation                                          IN apex_data_export.t_orientation
+
+apex_data_export.c_orientation_portrait,
+
+p_data_only                                            IN BOOLEAN
+
+FALSE,
+
+--
+
+p_pdf_accessible                                       IN BOOLEAN
+
+FALSE,
+
+--
+
+p_xml_include_declaration IN BOOLEAN
+
+TRUE )
+
+RETURN apex_data_export.t_export;
+
+API Reference                                                                             July 24, 2026
+G26651-03                                                                                 Page 3 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                          Chapter 51
+                                                                        EXPORT_DATA Function
+
+Parameters
+
+Parameter                                              Description
+p_format
+p_page_id                                              Export format. Use constants
+p_region_id                                            apex_data_export.c_format_*
+p_component_id
+                                                       ID of the page where the region is on.
+p_view_mode
+                                                       Open the query context for this specific region ID.
+p_additional_filters
+p_max_rows                                             Region component ID to use.
+p_parent_column_values                                 For Interactive Reports and Interactive Grids, this is
+                                                       the saved report ID within the current application
+p_as_clob                                              page. For JET charts, use the chart series ID.
+
+p_file_name                                            The view type available for the report. The values
+p_page_size                                            can be:
+p_orientation                                          � APEX_IR.C_VIEW_REPORT
+p_data_only                                            � APEX_IR.C_VIEW_GROUPBY
+p_pdf_accessible                                       � APEX_IR.C_VIEW_PIVOT
+p_xml_include_declaration                              If p_view is null, it gets the view currently used by
+                                                       the report. If p_view passed which doesn't exist for
+                                                       the current report, an error raises.
+
+                                                       Additional filters to apply to the context.
+
+                                                       Maximum amount of rows to get. Default unlimited.
+
+                                                       For the detail grid in an Interactive Grid Master-
+                                                       Detail relationship. Use this parameter to pass in
+                                                       values for the master-detail parent column(s).
+                                                       Returns the export contents as a CLOB. Does not
+                                                       work with binary export formats such as PDF and
+                                                       XLSX. Default to false.
+
+                                                       Defines the filename of the export.
+
+                                                       Page size of the report. Use constants
+                                                       apex_data_export.c_size_*
+
+                                                       Orientation of the report page. Use constants
+                                                       apex_data_export.c_orientation_*
+
+                                                       Whether to include column groups, control breaks,
+                                                       aggregates, and highlights.
+                                                       Whether to include accessibility tags in the PDF.
+                                                       Defaults to false.
+
+                                                       Whether to include the XML declaration. Defaults to
+                                                       true.
+
+Returns
+The export file contents, mime_type, and optionally the report layout.
+
+Examples
+Get the export result for a given saved interactive report on page 3 and download as HTML.
+
+DECLARE            apex_data_export.t_export;
+      l_export     number;
+      l_region_id
+
+BEGIN
+
+SELECT region_id into l_region_id
+
+API Reference                                                           July 24, 2026
+G26651-03                                                               Page 4 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                   Chapter 51
+                                                                                           GET_CACHE_DATE Function
+
+ FROM apex_application_page_regions
+WHERE application_id = 100
+
+   and page_id = 3
+   and static_id = 'classic_report';
+
+l_export := apex_region.export_data (
+
+         p_format                                      => apex_data_export.c_format_html,
+
+         p_page_id                                     => 3,
+
+         p_region_id => l_region_id );
+
+      apex_data_export.download( l_export );
+END;
+
+51.4 GET_CACHE_DATE Function
+
+                       This function returns the date and time a specified region was cached either for the user
+                       issuing the call, or for all users if the page was not set to be cached by user.
+
+                       Syntax
+
+APEX_REGION.GET_CACHE_DATE (
+
+p_application_id IN                                           NUMBER,
+                                                              NUMBER,
+p_page_id                                              IN     VARCHAR2 )
+
+p_static_id                                            IN
+
+RETURN DATE;
+
+Parameters
+
+Parameter                                                                 Description
+p_application_id                                                          The identification number (ID) of the application.
+p_page_id                                                                 The page number (ID).
+p_static_id                                                               The region Static ID.
+
+Examples
+
+The following example demonstrates how to use the GET_CACHE_DATE function to retrieve the
+cache date and time for the region Static ID cached-region on page 13 of the currently
+executing application. If the region is cached, the cache date and time is output using the HTP
+package. The region could have been cached either by the user issuing the call, or for all users
+if the page was not to be cached by user.
+
+declare
+
+l_cache_date date;
+
+begin
+
+l_cache_date := apex_region.get_cache_date (
+
+                                                       p_application_id => :APP_ID,
+
+                                                       p_page_id          => 13,
+
+                                                       p_static_id        => 'cached-region');
+
+if l_cache_date is not null then
+
+         sys.htp.p('Cached on ' || to_char(l_cache_date, 'DD-MON-YY
+
+HH24:MI:SS'));
+
+API Reference                                                                                   July 24, 2026
+G26651-03                                                                                       Page 5 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                            Chapter 51
+                                                                                     GET_ID Function Signature 1
+
+      end if;
+end;
+
+51.5 GET_ID Function Signature 1
+
+                       This function gets the region ID based on the dom static ID.
+                       Syntax
+
+APEX_REGION.GET_ID (
+
+p_application_id IN NUMBER DEFAULT apex.g_flow_id,
+
+p_page_id                                              IN NUMBER,
+
+p_dom_static_id IN VARCHAR2 )
+
+RETURN NUMBER;
+
+Parameters
+
+Parameter                                                          Description
+p_application_id                                                   ID of the application which contains the region.
+p_page_id                                                          ID of the page which contains the region.
+p_dom_static_id                                                    Static ID of the desired region.
+
+                                                                                     Note
+
+                                                                                     The p_dom_static_id is not
+                                                                                     unique and raises a
+                                                                                     too_many_rows error if
+                                                                                     multiple regions exist with the
+                                                                                     same static ID.
+
+Example
+
+The following example gets the ID of the region whose static ID is "my_apex_region" in app
+100 on page 1.
+
+DECLARE
+
+l_region_id apex_application_page_regions.region_id%type;
+
+BEGIN
+
+...
+
+l_region_id := apex_region.get_id(
+
+                                                       p_application_id => 100,
+
+                                                       p_page_id   => 1,
+
+                                                       p_dom_static_id => 'my_apex_region' );
+
+...
+
+END;
+
+51.6 GET_ID Function Signature 2
+
+                       This function gets the region ID based on the region name.
+
+API Reference                                                                                                        July 24, 2026
+G26651-03                                                                                                            Page 6 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                       Chapter 51
+                                                                                    IS_READ_ONLY Function
+
+Syntax
+
+APEX_REGION.GET_ID (
+
+p_application_id IN NUMBER DEFAULT apex.g_flow_id,
+
+p_page_id                                              IN NUMBER,
+
+p_name                                                 IN VARCHAR2 )
+
+RETURN NUMBER;
+
+Parameters
+
+Parameter                                                          Description
+p_application_id                                                   ID of the application which contains the region.
+p_page_id                                                          ID of the page which contains the region.
+p_name                                                             Name of the desired region.
+
+                                                                                    Note
+
+                                                                                    The p_name is not unique and
+                                                                                    raises a too_many_rows error
+                                                                                    if multiple regions exist with the
+                                                                                    same region name.
+
+Example
+The following example gets the ID of the region whose name is "Test" in app 100 on page 1.
+
+DECLARE
+
+l_region_id apex_application_page_regions.region_id%type;
+
+BEGIN
+
+...
+
+l_region_id := apex_region.get_id(
+
+                                                       p_application_id => 100,
+
+                                                       p_page_id      => 1,
+
+                                                       p_name         => 'Test' );
+
+...
+
+END;
+
+51.7 IS_READ_ONLY Function
+
+                       This function returns TRUE if the current region is rendered read-only and FALSE if not. If the
+                       function is called from a context where no region is currently processed, it returns NULL. For
+                       example, you can use this function in conditions of a region or its underlying items and buttons.
+
+                       Syntax
+
+FUNCTION IS_READ_ONLY
+RETURN BOOLEAN;
+
+API Reference                                                                                                        July 24, 2026
+G26651-03                                                                                                            Page 7 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                  Chapter 51
+                                                                   OPEN_QUERY_CONTEXT Function Signature 1
+
+                       Parameters
+                       None.
+                       Example
+                       This example returns TRUE if the current region is rendered read-only and FALSE if the region is
+                       not rendered read-only.
+
+                       RETURN APEX_REGION.IS_READ_ONLY;
+
+51.8 OPEN_QUERY_CONTEXT Function Signature 1
+
+                       This function returns an APEX_EXEC query context returning current region data.
+                       This function runs within an autonomous transaction.
+
+    Note
+    Only native regions are supported at this time.
+
+Syntax
+
+APEX_REGION.OPEN_QUERY_CONTEXT (
+
+p_page_id                                              IN NUMBER,
+
+p_region_id                                            IN NUMBER,
+
+p_component_id                                         IN NUMBER DEFAULT NULL,
+
+p_view_mode                                            IN VARCHAR2 DEFAULT NULL,
+
+--
+
+p_additional_filters IN apex_exec.t_filters DEFAULT
+
+apex_exec.c_empty_filters,
+
+p_outer_sql                                            IN VARCHAR2 DEFAULT NULL,
+
+--
+
+p_first_row                                            IN NUMBER DEFAULT NULL,
+
+p_max_rows                                             IN NUMBER DEFAULT NULL,
+
+p_total_row_count                                      IN BOOLEAN DEFAULT FALSE,
+
+p_total_row_count_limit IN NUMBER DEFAULT NULL,
+
+--
+
+p_parent_column_values IN apex_exec.t_parameters DEFAULT
+
+apex_exec.c_empty_parameters )
+
+RETURN apex_exec.t_context;
+
+Parameters
+
+Parameter                                              Description
+p_page_id
+p_region_id                                            ID of the page where the region is on.
+p_component_id                                         ID of a specific region to open the query context for.
+                                                       Region component ID to use. For interactive reports and interactive
+                                                       grids this is the saved report ID within the current application page.
+                                                       For JET charts, use the chart series ID.
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 8 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                      Chapter 51
+                                                       OPEN_QUERY_CONTEXT Function Signature 2
+
+Parameter                                              Description
+p_view_mode
+                                                       The view type available for the report. The values can be
+p_additional_filters                                   APEX_IR.C_VIEW_REPORT, APEX_IR.C_VIEW_GROUPBY, or
+p_outer_sql                                            APEX_IR.C_VIEW_PIVOT.
+
+p_first_row                                            If p_view is null, it gets the view currently used by the report. If the
+p_max_rows                                             p_view passed does not exist for the current report, an error is
+p_total_row_count                                      raised.
+
+p_total_row_count_limit                                Additional filters to apply to the context.
+p_parent_column_values
+                                                       Outer SQL query to wrap around the region SQL query. Use
+                                                       #APEX$SOURCE_DATA# to reference the region source
+                                                       (apex_exec.c_data_source_table_name constant).
+
+                                                       If this parameter is specified, then the p_columns parameter has no
+                                                       effect. This parameter overrides CHART, GROUP BY or PIVOT views
+                                                       for interactive reports.
+
+                                                       Row index to start fetching at. Defaults to 1.
+
+                                                       Maximum amount of rows to get. Default unlimited.
+
+                                                       Determines whether to retrieve the total row count. Default FALSE. If
+                                                       used together with the p_outer_sql parameter, you must add the
+                                                       APEX$TOTAL_ROW_COUNT column to the select list of the
+                                                       p_outer_sql query.
+
+                                                       Upper limit of rows to process the query on. This applies to
+                                                       interactive report aggregations or ordering. Default is no limit.
+
+                                                       For the detail grid in an Interactive Grid Master-Detail relationship.
+                                                       Use this parameter to pass in values for the master-detail parent
+                                                       column(s).
+
+Example
+
+The following example demonstrates how to get the query context for a given saved interactive
+report on page 1 and print the data out as JSON.
+
+DECLARE
+           l_context apex_exec.t_context;
+
+BEGIN
+           l_context := apex_region.open_query_context (
+                      p_page_id => 1,
+                      p_region_id => 2505704029884282,
+                      p_component_id => 880629800374638220 );
+
+      apex_json.open_object;
+      apex_json.write_context( 'data', l_context );
+      apex_json.close_object;
+
+END;
+
+51.9 OPEN_QUERY_CONTEXT Function Signature 2
+
+                       This function returns an APEX_EXEC query context returning current region data.
+                       This function runs within an autonomous transaction.
+
+API Reference                                                                                           July 24, 2026
+G26651-03                                                                                               Page 9 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                          Chapter 51
+                                                           OPEN_QUERY_CONTEXT Function Signature 2
+
+        Note
+        Only native regions are supported at this time.
+
+Syntax
+
+APEX_REGION.OPEN_QUERY_CONTEXT (
+
+p_page_id                                              IN  NUMBER,
+                                                           VARCHAR2,
+p_static_id                                            IN  NUMBER
+                                                           VARCHAR2
+p_component_id                                         IN  apex_exec.t_filters     DEFAULT
+                                                           VARCHAR2                DEFAULT
+NULL,                                                      NUMBER                  DEFAULT
+                                                           NUMBER                  DEFAULT
+p_view_mode                                            IN  BOOLEAN                 DEFAULT
+                                                           NUMBER                  DEFAULT
+NULL,                                                      apex_exec.t_parameters  DEFAULT
+                                                                                   DEFAULT
+p_additional_filters IN                                                            DEFAULT
+
+apex_exec.c_empty_filters,
+
+p_outer_sql                                            IN
+
+NULL,
+
+p_first_row                                            IN
+
+NULL,
+
+p_max_rows                                             IN
+
+NULL,
+
+p_total_row_count                                      IN
+
+FALSE,
+
+p_total_row_count_limit IN
+
+NULL,
+
+p_parent_column_values IN
+
+apex_exec.c_empty_parameters )
+
+RETURN apex_exec.t_context;
+
+Parameters
+
+Parameter                                              Description
+p_page_id
+p_static_id                                            ID of the page where the region is on.
+p_component_id
+p_view_mode                                            Static ID of a specific region to open the query context for.
+
+p_additional_filters                                   Region component ID to use. For interactive reports and interactive
+p_outer_sql                                            grids this is the saved report ID within the current application page.
+                                                       For JET charts, use the chart series ID.
+p_first_row                                            The view type available for the report. The values can be
+p_max_rows                                             APEX_IR.C_VIEW_REPORT, APEX_IR.C_VIEW_GROUPBY, or
+                                                       APEX_IR.C_VIEW_PIVOT.
+
+                                                       If p_view is null, it gets the view currently used by the report. If the
+                                                       p_view passed does not exist for the current report, an error is
+                                                       raised.
+
+                                                       Additional filters to apply to the context.
+
+                                                       Outer SQL query to wrap around the region SQL query. Use
+                                                       #APEX$SOURCE_DATA# to reference the region source
+                                                       (apex_exec.c_data_source_table_name constant).
+
+                                                       If this parameter is specified, then the p_columns parameter has no
+                                                       effect. This parameter overrides CHART, GROUP BY or PIVOT views
+                                                       for interactive reports.
+
+                                                       Row index to start fetching at. Defaults to 1.
+
+                                                       Maximum amount of rows to get. Default unlimited.
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 10 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                     Chapter 51
+                                                                                PURGE_CACHE Procedure Signature 1
+
+Parameter                                              Description
+p_total_row_count
+                                                       Determines whether to retrieve the total row count. Default FALSE. If
+p_total_row_count_limit                                used together with the p_outer_sql parameter, you must add the
+p_parent_column_values                                 APEX$TOTAL_ROW_COUNT column to the select list of the
+                                                       p_outer_sql query.
+
+                                                       Upper limit of rows to process the query on. This applies to
+                                                       interactive report aggregations or ordering. Default is no limit.
+
+                                                       For the detail grid in an Interactive Grid Master-Detail relationship.
+                                                       Use this parameter to pass in values for the master-detail parent
+                                                       column(s).
+
+Example
+
+The following example demonstrates how to get the query context for a given saved interactive
+report on page 1 and prints the data out as JSON.
+
+DECLARE
+
+       l_context apex_exec.t_context;
+
+BEGIN
+
+l_context := apex_region.open_query_context (
+
+                                                       p_page_id  => 1,
+
+                                                       p_static_id => 'group-region',
+
+                                                       p_component_id => 2505704029884282);
+
+   apex_json.open_object;
+   apex_json.write_context('data', l_context );
+   apex_json.close_object;
+END;
+
+51.10 PURGE_CACHE Procedure Signature 1
+
+                       This procedure purges the region cache of the specified application, page, and region.
+                       Syntax
+
+APEX_REGION.PURGE_CACHE (
+
+p_application_id                                       IN NUMBER DEFAULT apex.g_flow_id,
+
+p_page_id                                              IN NUMBER DEFAULT NULL,
+
+p_region_id                                            IN NUMBER DEFAULT NULL,
+
+p_current_session_only IN BOOLEAN DEFAULT FALSE );
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+p_page_id                                              ID of the application where the region caches should be purged.
+p_region_id                                            Defaults to the current application.
+                                                       ID of the page where the region caches should be purged. If no value
+                                                       is specified (default), all regions of the application are purged.
+                                                       ID of a specific region on a page. If no value is specified, all regions of
+                                                       the specified page are purged.
+
+API Reference                                                                                July 24, 2026
+G26651-03                                                                                    Page 11 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                    Chapter 51
+                                                                               PURGE_CACHE Procedure Signature 2
+
+Parameter                                              Description
+p_current_session_only
+                                                       Specify true if you only want to purge entries that where saved for the
+                                                       current session. Defaults to FALSE.
+
+Example
+This example purges session specific region cache for the whole application.
+
+BEGIN
+       APEX_REGION.PURGE_CACHE (
+              p_current_session_only => true );
+
+END;
+
+51.11 PURGE_CACHE Procedure Signature 2
+
+                       This procedure purges the region cache of the specified application, page, and region Static
+                       ID.
+
+                       Syntax
+
+APEX_REGION.PURGE_CACHE (
+
+      p_application_id                                 IN  NUMBER    DEFAULT
+
+apex_application.g_flow_id,                                NUMBER    DEFAULT NULL,
+                                                           VARCHAR2  DEFAULT NULL,
+      p_page_id                                        IN  BOOLEAN   DEFAULT FALSE );
+
+      p_static_id                                      IN
+
+      p_current_session_only IN
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+p_page_id                                              ID of the application where the region caches should be purged.
+p_static_id                                            Defaults to the current application.
+p_current_session_only
+                                                       ID of the page where the region caches should be purged. If no value
+                                                       is specified (default), all regions of the application are purged.
+
+                                                       Static ID of a specific region on a page. If no value is specified
+                                                       (default), all regions of the application are purged.
+
+                                                       Specify true if you only want to purge entries that where saved for the
+                                                       current session. Defaults to FALSE.
+
+Example
+This example purges session-specific region cache.
+
+BEGIN
+
+      APEX_REGION.PURGE_CACHE (
+
+       p_page_id                                           => 1,
+
+       p_static_id                                         => 'group-region',
+
+       p_current_session_only => true );
+
+END;
+
+API Reference                                                                          July 24, 2026
+G26651-03                                                                              Page 12 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                      Chapter 51
+                                                                             RESET Procedure Signature 1
+
+51.12 RESET Procedure Signature 1
+
+                       This procedure resets region settings (such as classic report and interactive report pagination,
+                       classic report sort, interactive report and interactive grid report settings, and Region Display
+                       Selector tab selection). Only report and Region Display Selector regions are supported at this
+                       time.
+
+                       Syntax
+
+APEX_REGION.RESET (
+
+p_application_id IN NUMBER DEFAULT apex_application.g_flow_id,
+
+p_page_id                                              IN NUMBER,
+
+p_region_id                                            IN NUMBER,
+
+p_component_id IN NUMBER DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+p_page_id                                              ID of the application where the region is on.
+p_region_id                                            ID of the page where the region is on.
+p_component_id                                         ID of a specific region.
+                                                       Region component ID to use. For interactive reports and interactive
+                                                       grids, this is the saved report ID within the current application page.
+
+Example
+This example resets the given saved report on application 100, page 1.
+
+BEGIN
+
+      APEX_REGION.RESET (
+
+       p_application_id => 100,
+
+       p_page_id                                       => 1,
+
+       p_region_id                                     => 2505704029884282,
+
+       p_component_id => 880629800374638220);
+
+END;
+
+51.13 RESET Procedure Signature 2
+
+                       This procedure resets region settings (such as classic report and interactive report pagination,
+                       classic report sort, interactive report and interactive grid report settings, and Region Display
+                       Selector tab selection) using static ID. Only report regions are supported at this time.
+
+                       Syntax
+
+APEX_REGION.RESET (
+
+      p_application_id IN NUMBER DEFAULT apex_application.g_flow_id,
+
+      p_page_id                                        IN NUMBER,
+
+      p_static_id                                      IN VARCHAR2,
+
+      p_component_id IN NUMBER DEFAULT NULL );
+
+API Reference                                                                July 24, 2026
+G26651-03                                                                    Page 13 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                    Chapter 51
+                                                                           RESET Procedure Signature 2
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+p_page_id                                              ID of the application where the region is on.
+p_static_id                                            ID of the page where the region is on.
+p_component_id                                         Static ID of a specific region.
+                                                       Region component ID to use. For interactive reports and interactive
+                                                       grids, this is the saved report ID within the current application page.
+
+Example
+This example resets the given saved report on application 100, page 1.
+
+BEGIN
+
+      APEX_REGION.RESET (
+
+       p_application_id => 100,
+
+       p_page_id                                       => 1,
+
+       p_static_id                                     => 'group-region',
+
+       p_component_id => 880629800374638220);
+
+END;
+
+API Reference                                                              July 24, 2026
+G26651-03                                                                  Page 14 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+52

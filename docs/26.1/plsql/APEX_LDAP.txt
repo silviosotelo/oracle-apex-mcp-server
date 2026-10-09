@@ -1,0 +1,601 @@
+# APEX_LDAP (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 47508-48107)
+
+APEX_LDAP
+
+                       You can use APEX_LDAP to perform various operations related to Lightweight Directory Access
+                       Protocol (LDAP) authentication.
+                       � AUTHENTICATE Function
+                       � GET_ALL_USER_ATTRIBUTES Procedure
+                       � GET_USER_ATTRIBUTES Procedure
+                       � IS_MEMBER Function
+                       � MEMBER_OF Function
+                       � MEMBER_OF2 Function
+                       � SEARCH Function
+
+43.1 AUTHENTICATE Function
+
+                       This function returns a boolean TRUE if the user name and password can be used to perform a
+                       SIMPLE_BIND_S call using the provided search base, host, and port.
+
+                       Syntax
+
+APEX_LDAP.AUTHENTICATE (
+
+p_username IN VARCHAR2 DEFAULT NULL,
+
+p_password IN VARCHAR2 DEFAULT NULL,
+
+p_search_base IN VARCHAR2,
+
+p_host           IN VARCHAR2,
+
+p_port           IN VARCHAR2 DEFAULT 389,
+
+p_use_ssl        IN VARCHAR2 DEFAULT 'N' )
+
+RETURN BOOLEAN;
+
+Parameters
+
+Parameter        Description
+p_username
+p_password       Login name of the user.
+p_search_base    Password for p_username.
+p_host           LDAP search base, for example, dc=users,dc=my,dc=org.
+p_port           LDAP server host name.
+p_use_ssl        LDAP server port number.
+                 (Default) Set to N to not use SSL.
+                 Set to Y to use SSL in bind to LDAP server.
+                 Set to A to use SSL with one-way authentication (requires LDAP server
+                 certificate configured in an Oracle wallet).
+
+API Reference                                          July 24, 2026
+G26651-03                                                Page 1 of 9
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                              Chapter 43
+                                                                     GET_ALL_USER_ATTRIBUTES Procedure
+
+Example
+
+The following example demostrates how to use the APEX_LDAP.AUTHENTICATE function to verify
+user credentials against an LDAP Server.
+
+IF APEX_LDAP.AUTHENTICATE(
+      p_username => 'firstname.lastname',
+      p_password => 'abcdef',
+      p_search_base => 'cn=user,l=amer,dc=example,dc=com',
+      p_host => 'our_ldap_sever.example.com',
+      p_port => '636',
+      p_use_ssl => 'A') THEN
+
+      dbms_output.put_line('authenticated');
+ELSE
+
+      dbms_output.put_line('authentication failed');
+END IF;
+
+43.2 GET_ALL_USER_ATTRIBUTES Procedure
+
+                       This procedure returns two OUT arrays of user_attribute names and values for the user
+                       name designated by p_username (with password if required) using the provided auth base,
+                       host, and port.
+
+                       Syntax
+
+APEX_LDAP.GET_ALL_USER_ATTRIBUTES (
+
+p_username                                             IN VARCHAR2 DEFAULT NULL,
+
+p_pass                                                 IN VARCHAR2 DEFAULT NULL,
+
+p_auth_base                                            IN VARCHAR2 DEFAULT NULL,
+
+p_host                                                 IN VARCHAR2,
+
+p_port                                                 IN VARCHAR2 DEFAULT 636,
+
+p_use_ssl                                              IN VARCHAR2 DEFAULT 'N',
+
+p_attributes                                           OUT apex_application_global.vc_arr2,
+
+p_attribute_values                                     OUT apex_application_global.vc_arr2,
+
+p_credential_static_id IN VARCHAR2 DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_username
+p_pass                                                 Login name of the user.
+p_auth_base                                            Password for p_username.
+p_host                                                 LDAP search base, for example, dc=users,dc=my,dc=org.
+p_port                                                 LDAP server host name.
+p_use_ssl                                              LDAP server port number.
+                                                       (Default) Set to N to not use SSL.
+p_attributes                                           Set to Y to use SSL in bind to LDAP server.
+                                                       Set to A to use SSL with one-way authentication (requires LDAP server
+                                                       certificate configured in an Oracle wallet).
+                                                       An array of attribute names returned.
+
+API Reference                                                                                July 24, 2026
+G26651-03                                                                                      Page 2 of 9
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                       Chapter 43
+                                                                     GET_USER_ATTRIBUTES Procedure
+
+Parameter                                              Description
+
+p_attribute_values                                     An array of values returned for each corresponding attribute name returned
+                                                       in p_attributes.
+
+p_credential_static_i The credential static ID (can be NULL for anonymous or username/pass
+
+d                                                      binds).
+
+                                                       If it is not NULL and the credential could not be found, then raises the error
+                                                       no_data_found.
+
+Example
+
+The following example demonstrates how to use the APEX_LDAP.GET_ALL_USER_ATTRIBUTES
+procedure to retrieve all attribute value's associated to a user.
+
+DECLARE
+      L_ATTRIBUTES apex_application_global.vc_arr2;
+      L_ATTRIBUTE_VALUES apex_application_global.vc_arr2;
+
+BEGIN
+      APEX_LDAP.GET_ALL_USER_ATTRIBUTES(
+            p_username => 'firstname.lastname',
+            p_pass => 'abcdef',
+            p_auth_base => 'cn=user,l=amer,dc=example,dc=com',
+            p_host => 'our_ldap_sever.example.com',
+            p_port => '636',
+            p_user_ssl => 'A',
+            p_attributes => L_ATTRIBUTES,
+            p_attribute_values => L_ATTRIBUTE_VALUES);
+
+       FOR i IN L_ATTRIBUTES.FIRST..L_ATTRIBUTES.LAST LOOP
+              htp.p('attribute name: '||L_ATTRIBUTES(i));
+              htp.p('attribute value: '||L_ATTRIBUTE_VALUES(i));
+
+       END LOOP;
+END;
+
+43.3 GET_USER_ATTRIBUTES Procedure
+
+                       This procedure returns an OUT array of user_attribute values for the user name designated
+                       by p_username (with password if required) corresponding to the attribute names passed in
+                       p_attributes using the provided auth base, host, and port.
+
+                       Syntax
+
+APEX_LDAP.GET_USER_ATTRIBUTES (
+
+   p_username                                                   IN   VARCHAR2 DEFAULT NULL,
+                                                                     VARCHAR2 DEFAULT NULL,
+   p_pass                                                       IN   VARCHAR2,
+                                                                     VARCHAR2,
+   p_auth_base                                                  IN   VARCHAR2 DEFAULT 389,
+                                                                     VARCHAR2 DEFAULT 'N',
+   p_host                                                       IN   apex_application_global.vc_arr2,
+                                                                     apex_application_global.vc_arr2,
+   p_port                                                       IN   VARCHAR2 DEFAULT NULL );
+
+   p_use_ssl                                                    IN
+
+   p_attributes                                                 IN
+
+   p_attribute_values                                           OUT
+
+   p_credential_static_id IN
+
+API Reference                                                                                          July 24, 2026
+G26651-03                                                                                                Page 3 of 9
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                   Chapter 43
+                                                                    IS_MEMBER Function
+
+Parameters
+
+Parameter                                              Description
+
+p_username                                             Login name of the user.
+p_pass                                                 Password for p_username.
+p_auth_base                                            LDAP search base, for example, dc=users,dc=my,dc=org.
+p_host                                                 LDAP server host name.
+p_port                                                 LDAP server port number.
+p_use_ssl                                              (Default) Set to N to not use SSL.
+                                                       Set to Y to use SSL in bind to LDAP server.
+                                                       Set to A to use SSL with one-way authentication (requires LDAP server
+                                                       certificate configured in an Oracle wallet).
+
+p_attributes                                           An array of attribute names for which values are to be returned.
+
+p_attribute_values                                     An array of values returned for each corresponding attribute name in
+                                                       p_attributes.
+
+p_credential_static_i The credential static ID (can be NULL for anonymous or username/pass
+
+d                                                      binds).
+
+                                                       If it is not NULL and the credential could not be found, then raises the error
+                                                       no_data_found.
+
+Example
+
+The following example demonstrates how to use the APEX_LDAP.GET_USER_ATTRIBUTES
+procedure to retrieve a specific attribute value associated to a user.
+
+DECLARE
+      L_ATTRIBUTES apex_application_global.vc_arr2;
+      L_ATTRIBUTE_VALUES apex_application_global.vc_arr2;
+
+BEGIN
+      L_ATTRIBUTES(1) := 'xxxxxxxxxx'; /* name of the employee number attribute
+
+*/
+      APEX_LDAP.GET_USER_ATTRIBUTES(
+            p_username => 'firstname.lastname',
+            p_pass => NULL,
+            p_auth_base => 'cn=user,l=amer,dc=example,dc=com',
+            p_host => 'our_ldap_sever.example.com',
+            p_port => '636',
+            p_use_ssl => 'A',
+            p_attributes => L_ATTRIBUTES,
+            p_attribute_values => L_ATTRIBUTE_VALUES);
+
+END;
+
+43.4 IS_MEMBER Function
+
+                       This function returns a boolean TRUE if the user named by p_username (with password if
+                       required) is a member of the group specified by the p_group and p_group_base parameters
+                       using the provided auth base, host, and port.
+
+API Reference                                                                                                            July 24, 2026
+G26651-03                                                                                                                  Page 4 of 9
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                   Chapter 43
+                                                                                    IS_MEMBER Function
+
+Syntax
+
+APEX_LDAP.IS_MEMBER (                                  IN VARCHAR2,
+      p_username                                       IN VARCHAR2 DEFAULT NULL,
+      p_pass                                           IN VARCHAR2,
+      p_auth_base                                      IN VARCHAR2,
+      p_host                                           IN VARCHAR2 DEFAULT 389,
+      p_port                                           IN VARCHAR2 DEFAULT 'N',
+      p_use_ssl                                        IN VARCHAR2,
+      p_group                                          IN VARCHAR2,
+      p_group_base                                     IN VARCHAR2 DEFAULT NULL );
+      p_credential_static_id
+
+RETURN BOOLEAN;
+
+Parameters
+
+Parameter    Description
+
+p_username   Login name of the user.
+p_pass       Password for p_username.
+p_auth_base  LDAP search base, for example, dc=users,dc=my,dc=org.
+p_host       LDAP server host name.
+p_port       LDAP server port number.
+p_use_ssl    (Default) Set to N to not use SSL.
+             Set to Y to use SSL in bind to LDAP server.
+             Set to A to use SSL with one-way authentication (requires LDAP server certificate
+             configured in an Oracle wallet).
+
+p_group      Name of the group to be search for membership.
+
+p_group_base The base from which the search should be started.
+
+p_credential_s The credential static ID (can be NULL for anonymous or username/pass binds).
+
+tatic_id     If it is not NULL and the credential could not be found, then raises the error
+
+             no_data_found.
+
+Example
+
+The following example demonstrates how to use the APEX_LDAP.IS_MEMBER function to verify
+whether a user is a member of a group against an LDAP server.
+
+DECLARE
+      L_VAL boolean;
+
+BEGIN
+      L_VAL := APEX_LDAP.IS_MEMBER(
+            p_username =>'firstname.lastname',
+            p_pass =>'abcdef',
+            p_auth_base => 'cn=user,l=amer,dc=example,dc=com',
+            p_host => 'our_ldap_sever.example.com',
+            p_port => '636',
+            p_use_ssl => 'A',
+            p_group => 'group_name',
+            p_group_base => 'group_base');
+      IF L_VAL THEN
+            htp.p('Is a member.');
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                             Page 5 of 9
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                           Chapter 43
+                                                                                           MEMBER_OF Function
+
+      ELSE
+            htp.p('Not a member.');
+
+      END IF;
+END;
+
+43.5 MEMBER_OF Function
+
+                       This function returns an array of groups the user name designated by p_username (with
+                       password if required) belongs to, using the provided auth base, host, and port.
+
+                       Syntax
+
+APEX_LDAP.MEMBER_OF (
+
+     p_username                                                 IN VARCHAR2 DEFAULT NULL,
+
+     p_pass                                                     IN VARCHAR2 DEFAULT NULL,
+
+     p_auth_base                                                IN VARCHAR2,
+
+     p_host                                                     IN VARCHAR2,
+
+     p_port                                                     IN VARCHAR2 DEFAULT 389,
+
+     p_use_ssl                                                  IN VARCHAR2 DEFAULT 'N',
+
+     p_credential_static_id IN VARCHAR2 DEFAULT NULL );
+
+RETURN apex_application_global.vc_arr2;
+
+Parameters
+
+Parameter                                              Description
+
+p_username                                             Login name of the user.
+p_pass                                                 Password for p_username.
+p_auth_base                                            LDAP search base, for example, dc=users,dc=my,dc=org.
+p_host                                                 LDAP server host name.
+p_port                                                 LDAP server port number.
+p_use_ssl                                              (Default) Set to N to not use SSL.
+                                                       Set to Y to use SSL in bind to LDAP server.
+                                                       Set to A to use SSL with one-way authentication (requires LDAP server
+                                                       certificate configured in an Oracle wallet).
+
+p_credential_static The credential static ID (can be NULL for anonymous or username/pass
+
+_id                                                    binds).
+
+                                                       If it is not NULL and the credential could not be found, then raises the error
+
+                                                       no_data_found.
+
+Example
+
+The following example demonstrates how to use the APEX_LDAP.MEMBER_OF function to retrieve
+all the groups designated by the specified username.
+
+DECLARE
+      L_MEMBERSHIP apex_application_global.vc_arr2;
+
+BEGIN
+      L_MEMBERSHIP := APEX_LDAP.MEMBER_OF(
+            p_username => 'firstname.lastname',
+            p_pass => 'abcdef',
+            p_auth_base => 'cn=user,l=amer,dc=example,dc=com',
+
+API Reference                                                                              July 24, 2026
+G26651-03                                                                                    Page 6 of 9
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                             Chapter 43
+                                                           MEMBER_OF2 Function
+
+            p_host => 'our_ldap_sever.example.com',
+            p_port => '636'
+            p_use_ssl => 'A');
+
+      FOR i IN L_MEMBERSHIP.FIRST..L_MEMBERSHIP.LAST LOOP
+            htp.p('Member of: '||L_MEMBERSHIP(i));
+
+      END LOOP;
+END;
+
+43.6 MEMBER_OF2 Function
+
+                       This function returns a VARCHAR2 colon delimited list of groups the user name designated by
+                       p_username (with password if required) belongs to, using the provided auth base, host, and
+                       port.
+
+                       Syntax
+
+APEX_LDAP.MEMBER_OF2 (
+
+p_username IN VARCHAR2 DEFAULT NULL,
+
+p_pass            IN VARCHAR2 DEFAULT NULL,
+
+p_auth_base IN VARCHAR2,
+
+p_host            IN VARCHAR2,
+
+p_port            IN VARCHAR2 DEFAULT 389,
+
+p_use_ssl         IN VARCHAR2 DEFAULT 'N',
+
+p_credential_static_id IN VARCHAR2 DEFAULT NULL );
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter    Description
+
+p_username   Login name of the user.
+p_pass       Password for p_username.
+p_auth_base  LDAP search base, for example, dc=users,dc=my,dc=org.
+p_host       LDAP server host name.
+p_port       LDAP server port number.
+p_use_ssl    (Default) Set to N to not use SSL.
+             Set to Y to use SSL in bind to LDAP server.
+             Set to A to use SSL with one-way authentication (requires LDAP server certificate
+             configured in an Oracle wallet).
+
+p_credential_s The credential static ID (can be NULL for anonymous or username/pass binds).
+
+tatic_id     If it is not NULL and the credential could not be found, then raises the error
+
+             no_data_found.
+
+Example
+
+The following example demonstrates how to use the APEX_LDAP.MEMBER_OF2 function to
+retreive all the groups designated by the specified username.
+
+DECLARE
+      L_VAL varchar2(4000);
+
+BEGIN
+
+API Reference                                              July 24, 2026
+G26651-03                                                    Page 7 of 9
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                               Chapter 43
+                                                                                     SEARCH Function
+
+      L_VAL := APEX_LDAP.MEMBER_OF2(
+            p_username => 'firstname.lastname',
+            p_pass => 'abcdef',
+            p_auth_base => 'cn=user,l=amer,dc=example,dc=com',
+            p_host => 'our_ldap_sever.example.com',
+            p_port => '636',
+            p_use_ssl => 'A');
+
+      htp.p('Is Member of:'||L_VAL);
+END;
+
+43.7 SEARCH Function
+
+                       The SEARCH function searches the LDAP repository and returns an object table of (dn, name,
+                       val) that can be used in table queries.
+
+                       Syntax
+
+APEX_LDAP.SEARCH (
+
+p_username                                             IN VARCHAR2 DEFAULT NULL,
+
+p_pass                                                 IN VARCHAR2 DEFAULT NULL,
+
+p_auth_base                                            IN VARCHAR2 DEFAULT NULL,
+
+p_host                                                 IN VARCHAR2,
+
+p_port                                                 IN NUMBER DEFAULT 389,
+
+p_use_ssl                                              IN VARCHAR2 DEFAULT 'N',
+
+p_search_base                                          IN VARCHAR2,
+
+p_search_filter                                        IN VARCHAR2,
+
+p_scope                                                IN binary_integer DEFAULT
+
+                                                       sys.dbms_ldap.scope_subtree,
+
+p_timeout_sec                                          IN binary_integer DEFAULT 3,
+
+p_attribute_names                                      IN VARCHAR2,
+
+p_credential_static_id IN VARCHAR2 DEFAULT NULL )
+
+RETURN apex_t_ldap_attributes pipelined;
+
+Parameters
+
+Parameter                                              Descriptions
+p_username
+p_pass                                                 Username to connect as (can be null for anonymous binds).
+p_auth_base                                            Password of p_username (can be null for anonymous binds).
+                                                       Authentication base dn for p_username (can be null for
+p_host                                                 anonymous binds).
+p_port                                                 LDAP server hostname.
+p_use_ssl                                              LDAP server port (default 389).
+p_search_base                                          Y if a SSL connection is required (default N).
+p_search_filter                                        dn base for the search.
+p_scope                                                LDAP search filter expression.
+p_timeout_sec                                          Search scope (default descends into sub-trees).
+p_attribute_names                                      Timeout for the search (default 3 seconds).
+                                                       Comma-separated list of return attribute names.
+
+API Reference                                                                        July 24, 2026
+G26651-03                                                                              Page 8 of 9
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                        Chapter 43
+                                                                                              SEARCH Function
+
+ Parameter                                             Descriptions
+p_credential_static_id
+                                                       The credential static ID (can be null for anonymous or
+Example 1                                              username/pass binds). If it is not null and the credential could not
+                                                       be found, then raises the error no_data_found.
+
+SELECT val group_dns
+
+FROM table(apex_ldap.search (
+
+           p_host                                      => 'ldap.example.com',
+
+           p_port                                      => '636',
+
+           p_use_ssl                                   => 'A',
+
+           p_search_base => 'dc=example,dc=com',
+
+           p_search_filter => 'uid='||
+
+apex_escape.ldap_search_filter(:APP_USER),
+
+           p_attribute_names => 'memberof' ));
+
+Example 2
+
+SELECT dn, mail, dispname, phone
+
+FROM ( select dn, name, val
+
+           from table(apex_ldap.search (
+
+                                                       p_host     => 'ldap.example.com',
+
+                                                       p_port     => '636',
+
+                                                       p_use_ssl  => 'A',
+
+                                                       p_search_base => 'dc=example,dc=com',
+
+                                                       p_search_filter => '&(objectClass=person)
+
+(ou=Test)',
+
+                                                       p_attribute_names =>
+
+'mail,displayname,telephonenumber' )))
+
+pivot (min(val) for name in ( 'mail'                                         mail,
+
+                                                       'displayname' dispname,
+
+                                                       'telephonenumber' phone ))
+
+API Reference                                                                                     July 24, 2026
+G26651-03                                                                                           Page 9 of 9
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+44

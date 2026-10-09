@@ -1,0 +1,47 @@
+# APEX_DG_DATA_GEN (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 21566-21610)
+
+APEX_DG_DATA_GEN
+
+                       This package contains the implementation for data generation in Oracle APEX.
+
+                              Tip
+                                 The APIs in this package require an APEX session. See APEX_SESSION
+                                 documentation for creating a session outside of the APEX App Builder context.
+
+                       � ADD_BLUEPRINT Procedure                  July 24, 2026
+                       � ADD_BLUEPRINT_FROM_FILE Procedure        Page 1 of 31
+                       � ADD_BLUEPRINT_FROM_TABLES Procedure
+                       � ADD_COLUMN Procedure
+                       � ADD_DATA_SOURCE Procedure
+                       � ADD_TABLE Procedure
+                       � EXPORT_BLUEPRINT Function
+                       � GENERATE_DATA Procedure Signature 1
+                       � GENERATE_DATA Procedure Signature 2
+                       � GENERATE_DATA_INTO_COLLECTION Procedure
+                       � GET_BLUEPRINT_ID Function
+                       � GET_BP_TABLE_ID Function
+                       � GET_EXAMPLE Function
+                       � GET_WEIGHTED_INLINE_DATA Function
+                       � IMPORT_BLUEPRINT Procedure
+                       � PREVIEW_BLUEPRINT Procedure
+                       � REMOVE_BLUEPRINT Procedure
+                       � REMOVE_COLUMN Procedure
+                       � REMOVE_DATA_SOURCE Procedure
+                       � REMOVE_TABLE Procedure
+                       � RESEQUENCE_BLUEPRINT Procedure
+                       � STOP_DATA_GENERATION Procedure
+                       � UPDATE_BLUEPRINT Procedure
+                       � UPDATE_COLUMN Procedure
+                       � UPDATE_DATA_SOURCE Procedure
+                       � UPDATE_TABLE Procedure
+
+API Reference
+G26651-03
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                          Chapter 25
+                                                                                  ADD_BLUEPRINT Procedure
+
+� VALIDATE_BLUEPRINT Procedure
+� VALIDATE_INSTANCE_SETTING Procedure
+
+       See Also

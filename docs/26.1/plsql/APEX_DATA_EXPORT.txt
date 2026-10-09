@@ -1,0 +1,1126 @@
+# APEX_DATA_EXPORT (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 17526-18650)
+
+APEX_DATA_EXPORT
+
+                       The APEX_DATA_EXPORT package contains the implementation to export data from Oracle
+                       APEX. Supported filetypes include: PDF, XLSX, HTML, CSV, XML and JSON.
+
+                       Use the EXPORT function to pass a query context from the APEX_EXEC package and return the
+                       t_export type, which includes the contents in a LOB.
+
+                       � Global Constants
+                       � Data Types
+                       � ADD_AGGREGATE Procedure
+                       � ADD_COLUMN Procedure
+                       � ADD_COLUMN_GROUP Procedure
+                       � ADD_HIGHLIGHT Procedure
+                       � DOWNLOAD Procedure
+                       � EXPORT Function
+                       � GET_PRINT_CONFIG Function
+
+20.1 Global Constants
+
+                       The APEX_DATA_EXPORT package uses the following constants.
+
+                       Export Format Constants
+
+                       Constants used in the EXPORT function. The c_format_pxml and c_format_pjson formats are
+                       optimized for printing.
+
+c_format_csv                                           constant t_format     := 'CSV';
+c_format_html                                          constant t_format     := 'HTML';
+c_format_pdf                                           constant t_format     := 'PDF';
+c_format_xlsx                                          constant t_format     := 'XLSX';
+c_format_xml                                           constant t_format     := 'XML';
+c_format_pxml                                          constant t_format     := 'PXML';
+c_format_json                                          constant t_format     := 'JSON';
+c_format_pjson                                         constant t_format     := 'PJSON';
+
+Alignment Constants
+Constants used in the ADD_COLUMN, ADD_COLUMN_GROUP, and GET_PRINT_CONFIG methods.
+
+c_align_start                                          constant t_alignment  := 'LEFT';
+c_align_center                                         constant t_alignment  := 'CENTER';
+c_align_end                                            constant t_alignment  := 'RIGHT';
+
+API Reference                                                                July 24, 2026
+G26651-03                                                                    Page 1 of 17
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                           Chapter 20
+                                                                                   Global Constants
+
+Content Disposition Constants
+Constants used in the DOWNLOAD procedure.
+
+c_attachment                                           constant t_content_disposition :=
+'attachment';                                          constant t_content_disposition := 'inline';
+c_inline
+
+Size Unit Constants
+Constants used in the GET_PRINT_CONFIG function.
+
+c_unit_inches                                          constant t_unit         := 'INCHES';
+c_unit_millimeters                                     constant t_unit         :=
+'MILLIMETERS';
+c_unit_centimeters                                     constant t_unit         :=
+'CENTIMETERS';
+c_unit_points                                          constant t_unit         := 'POINTS';
+
+Predefined Size Constants
+Constants used in the GET_PRINT_CONFIG function.
+
+c_size_letter                                          constant t_size         := 'LETTER';
+c_size_legal                                           constant t_size         := 'LEGAL';
+c_size_tabloid                                         constant t_size         := 'TABLOID';
+c_size_A4                                              constant t_size         := 'A4';
+c_size_A3                                              constant t_size         := 'A3';
+c_size_custom                                          constant t_size         := 'CUSTOM';
+
+Column Width Unit Constants
+Constants used in the GET_PRINT_CONFIG function.
+
+c_width_unit_percentage                                constant t_width_unit   :=
+'PERCENTAGE';
+c_width_unit_points                                    constant t_width_unit   := 'POINTS';
+c_width_unit_pixels                                    constant t_width_unit   := 'PIXELS';
+
+Page Orientation Constants
+Constants used in the GET_PRINT_CONFIG function.
+
+c_orientation_portrait                                 constant t_orientation  := 'VERTICAL';
+c_orientation_landscape                                constant t_orientation  :=
+'HORIZONTAL';
+
+Font Family Constants
+Constants used in the GET_PRINT_CONFIG function.
+
+c_font_family_helvetica                                constant t_font_family  :=
+
+'Helvetica';
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 2 of 17
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                     Chapter 20
+                                                                                    Data Types
+
+c_font_family_times                                    constant t_font_family       := 'Times';
+c_font_family_courier                                  constant t_font_family       := 'Courier';
+
+Font Weight Constants
+Constants used in the GET_PRINT_CONFIG function.
+
+c_font_weight_normal                                   constant t_font_weight       := 'normal';
+c_font_weight_bold                                     constant t_font_weight       := 'bold';
+
+20.2 Data Types
+
+                       The APEX_DATA_EXPORT package uses the following data types.
+                       Generic
+
+subtype t_alignment                                    is varchar2(255);
+subtype t_label                                        is varchar2(255);
+subtype t_color                                        is varchar2(4000);
+subtype t_format                                       is varchar2(20);
+subtype t_content_disposition                          is varchar2(30);
+subtype t_unit                                         is varchar2(4000);
+subtype t_size                                         is varchar2(4000);
+subtype t_width_unit                                   is varchar2(255);
+subtype t_orientation                                  is varchar2(4000);
+subtype t_font_family                                  is varchar2(4000);
+subtype t_font_weight                                  is varchar2(4000);
+
+Resulting Object of an Export
+
+type t_export is record (                              varchar2(32767),
+      file_name                                        t_format,
+      format                                           varchar2(32767),
+      mime_type                                        boolean,
+      as_clob                                          blob,
+      content_blob                                     clob );
+      content_clob
+
+Column Groups
+
+type t_column_group is record (
+
+name                                                   varchar2(255),
+
+alignment                                              t_alignment,
+
+parent_group_idx                                       pls_integer );
+
+type t_column_groups                                   is table of t_column_group index by pls_integer;
+
+Columns
+
+type t_column is record (                              apex_exec.t_column_name,
+      name                                             varchar2(255),
+      heading
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 3 of 17
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                  Chapter 20
+                                                                                 Data Types
+
+      format_mask                                      varchar2(4000),           index by pls_integer;
+      heading_alignment                                t_alignment,
+      value_alignment                                  t_alignment,
+      width                                            number,
+      is_column_break                                  boolean,
+      is_frozen                                        boolean,
+      column_group_idx                                 pls_integer );
+
+type t_columns                                         is table of t_column
+
+Highlights
+
+type t_highlight is record (
+
+id                                                     number,
+
+name                                                   varchar2(4000),
+
+value_column                                           apex_exec.t_column_name,
+
+display_column                                         apex_exec.t_column_name,
+
+text_color                                             t_color,
+
+background_color                                       t_color );
+
+type t_highlights                                      is table of t_highlight   index by pls_integer;
+
+Aggregates
+
+type t_aggregate is record (
+
+label                                                  t_label,
+
+format_mask                                            varchar2(4000),
+
+display_column                                         apex_exec.t_column_name,
+
+value_column                                           apex_exec.t_column_name,
+
+overall_label                                          t_label,
+
+overall_value_column apex_exec.t_column_name );
+
+type t_aggregates                                      is table of t_aggregate index by pls_integer;
+
+Print Config
+
+type t_print_config is record (
+
+units                                                  t_unit,
+
+paper_size                                             t_size,
+
+width_units                                            t_width_unit,
+
+width                                                  number,
+
+height                                                 number,
+
+orientation                                            t_orientation,
+
+page_header                                            varchar2(4000),
+
+page_header_font_color                                 t_color,
+
+page_header_font_family t_font_family,
+
+page_header_font_weight t_font_weight,
+
+page_header_font_size                                  varchar2(4000),
+
+page_header_alignment                                  t_alignment,
+
+page_footer                                            varchar2(4000),
+
+page_footer_font_color                                 t_color,
+
+page_footer_font_family t_font_family,
+
+page_footer_font_weight t_font_weight,
+
+page_footer_font_size                                  varchar2(4000),
+
+API Reference                                                                    July 24, 2026
+G26651-03                                                                        Page 4 of 17
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                             Chapter 20
+                                                                                    ADD_AGGREGATE Procedure
+
+page_footer_alignment                                      t_alignment,
+header_bg_color                                            t_color,
+header_font_color                                          t_color,
+header_font_family                                         t_font_family,
+header_font_weight                                         t_font_weight,
+header_font_size                                           varchar2(4000),
+body_bg_color                                              t_color,
+body_font_color                                            t_color,
+body_font_family                                           t_font_family,
+body_font_weight                                           t_font_weight,
+body_font_size                                             varchar2(4000),
+border_width                                               number,
+border_color                                               t_color );
+
+20.3 ADD_AGGREGATE Procedure
+
+                       This procedure adds an aggregate to the aggregate collection. Aggregate collections can be
+                       passed to the EXPORT calls in order to add an aggregate row. This procedure can be used in
+                       combination with control breaks or standalone for overall aggregates.
+
+                       If an empty aggregate collection (or no aggregate collection) is passed, no aggregate rows
+                       render in the export.
+
+                       This procedure requires an aggregate column. Value is the current aggregate total (for control
+                       breaks) or the overall total.
+
+                       Syntax
+
+PROCEDURE ADD_AGGREGATE(                               IN OUT NOCOPY t_aggregates,
+   p_aggregates
+   p_label                                             IN  t_label,
+   p_format_mask
+                                                       IN  VARCHAR2                  DEFAULT
+NULL,
+   p_display_column                                    IN  apex_exec.t_column_name,  DEFAULT
+   p_value_column                                                                    DEFAULT
+   p_overall_label                                     IN  apex_exec.t_column_name,
+
+NULL,                                                  IN  t_label
+   p_overall_value_column
+                                                       IN  apex_exec.t_column_name
+NULL );
+
+Parameters
+
+Parameter                                                  Description
+p_aggregates
+p_label                                                    Aggregate collection.
+p_format_mask                                              Aggregate label.
+p_display_column                                           Format mask to apply on the aggegate value.
+                                                           Name of the column where to display the
+p_value_column                                             aggregate.
+                                                           Name of the column which contains the value of
+p_overall_label                                            the aggregate.
+p_overall_value_column                                     Overall label.
+                                                           Name of the column which contains the value of
+                                                           the overall aggregate.
+
+API Reference                                                                        July 24, 2026
+G26651-03                                                                            Page 5 of 17
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                  Chapter 20
+                                                                         ADD_AGGREGATE Procedure
+
+Examples
+
+DECLARE
+
+l_aggregates apex_data_export.t_aggregates;
+
+l_columns apex_data_export.t_columns;
+
+l_context apex_exec.t_context;
+
+l_export  apex_data_export.t_export;
+
+BEGIN
+
+apex_data_export.add_aggregate(
+
+p_aggregates                                           => l_aggregates,
+
+p_label                                                => 'Sum',
+
+p_format_mask                                          => 'FML999G999G999G999G990D00',
+
+p_display_column                                       => 'SAL',
+
+p_value_column                                         => 'AGGREGATE1',
+
+p_overall_label                                        => 'Total sum',
+
+p_overall_value_column => 'OVERALL1' );
+
+   apex_data_export.add_column( p_columns => l_columns, p_name => 'DEPTNO',
+p_is_column_break => true );
+
+   apex_data_export.add_column( p_columns => l_columns, p_name => 'EMPNO');
+   apex_data_export.add_column( p_columns => l_columns, p_name => 'ENAME');
+   apex_data_export.add_column( p_columns => l_columns, p_name => 'SAL');
+
+   l_context := apex_exec.open_query_context(
+      p_location => apex_exec.c_location_local_db,
+      p_sql_query => 'select deptno,
+                                              empno,
+                                              ename,
+                                              sal,
+                                              sum( sal) over ( partition by deptno ) as
+
+AGGREGATE1,
+                                              sum( sal) over ( ) as OVERALL1
+
+                                      FROM emp
+                                      order by deptno' );
+
+l_export := apex_data_export.export (
+
+          p_context                                    => l_context,
+
+          p_format                                     => apex_data_export.c_format_pdf,
+
+          p_columns                                    => l_columns,
+
+          p_aggregates => l_aggregates );
+
+apex_exec.close( l_context );
+
+apex_data_export.download( p_export => l_export );
+
+EXCEPTION
+   WHEN others THEN
+         apex_exec.close( l_context );
+         raise;
+
+END;
+
+API Reference                                                                             July 24, 2026
+G26651-03                                                                                 Page 6 of 17
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                     Chapter 20
+                                                                                 ADD_COLUMN Procedure
+
+20.4 ADD_COLUMN Procedure
+
+                       This procedure adds a column to the column collection. Column collections can be passed to
+                       the EXPORT calls in order to return only a subset of the columns in the export. If an empty
+                       column collection (or no column collection) passes, all columns defined in the Query Context
+                       are added to the export.
+
+                       Syntax
+
+PROCEDURE ADD_COLUMN (                                 IN OUT NOCOPY t_columns,
+   p_columns
+   p_name                                              IN  apex_exec.t_column_name,
+   p_heading
+   p_format_mask                                       IN  VARCHAR2                  DEFAULT NULL,
+   p_heading_alignment                                                               DEFAULT NULL,
+   p_value_alignment                                   IN  VARCHAR2                  DEFAULT NULL,
+   p_width                                                                           DEFAULT NULL,
+   p_is_column_break                                   IN  t_alignment               DEFAULT NULL,
+   p_is_frozen                                                                       DEFAULT FALSE,
+   p_column_group_idx                                  IN  t_alignment               DEFAULT FALSE,
+                                                                                     DEFAULT
+NULL );                                                IN  NUMBER
+
+                                                       IN  BOOLEAN
+
+                                                       IN  BOOLEAN
+
+                                                       IN  PLS_INTEGER
+
+Parameters
+
+ Parameter                                                                       Description
+p_columns                                                                        Column collection.
+p_name                                                                           Column name.
+p_heading                                                                        Column heading text.
+p_format_mask                                                                    Format mask to apply. Useful for XLSX exports
+                                                                                 where native datatypes are used.
+p_heading_alignment                                                            Column heading alignment. Valid values are: LEFT,
+                                                                               CENTER, RIGHT.
+p_value_alignment                                                              Column value alignment. Valid values are: LEFT,
+                                                                               CENTER, RIGHT.
+p_width                                                                          PDF only. The column width. By default the units
+                                                                                 are as percentage. The units can be modified by
+p_is_column_break                                                                updating the width_units of the print config.
+p_is_frozen                                                                      Whether to use this column for control breaks
+p_column_group_idx                                                               XLSX only. Whether the column is frozen.
+                                                                                 The index of a column group. If used, this column
+Examples                                                                         will part of the column group.
+
+DECLARE                                                    apex_exec.t_context;
+      l_context
+                                                           apex_data_export.t_export;
+      l_export                                             apex_data_export.t_columns;
+      l_columns
+
+API Reference                                                                        July 24, 2026
+G26651-03                                                                            Page 7 of 17
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                               Chapter 20
+                                                                               ADD_COLUMN_GROUP Procedure
+
+BEGIN
+      l_context := apex_exec.open_query_context(
+            p_location => apex_exec.c_location_local_db,
+            p_sql_query => 'select * from emp' );
+
+apex_data_export.add_column(
+
+p_columns                                                   => l_columns,
+
+p_name                                                      => 'ENAME',
+
+p_heading                                                   => 'Name' );
+
+apex_data_export.add_column(
+
+p_columns                                                   => l_columns,
+
+p_name                                                      => 'JOB',
+
+p_heading                                                   => 'Job' );
+
+apex_data_export.add_column(
+
+p_columns                                                   => l_columns,
+
+p_name                                                      => 'SAL',
+
+p_heading                                                   => 'Salary',
+
+p_format_mask                                               => 'FML999G999G999G999G990D00' );
+
+l_export := apex_data_export.export (
+
+p_context                                                   => l_context,
+
+p_format                                                    => apex_data_export.c_format_html,
+
+p_columns                                                   => l_columns,
+
+p_file_name                                                 => 'employees' );
+
+apex_exec.close( l_context );
+
+apex_data_export.download( p_export => l_export );
+
+EXCEPTION
+      WHEN others THEN
+            apex_exec.close( l_context );
+            raise;
+
+END;
+
+20.5 ADD_COLUMN_GROUP Procedure
+
+                       This procedure adds a column group to the column group collection. Column group collections
+                       can be passed to the EXPORT calls in order to group columns using an extra header row. If an
+                       empty column group collection (or no column group collection) passes, no column groups are
+                       added to the export. You can create multiple column group levels.
+
+                       Syntax
+
+APEX_DATA_EXPORT.ADD_COLUMN_GROUP (
+
+p_column_groups IN OUT NOCOPY                                          t_column_groups,
+                                                                       PLS_INTEGER,
+p_idx                                                  OUT             VARCHAR2,
+                                                                       t_alignment
+p_name                                                 IN
+                                                                       PLS_INTEGER
+p_alignment                                            IN                                DEFAULT
+                                                                                         DEFAULT NULL )
+c_align_center,
+
+p_parent_group_idx IN
+
+API Reference                                                                                   July 24, 2026
+G26651-03                                                                                       Page 8 of 17
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                               Chapter 20
+                                                                               ADD_COLUMN_GROUP Procedure
+
+Parameters
+
+ Parameter                                                           Description
+p_column_groups
+p_idx                                                                Column group collection.
+p_name                                                               The generated index in the columns collection.
+p_alignment                                                          Column group name.
+                                                                     Column group alignment. Valid values are: LEFT,
+p_parent_group_idx                                                   CENTER (default), RIGHT.
+                                                                     The index of a parent column group.
+Example
+
+DECLARE                                                apex_exec.t_context;
+      l_context
+
+l_export                                               apex_data_export.t_export;
+l_column_groups                                        apex_data_export.t_column_groups;
+l_columns                                              apex_data_export.t_columns;
+
+-- Column group indexes
+
+l_identity_idx                                         pls_integer;
+
+l_compensation_idx                                     pls_integer;
+
+BEGIN
+
+l_context := apex_exec.open_query_context(
+      p_location => apex_exec.c_location_local_db,
+      p_sql_query => 'select * from emp' );
+
+-- Define column groups
+
+apex_data_export.add_column_group(
+
+       p_column_groups => l_column_groups,
+
+       p_idx                                           => l_identity_idx,
+
+       p_name                                          => 'Identity' );
+
+apex_data_export.add_column_group(
+
+       p_column_groups => l_column_groups,
+
+       p_idx                                           => l_compensation_idx,
+
+       p_name                                          => 'Compensation' );
+
+-- Define columns
+
+apex_data_export.add_column(
+
+       p_columns                                       => l_columns,
+
+       p_name                                          => 'ENAME',
+
+       p_heading                                       => 'Name',
+
+       p_column_group_idx => l_identity_idx );
+
+apex_data_export.add_column(
+
+       p_columns                                       => l_columns,
+
+       p_name                                          => 'JOB',
+
+       p_heading                                       => 'Job',
+
+       p_column_group_idx => l_identity_idx );
+
+apex_data_export.add_column(
+
+API Reference                                                                             July 24, 2026
+G26651-03                                                                                 Page 9 of 17
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                     Chapter 20
+                                                                                              ADD_HIGHLIGHT Procedure
+
+      p_columns                                            => l_columns,
+      p_name                                               => 'SAL',
+      p_heading                                            => 'Salary',
+      p_column_group_idx                                   => l_compensation_idx );
+
+apex_data_export.add_column(
+
+      p_columns                                            => l_columns,
+
+      p_name                                               => 'COMM',
+
+      p_heading                                            => 'Commission',
+
+      p_column_group_idx => l_compensation_idx );
+
+l_export := apex_data_export.export (
+
+      p_context                                            => l_context,
+
+      p_format                                             => apex_data_export.c_format_html,
+
+      p_columns                                            => l_columns,
+
+      p_column_groups                                      => l_column_groups,
+
+      p_file_name                                          => 'employees' );
+
+apex_exec.close( l_context );
+
+apex_data_export.download( p_export => l_export );
+
+EXCEPTION
+      when others THEN
+            apex_exec.close( l_context );
+            raise;
+
+END;
+
+20.6 ADD_HIGHLIGHT Procedure
+
+                       This procedure adds a highlight to the highlight collection. Highlight collections can be passed
+                       to the EXPORT calls in order to highlight a row or a column in a row. If no highlight collection (or
+                       an empty highlight collection) is passed, no highlights render in the export.
+
+                       This procedure requires a highlight column. The value is the ID when highlights should be
+                       applied, else NULL.
+
+                       Syntax
+
+PROCEDURE ADD_HIGHLIGHT (
+
+p_highlights                                           IN OUT NOCOPY t_highlights,
+
+p_id                                                   IN  pls_integer,
+
+p_value_column                                         IN  apex_exec.t_column_name,
+
+p_display_column IN                                        apex_exec.t_column_name DEFAULT NULL,
+
+p_text_color                                           IN  t_color                            DEFAULT NULL,
+
+p_background_color IN                                      t_color                            DEFAULT NULL );
+
+Parameters
+
+Parameter                                                              Description
+p_highlights                                                           Highlight collection.
+p_id                                                                   ID of the highlight.
+
+API Reference                                                                                  July 24, 2026
+G26651-03                                                                                      Page 10 of 17
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                         Chapter 20
+                                                                                        DOWNLOAD Procedure
+
+ Parameter                                                        Description
+p_value_column
+                                                                  Name of the column where to check for the
+p_display_column                                                  highlight ID.
+                                                                  Name of the column where to display the highlight.
+p_text_color                                                      Leave empty for row highlights.
+p_background_color                                                Hex color code of the text (#FF0000).
+Examples                                                          Hex color code of the background (#FF0000).
+
+DECLARE
+
+l_highlights apex_data_export.t_highlights;
+
+l_context                                              apex_exec.t_context;
+
+l_export                                               apex_data_export.t_export;
+
+BEGIN
+
+apex_data_export.add_highlight(
+
+         p_highlights                                  => l_highlights,
+
+         p_id                                          => 1,
+
+         p_value_column                                => 'HIGHLIGHT1',
+
+         p_display_column                              => 'SAL',
+
+         p_text_color                                  => '#FF0000' );
+
+l_context := apex_exec.open_query_context(
+      p_location => apex_exec.c_location_local_db,
+      p_sql_query => 'select empno,
+                                            ename,
+                                            sal,
+                                            case when sal >= 3000 then 1 end as HIGHLIGHT1
+                                      from emp' );
+
+l_export := apex_data_export.export (
+
+                                                       p_context  => l_context,
+
+                                                       p_format   => apex_data_export.c_format_pdf,
+
+                                                       p_highlights => l_highlights );
+
+apex_exec.close( l_context );
+
+apex_data_export.download( p_export => l_export );
+
+EXCEPTION
+      when others THEN
+            apex_exec.close( l_context );
+            raise;
+
+END;
+
+20.7 DOWNLOAD Procedure
+
+                       This procedure downloads the data export by calling APEX_APPLICATION.STOP_APEX_ENGINE.
+
+API Reference                                                                           July 24, 2026
+G26651-03                                                                               Page 11 of 17
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                   Chapter 20
+                                                                                         EXPORT Function
+
+Syntax
+
+APEX_DATA_EXPORT.DOWNLOAD (
+
+p_export                                               IN OUT NOCOPY t_export,
+
+p_content_disposition IN t_content_disposition                                           DEFAULT c_attachment,
+                                                                                         DEFAULT TRUE,
+p_add_file_extension IN BOOLEAN                                                          DEFAULT TRUE )
+
+p_stop_apex_engine                                     IN BOOLEAN
+
+Parameters
+
+ Parameter                                                         Description
+p_export
+p_content_disposition                                              The result object of an export.
+p_add_file_extension
+p_stop_apex_engine                                                 Specifies whether to download the print document
+                                                                   or display inline ("attachment" or "inline").
+Examples                                                           Whether Oracle APEX adds the file extension to
+                                                                   the filename based on the export format.
+                                                                   Whether to call
+                                                                   APEX_APPLICATION.STOP_APEX_ENGINE.
+
+DECLARE
+      l_context apex_exec.t_context;
+      l_export apex_data_export.t_export;
+
+BEGIN
+      l_context := apex_exec.open_query_context(
+            p_location => apex_exec.c_location_local_db,
+            p_sql_query => 'select * from emp' );
+
+      l_export := apex_data_export.export (
+            p_context => l_context,
+            p_format => apex_data_export.c_format_csv,
+            p_file_name => 'employees' );
+
+      apex_exec.close( l_context );
+
+      apex_data_export.download( p_export => l_export );
+
+EXCEPTION
+      when others THEN
+            apex_exec.close( l_context );
+            raise;
+
+END;
+
+20.8 EXPORT Function
+
+                       This function exports the query context in the specified format.
+                       Syntax
+
+FUNCTION EXPORT (                                      IN apex_exec.t_context,
+   p_context
+
+API Reference                                                                            July 24, 2026
+G26651-03                                                                                Page 12 of 17
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                     Chapter 20
+                                                                           EXPORT Function
+
+p_format                                               IN t_format,
+
+p_as_clob                                              IN BOOLEAN          DEFAULT false,
+                                                                           DEFAULT c_empty_columns,
+p_columns                                              IN t_columns        DEFAULT c_empty_column_groups,
+                                                                           DEFAULT c_empty_aggregates,
+p_column_groups                                        IN t_column_groups  DEFAULT c_empty_highlights,
+
+p_aggregates                                           IN t_aggregates     DEFAULT NULL,
+                                                                           DEFAULT c_empty_print_config,
+p_highlights                                           IN t_highlights     DEFAULT NULL,
+                                                                           DEFAULT NULL,
+--                                                                         DEFAULT NULL,
+
+p_file_name                                            IN VARCHAR2         DEFAULT NULL,
+                                                                           DEFAULT NULL,
+p_print_config                                         IN t_print_config
+                                                                           DEFAULT NULL,
+p_page_header                                          IN VARCHAR2
+                                                                           DEFAULT false )
+p_page_footer                                          IN VARCHAR2
+
+p_supplemental_text                                    IN VARCHAR2
+
+--
+
+p_csv_enclosed_by                                      IN VARCHAR2
+
+p_csv_separator                                        IN VARCHAR2
+
+--
+
+p_pdf_accessible                                       IN BOOLEAN
+
+--
+
+p_xml_include_declaration IN BOOLEAN
+
+RETURN t_export
+
+Parameters
+
+Parameter                                                            Description
+p_context
+p_format                                                             Context object from the EXEC infrastructure.
+
+p_as_clob                                                            Export format. Valid values are: XLSX, PDF, HTML,
+                                                                     CSV, XML and JSON.
+p_columns                                                            Exports as a CLOB instead of BLOB (default
+                                                                     FALSE).
+p_column_groups                                                      Collection of column attributes beginning with
+                                                                     column breaks, then in the order of display.
+p_aggregates                                                         Collection of column group attributes in the order of
+p_highlights                                                         levels and display.
+p_file_name                                                          Collection of report aggregates.
+p_print_config
+p_page_header                                                        Collection of report highlights.
+
+p_page_footer                                                        Defines the filename of the export.
+
+p_supplemental_text                                                  Used for EXCEL and PDF to set the print attributes.
+p_csv_enclosed_by
+p_csv_separator                                                      Text to appear in the header section of the
+p_pdf_accessible                                                     document. Overrides the page header from
+p_xml_include_declaration                                            p_print_config.
+
+                                                                     Text to appear in the footer section of the
+                                                                     document. Overrides the page footer from
+                                                                     p_print_config.
+
+                                                                     Text at the top of all download formats.
+
+                                                                     Used for CSV to enclose the output.
+
+                                                                     Used for CSV to separate the column values.
+
+                                                                     Used for PDF to create an accessible PDF.
+
+                                                                     Used for XML to generate the XML declaration as
+                                                                     the first line.
+
+API Reference                                                              July 24, 2026
+G26651-03                                                                  Page 13 of 17
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                  Chapter 20
+                                                                        GET_PRINT_CONFIG Function
+
+Returns
+This function returns: the export file as object which includes the contents, MIME type, and file
+name.
+
+Examples
+
+DECLARE
+      l_context apex_exec.t_context;
+      l_export apex_data_export.t_export;
+
+BEGIN
+      l_context := apex_exec.open_query_context(
+            p_location => apex_exec.c_location_local_db,
+            p_sql_query => 'select * from emp' );
+
+      l_export := apex_data_export.export (
+                                      p_context => l_context,
+                                      p_format => apex_data_export.c_format_pdf );
+
+      apex_exec.close( l_context );
+
+      apex_data_export.download( p_export => l_export );
+
+EXCEPTION
+      when others THEN
+            apex_exec.close( l_context );
+            raise;
+
+END;
+
+20.9 GET_PRINT_CONFIG Function
+
+                       This function prepares the print config to style the data export.
+                       � The colors are specified using hexadecimal (hex) notation, RGB color codes, or HTML
+
+                             color names.
+                       � The alignment options include: Left, Center, Right
+                       � The font family options include: Helvetica, Times, Courier
+                       � The font weight options include: Normal, Bold
+
+                       Syntax
+
+FUNCTION GET_PRINT_CONFIG(                             IN t_unit        DEFAULT c_unit_inches,
+      p_units                                          IN t_size        DEFAULT c_size_letter,
+      p_paper_size                                     IN t_width_unit  DEFAULT
+      p_width_units
+                                                       IN NUMBER        DEFAULT 11,
+c_width_unit_percentage,
+      p_width                                          IN NUMBER        DEFAULT 8.5,
+      p_height
+      p_orientation                                    IN t_orientation DEFAULT
+
+c_orientation_landscape,                               IN VARCHAR2      DEFAULT NULL,
+      --                                               IN t_color       DEFAULT '#000000',
+      p_page_header
+      p_page_header_font_color
+
+API Reference                                                                               July 24, 2026
+G26651-03                                                                                   Page 14 of 17
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                 Chapter 20
+                                                                       GET_PRINT_CONFIG Function
+
+      p_page_header_font_family                        IN t_font_family DEFAULT
+c_font_family_helvetica,
+                                                       IN t_font_weight DEFAULT
+      p_page_header_font_weight
+c_font_weight_normal,                                  IN NUMBER       DEFAULT 12,
+                                                       IN t_alignment  DEFAULT c_align_center,
+      p_page_header_font_size
+      p_page_header_alignment                          IN VARCHAR2     DEFAULT NULL,
+      --
+      p_page_footer                                    IN t_color      DEFAULT '#000000',
+      p_page_footer_font_color
+      p_page_footer_font_family                        IN t_font_family DEFAULT
+c_font_family_helvetica,
+      p_page_footer_font_weight                        IN t_font_weight DEFAULT
+c_font_weight_normal,
+      p_page_footer_font_size                          IN NUMBER       DEFAULT 12,
+      p_page_footer_alignment                          IN t_alignment  DEFAULT c_align_center,
+      --
+      p_header_bg_color                                IN t_color      DEFAULT '#EEEEEE',
+      p_header_font_color
+      p_header_font_family                             IN t_color      DEFAULT '#000000',
+c_font_family_helvetica,
+      p_header_font_weight                             IN t_font_family DEFAULT
+c_font_weight_bold,
+      p_header_font_size                               IN t_font_weight DEFAULT
+      --
+      p_body_bg_color                                  IN NUMBER       DEFAULT 10,
+      p_body_font_color
+      p_body_font_family                               IN t_color      DEFAULT '#FFFFFF',
+c_font_family_helvetica,
+      p_body_font_weight                               IN t_color      DEFAULT '#000000',
+c_font_weight_normal,
+      p_body_font_size                                 IN t_font_family DEFAULT
+      --
+      p_border_width                                   IN t_font_weight DEFAULT
+      p_border_color
+RETURN t_print_config;                                 IN NUMBER       DEFAULT 10,
+
+Parameters                                             IN NUMBER       DEFAULT .5,
+                                                       IN t_color      DEFAULT '#666666' )
+
+Parameter                                              Description
+p_units
+                                                       Select the units used to specify page width and
+p_paper_size                                           height.
+                                                       Valid values are: Inches, Millimeters, Centimeters,
+p_width_units                                          Points
+p_width
+p_height                                               PDF only. Select the report page size. To type in
+                                                       your own page width and height, select Custom.
+                                                       Available options include: Letter, Legal, Tabloid, A4,
+                                                       A3, Custom
+
+                                                       PDF only. Select the units used to specify column
+                                                       widths.
+                                                       Valid values are: Percentage, Points, Pixels
+
+                                                       PDF only. The width of the page.
+                                                       PDF only. The height of the page.
+
+API Reference                                                                              July 24, 2026
+G26651-03                                                                                  Page 15 of 17
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                             Chapter 20
+                                                                                   GET_PRINT_CONFIG Function
+
+ Parameter                                             Description
+p_orientation
+                                                       The orientation for the page. PDF only.
+p_page_header                                          Available options include: Vertical (Portrait),
+                                                       Horizontal (Landscape)
+p_page_header_font_color
+p_page_header_font_family                              Text to appear in the header section of the
+p_page_header_font_weight                              document.
+p_page_header_font_size                                The page header font color.
+p_page_header_alignment                                The page header font family.
+p_page_footer                                          The page header font weight.
+                                                       The page header font size.
+p_page_footer_font_color                               The page header text alignment.
+p_page_footer_font_family                              Text to appear in the footer section of the
+p_page_footer_font_weight                              document.
+p_page_footer_font_size                                The page footer font color.
+p_page_footer_alignment                                The page footer font family.
+p_header_bg_color                                      The page footer font weight.
+p_header_font_color                                    The page footer font size.
+p_header_font_family                                   The page footer text aligment.
+p_header_font_weight                                   The table header background color.
+p_header_font_size                                     The table header font color.
+p_body_bg_color                                        The table header font family.
+p_body_font_color                                      The table header font weight.
+p_body_font_family                                     The table header font size.
+p_body_font_weight                                     The table body background color.
+p_body_font_size                                       The table body font color.
+p_border_width                                         The table body font family.
+p_border_color                                         The table body font weight.
+                                                       The table body font size.
+Returns                                                The width of the borders.
+The print config to style the data export.             The color of the borders.
+
+Example
+
+DECLARE
+
+l_context                                              apex_exec.t_context;
+
+l_print_config apex_data_export.t_print_config;
+
+l_export                                               apex_data_export.t_export;
+
+BEGIN
+
+l_context := apex_exec.open_query_context(
+
+         p_location => apex_exec.c_location_local_db,
+
+         p_sql_query => 'select * from emp' );
+
+l_print_config := apex_data_export.get_print_config(
+      p_orientation => apex_data_export.c_orientation_portrait,
+      p_border_width => 2 );
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 16 of 17
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                Chapter 20
+                                                                      GET_PRINT_CONFIG Function
+
+l_export := apex_data_export.export (
+
+p_context                                              => l_context,
+
+p_print_config => l_print_config,
+
+p_format                                               => apex_data_export.c_format_pdf );
+
+apex_exec.close( l_context );
+
+apex_data_export.download( p_export => l_export );
+
+EXCEPTION
+      when others THEN
+            apex_exec.close( l_context );
+            raise;
+
+END;
+
+API Reference                                                                               July 24, 2026
+G26651-03                                                                                   Page 17 of 17
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+21

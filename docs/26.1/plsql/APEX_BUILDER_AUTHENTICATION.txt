@@ -1,0 +1,2695 @@
+# APEX_BUILDER_AUTHENTICATION (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 35918-38610)
+
+                        APEX_BUILDER_AUTHENTICATION
+                                                       If set to Y, enable Real Application Security support
+                        APPLICATION_ACTIVITY_LOGGING   for applications. If set to N (the default), RAS can
+                                                       not be used.
+                        APPLICATION_ID_MAX             If set to Y, the default, developers are allowed to
+                        APPLICATION_ID_MIN             expose report regions as RESTful services. If set to
+                        AUDIT_LOG_RETENTION            N, they are not allowed.
+                        AUTHENTICATION_SUBSTITUTIONS   If set to Y, developers are allowed to open SQL
+                                                       Developer Web for DB schemas associated with
+                        AUTOEXTEND_TABLESPACES         their workspace from the Builder menu. Default is
+                                                       N.
+API Reference                                          Controls the authentication scheme for Oracle
+G26651-03                                              APEX Administration Services and the
+Copyright � 2003, 2026, Oracle and/or its affiliates.  development environment. Valid parameter values
+                                                       include:
+                                                       � APEX: Oracle APEX workspace accounts
+
+                                                             authentication (default)
+                                                       � DB: Database accounts authentication
+                                                       � HEADER: HTTP header variable based
+
+                                                             authentication
+                                                       � SSO: Oracle Single Sign-On authentication
+
+                                                             (OracleAS PL/SQL SSO SDK)
+                                                       � LDAP: LDAP authentication
+                                                       � SAML: SAML authentication
+                                                       � SOCIAL: Social Sign-In authentication
+
+                                                             (OpenID / OAuth2)
+                                                       Controls setting of application activity log for entire
+                                                       instance. Options are:
+                                                       � A (Always)
+                                                       � N (Never)
+                                                       � U (Use application settings)
+                                                       � O (Off for New Applications)
+                                                       The largest possible ID for a database application.
+                                                       The smallest possible ID for a database
+                                                       application.
+                                                       Number of days to keep audit log entries.
+                                                       Allows to specify substitutions which are visible to
+                                                       all authentication schemes in the APEX instance.
+                                                       The parameter value is a JSON format with a flat
+                                                       structure. Substitutions can be used for all
+                                                       authentication scheme attributes with
+                                                       #SUBSTITUTION_NAME#. Example:
+
+                                                       {
+                                                              "SUBST_NAME": "SOME_VALUE",
+                                                              "SUBST_NAME_2": "VALUE_2"
+
+                                                       }
+
+                                                       If set to Y, the default, provisioned tablespaces will
+                                                       autoextend up to a maximum size. If set to N,
+                                                       tablespaces will not autoextend.
+
+                                                                                                                   July 24, 2026
+                                                                                                                    Page 3 of 46
+                           Parameter Name                                                                          Chapter 34
+                        BACKGROUND_JOB_CLASS                                              Available Parameter Values
+                        BACKGROUND_MIN_EXECUTION_CADENCE
+                                                          Description
+                        BACKGROUND_PROCESS_JOB_CLASS
+                        BIGFILE_TABLESPACES_ENABLED       Defines the DBMS_SCHEDULER job class to use for
+                        CHECK_FOR_UPDATES                 Automations, REST Data Source synchronizations
+                        CHECKSUM_HASH_FUNCTION            and Interactive Report notifications.
+                                                          Defines the minimum execution cadence for
+                        CLONE_SESSION_ENABLED             background jobs like REST data source
+                        CSV_DOWNLOAD_CRLF_LINE_BREAKS     synchronizations or automations. The configured
+                        CSV_DOWNLOAD_ESCAPE_FORMULAS      amount of minutes must pass between two
+                        CSV_DOWNLOAD_WITH_BOM_ENABLED     executions.
+                        DATA_REPORTER_AUTHENTICATION      Defines the DBMS_SCHEDULER job class to use for
+                                                          background execution of page processes.
+                        DB_SIGNATURE                      If set to Y, the tablespaces provisioned through
+                                                          APEX are created as bigfile tablespaces. If set to N,
+                        DEBUG_MESSAGE_PAGE_VIEW_LIMIT     the tablespaces are created as smallfile
+                        DEFAULT_THEME_FILES               tablespaces.
+                                                          If set to N, the check for Oracle APEX and Oracle
+API Reference                                             REST Data Services product updates is disabled
+G26651-03                                                 for the entire instance, regardless of preferences
+Copyright � 2003, 2026, Oracle and/or its affiliates.     specified by individual developers. The default is Y.
+
+                                                          Defines the algorithm that is used to create one
+                                                          way hashes for URL checksums. Valid values are
+                                                          MD5 (deprecated), SH1 (deprecated), SH256
+                                                          (SHA-2, 256 bit), SH384 (SHA-2, 384 bit), SH512
+                                                          (SHA-2, 512 bit) and null. The SHA-2 algorithms
+                                                          are only available on Oracle 12g and later. A null
+                                                          value evaluates to the most secure algorithm
+                                                          available and is the default.
+                                                          If set to Y, the default, users can create multiple
+                                                          sessions in the browser.
+                                                          If set to Y, CSV downloads will use CRLF as line
+                                                          break instead of LF. Default is NULL.
+
+                                                          If set to Y, apex_escape.csv will escape formula
+                                                          cells by prepending a space.
+                                                          If set to Y, CSV downloads will include a BOM
+                                                          (Byte order mark) to help MS Excel to recognize
+                                                          the character set of CSV file. Default is NULL.
+
+                                                          Controls the authentication scheme for Oracle
+                                                          APEX Data Reporter applications. Valid parameter
+                                                          values include:
+                                                          � HEADER: HTTP header variable based
+
+                                                                authentication
+                                                          � SAML: SAML authentication
+                                                          � SOCIAL: Social Sign-In authentication
+
+                                                          This parameter can be used to automatically
+                                                          disable sending of emails on cloned databases. If
+                                                          the value is not NULL and differs from
+                                                          APEX_INSTANCE_ADMIN.DB_SIGNATURE, features
+                                                          are disabled. The default value is NULL, i.e. nothing
+                                                          is disabled. See also functions DB_SIGNATURE and
+                                                          IS_DB_SIGNATURE_VALID.
+
+                                                          Maximum number of debug messages for a single
+                                                          page view. Default is 50000.
+                                                          Virtual web server path for theme files. Only
+                                                          applies to themes that reference this location using
+                                                          #DEFAULT_THEME_FILES# substitution string.
+
+                                                                                                                      July 24, 2026
+                                                                                                                       Page 4 of 46
+                                                                            Chapter 34
+                                                       Available Parameter Values
+
+Parameter Name                                         Description
+DELETE_UPLOADED_FILES_AFTER_DAYS
+                                                       Uploaded files like application export files,
+DISABLE_ADMIN_LOGIN                                    websheet export files, or spreadsheet data load
+DISABLE_APPS_LOGIN                                     files will be automatically deleted after this number
+                                                       of days. Default is 14.
+DISABLE_WORKSPACE_LOGIN
+DISABLE_WS_MSG                                         If set to Y, Oracle APEX Administration Services
+                                                       are disabled. If set to N, the default, they are not
+DISABLE_WS_PROV                                        disabled.
+DOCGEN_CREDENTIAL
+DOCGEN_FUNCTION_OCID                                   If set to Y, the login to all customer-created apps is
+DOCGEN_INSTANCEID_OVERRIDE                             disabled. If set to a comma-separated list of
+DOCGEN_INVOKE_ENDPOINT                                 application IDs, only the login to those applications
+DOCGEN_OS_BUCKET_COMPARTMENT_OCID                      is disabled. If set to N, the default, the login to
+DOCGEN_OS_ENDPOINT                                     customer-created apps is not disabled.
+DOCGEN_OS_NAMESPACE
+EMAIL_ATTACHMENT_MAX_SIZE_MB                           If set to Y, the workspace login is disabled. If set to
+EMAIL_IMAGES_URL                                       N, the default, the login is not disabled.
+
+EMAIL_INSTANCE_URL                                     The message displayed to end users when they
+                                                       attempt to provision a workspace via email
+                                                       provisioning while workspace provisioning has
+                                                       been disabled (via DISABLE_WS_PROV).
+
+                                                       If set to Y, the workspace creation is disabled for
+                                                       requests sent out via e-mail notification. If set to N,
+                                                       the default, they are not disabled.
+
+                                                       Specifies the cloud credential to use for Oracle
+                                                       Object Storage bucket management and use of the
+                                                       Oracle Document Generator Pre-built function.
+
+                                                       Specifies the Oracle Cloud Identity (OCID) of the
+                                                       Oracle Document Generator Pre-Built function.
+
+                                                       Overrides the instance ID used for the bucket name
+                                                       in Object Storage.
+
+                                                       The base endpoint URL to access the Oracle
+                                                       Document Generator Pre-built function.
+
+                                                       The unique ID of the OCI compartment for bucket
+                                                       management and Oracle Document Generator Pre-
+                                                       built function access.
+
+                                                       Specifies the base URL endpoint for the Oracle
+                                                       Object Storage bucket.
+
+                                                       OCI system-assigned namespace name for Object
+                                                       Storage. The Object Storage namespace serves as
+                                                       the top-level container for all buckets and objects.
+
+                                                       Specifies the maximum size in megabytes of a
+                                                       single email attachment sent using APEX_MAIL or
+                                                       the Send E-Mail process.
+
+                                                       Specifies the full URL to the images directory of
+                                                       Oracle APEX instance, including the trailing slash
+                                                       after the images directory. For example: http://
+                                                       example_server/i/. This setting used for Oracle
+                                                       APEX system-generated emails.
+
+                                                       Specifies the full URL to the Oracle APEX instance,
+                                                       including the trailing slash after the Database
+                                                       Access Descriptor. For example: http://
+                                                       example_server/pls/apex/. This setting used
+                                                       for Oracle APEX system-generated emails.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 5 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                         Chapter 34
+                                                                    Available Parameter Values
+
+Parameter Name                                         Description
+
+ENABLE_DICTATION                                       If set to Y, this instance can use the Web Speech
+                                                       API for converting speech into text in supported
+                                                       components. If set to N, Web Speech will not be
+                                                       enabled in supported components.
+
+ENABLE_LEGACY_WEB_ENTRY_POINTS                         If Y (default is N), procedures that were used in
+                                                       older APEX versions (e.g. HTMLDB_UTIL.%) can be
+                                                       called in the URL.
+
+ENABLE_TRANSACTIONAL_SQL                               If set to Y, the default, transactional SQL
+                                                       commands are enabled on this instance. If set to N,
+                                                       transactional SQL commands are not enabled.
+
+ENCRYPTED_TABLESPACES_ENABLED                          If set to Y, the tablespaces provisioned through
+                                                       APEX are created as encrypted tablespaces. If set
+                                                       to N, the tablespaces are not encrypted.
+
+GALLERY_BACKGROUND_INSTALL                             If set to Y, the default, gallery applications are
+                                                       installed in the background, so users don't have to
+                                                       wait until installation finishes and can proceed with
+                                                       their work without interruption.
+
+GALLERY_FILE_URLS                                      URLs which will be used as a installation source for
+                                                       the Oracle APEX application gallery. The URLs
+                                                       should point to valid endpoints returning JSON
+                                                       format, which describe the sample or starter apps
+                                                       to list. Substitution string #APEX_BASE_VERSION#
+                                                       can be used to link to version dependent endpoints.
+
+GETTING_STARTED_ENABLED                                If set to Y, getting started information will be shown
+                                                       on the homepage and other pages.
+
+HEADER_AUTH_CALLBACK                                   Callback procedure name for HTTP header based
+                                                       authentication, defaults to
+                                                       APEX_AUTHENTICATION.CALLBACK.
+
+HEADER_AUTHENTICATION                                  HTTP Header Variable authentication settings in
+                                                       flat JSON format. Supported keys are
+                                                       http_header_variable,
+                                                       action_if_username_empty, url,
+                                                       error_message, verify_username, and
+                                                       logout_url_sso_server.
+
+HTTP_ERROR_STATUS_ON_AJAX_ERROR_ENABLED                If set to N, the default, APEX presents an error
+                                                       JSON to AJAX caller for all unhanded errors. If set
+                                                       to Y, returns an HTTP 400 status when the APEX
+                                                       engine encounters an unhandled error. If empty,
+                                                       follow the behavior configured with
+                                                       HTTP_ERROR_STATUS_ON_ERROR_PAGE_ENABLED
+                                                       parameter.
+
+HTTP_ERROR_STATUS_ON_ERROR_PAGE_ENABLED                If set to N, the default, APEX presents an error
+                                                       page to the end user for all unhanded errors. If set
+                                                       to Y, returns an HTTP 400 status to the end user's
+                                                       client browser when the APEX engine encounters
+                                                       an unhandled error.
+
+HTTP_RESPONSE_HEADERS                                  List of http response headers, separated by
+                                                       newline (chr(10)). APEX writes these headers on
+                                                       each request, before rendering the page. The
+                                                       substitution string #CDN# within the headers will be
+                                                       replaced by the content delivery networks that are
+                                                       known to APEX.
+
+API Reference                                                       July 24, 2026
+G26651-03                                                           Page 6 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+Parameter Name                                                                                                  Chapter 34
+HTTP_STS_MAX_AGE                                                                       Available Parameter Values
+
+HTTP_TRUSTED_ORIGINS                                   Description
+
+IGNORED_FRIENDLY_URL_PARAMETERS                        This parameter is only relevant if REQUIRE_HTTPS
+                                                       is set to A. Then, APEX emits a Strict-Transport-
+IMAGE_PREFIX                                           Security header, with max-age=<value>, on
+IMP_DEFAULT_SUBSCRIPTION_MODE                          HTTPS requests if HTTP_STS_MAX_AGE has a
+                                                       value greater than 0. It also redirects to a HTTPS
+INBOUND_PROXIES                                        URL if the request protocol is HTTP, instead of
+INSTANCE_DBMS_CREDENTIAL_ENABLED                       processing the request.
+                                                       List of remote HTTP origins that can access
+INSTANCE_NO_PROXY_DOMAINS                              resources, separated by newline. Set this
+INSTANCE_PROXY                                         parameter in combination with the ORDS
+INSTANCE_TABLESPACE                                    parameter
+KEEP_SESSIONS_ON_UPGRADE                               security.externalSessionTrustedOrigins.
+LOGIN_MESSAGE                                          Comma-separated list of parameter names which
+LOGIN_THROTTLE_DELAY                                   are ignored when parsing friendly URLs. Default:
+LOGIN_THROTTLE_METHODS
+MAX_APPLICATION_BACKUPS                                utm_campaign,utm_source,utm_medium,ut
+MAX_DATA_EXPORT_IMAGES                                 m_term,utm_content,fbclid
+
+                                                       The image prefix of the APEX instance, such
+                                                       as /i/.
+                                                       Use this parameter to define a default Subscription
+                                                       Mode installation option. Refer Subscription Mode
+                                                       constants in the APEX_APPLICATION_INSTALL
+                                                       package for valid values.
+                                                       Comma-separated list of IP addresses for proxy
+                                                       servers through which requests come in.
+                                                       If set to Y, database credentials, which are
+                                                       accessible to the APEX engine (APEX_NNNNNN
+                                                       schema), can be used in all workspaces on this
+                                                       instance.
+                                                       Comma-separated list of domain names for which
+                                                       the instance proxy is not to be used.
+                                                       The proxy server for all outbound HTTP(s) traffic. If
+                                                       INSTANCE_PROXY is set, it overrides any
+                                                       application specific proxy server definition.
+                                                       If specified, comma-separated list of tablespaces to
+                                                       use for the database user for all new workspaces.
+                                                       This flag affects application upgrades. If set to N,
+                                                       the default, delete sessions associated with the
+                                                       application. If set to Y, leave sessions unaffected.
+                                                       The text to be displayed on the login page. This text
+                                                       can include HTML.
+                                                       The flag which determines the time increase in
+                                                       seconds after failed logins.
+                                                       The methods to count failed logins. Colon-
+                                                       separated list of USERNAME_IP, USERNAME, IP.
+                                                       The maximum number of backups kept for each
+                                                       application. Default is 25. Maximum is 30. Zero (0)
+                                                       disables automated backups.
+                                                       The maximum number of unique images to be
+                                                       included in a data export / report download.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 7 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                            Chapter 34
+                                                       Available Parameter Values
+
+Parameter Name                                         Description
+MAX_MAIL_QUEUE_ROWS
+                                                       Defines the number of email messages that will be
+MAX_MAP_AJAX_REQUESTS_PER_SESSION                      processed from the queue per workspace during
+                                                       each invocation of the ORACLE_APEX_MAIL_QUEUE
+MAX_OBJECTS_MAP_LAYER_TILE                             scheduler job.
+
+MAX_PROCESS_SCHEDULER_JOBS_DEFAULT                     Maximum number of allowed AJAX requests per
+MLE_LANGUAGES                                          session when Vector Tiles are used. Default is 20.
+                                                       Unlimited if NULL. Zero (0) disables "Use Vector
+                                                       Tiles".
+
+                                                       The maximum number of features included in a
+                                                       layer tile when Vector Tiles are used. Default is
+                                                       15000, minimal value is 1, maximum value is
+                                                       25000.
+
+                                                       Default maximum value of scheduler jobs for
+                                                       background processing. The default value is 4.
+
+                                                       Comma-separated list of MLE languages available
+                                                       for application development. If the parameter
+                                                       contains no language, only SQL and PL/SQL can
+                                                       be used. Default: JAVASCRIPT.
+
+                                                                                    Note
+
+                                                                                          To use MLE,
+                                                                                          workspace schemas
+                                                                                          still need the
+                                                                                          necessary MLE grants:
+                                                                                       � =21c: grant
+
+                                                                                            EXECUTE
+                                                                                            DYNAMIC MLE to
+                                                                                            schema
+                                                                                       � >=21c: grant
+                                                                                            EXECUTE ON
+                                                                                            sys.JAVASCRIPT
+                                                                                            to schema
+                                                                                          To create
+                                                                                          environments and
+                                                                                          modules:
+                                                                                       � >=26ai: grant
+                                                                                            CREATE MLE to
+                                                                                            schema
+
+PASSWORD_ALPHA_CHARACTERS                              The alphabetic characters used for password
+                                                       complexity rules. Default list of alphabetic
+                                                       characters include the following:
+
+                                                       abcdefghijklmnopqrstuvwxyzABCDEFGHIJK
+                                                       LMNOPQRSTUVWXYZ
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 8 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                           Parameter Name                                                                       Chapter 34
+                        PASSWORD_HASH_FUNCTION                                         Available Parameter Values
+
+                        PASSWORD_HASH_ITERATIONS       Description
+                        PASSWORD_HISTORY_DAYS
+                        PASSWORD_MIN_LENGTH            Defines the algorithm that is used to create one
+                        PASSWORD_NEW_DIFFERS_BY        way hashes for workspace user passwords. Valid
+                                                       values are MD5 (deprecated), SH1 (deprecated),
+                        PASSWORD_NOT_LIKE_USERNAME     SH256 (SHA-2, 256 bit), SH384 (SHA-2, 384 bit),
+                        PASSWORD_NOT_LIKE_WORDS        SH512 (SHA-2, 512 bit) and NULL. The SHA-2
+                                                       algorithms are only available on Oracle 12g and
+                        PASSWORD_NOT_LIKE_WS_NAME      later. A NULL value evaluates to the most secure
+                        PASSWORD_ONE_ALPHA             algorithm available and is the default.
+                        PASSWORD_ONE_LOWER_CASE        Defines the number of iterations for the
+                        PASSWORD_ONE_NUMERIC           PASSWORD_HASH_FUNCTION (default 10000).
+                        PASSWORD_ONE_PUNCTUATION
+                                                       Defines the number of days a previously used
+API Reference                                          password cannot be used again as a new
+G26651-03                                              password by the same user.
+Copyright � 2003, 2026, Oracle and/or its affiliates.  A positive integer or 0 which specifies the minimum
+                                                       character length for passwords for instance
+                                                       administrators, workspace administrators,
+                                                       developers, and end user Oracle APEX accounts.
+                                                       A positive integer or 0 which specifies the number
+                                                       of differences required between old and new
+                                                       passwords. The passwords are compared
+                                                       character by character, and each difference that
+                                                       occurs in any position counts toward the required
+                                                       minimum difference. This setting applies to
+                                                       accounts for instance administrators, workspace
+                                                       administrators, developers, and end user Oracle
+                                                       APEX accounts.
+                                                       If Y (the default is N), prevent workspace
+                                                       administrator, developer, and end user account
+                                                       passwords from containing the username.
+                                                       Enter words, separated by colons, that workspace
+                                                       administrator, developer, and end user account
+                                                       passwords must not contain. These words may not
+                                                       appear in the password in any combination of
+                                                       upper- or lowercase.
+                                                       Set to Y to prevent workspace administrator,
+                                                       developer, and end user account passwords from
+                                                       containing the workspace name.
+                                                       Set to Y to require that workspace administrator,
+                                                       developer, and end user account passwords
+                                                       contain at least one alphabetic character as
+                                                       specified in PASSWORD_ALPHA_CHARACTERS.
+
+                                                       Set to Y to require that workspace administrator,
+                                                       developer, and end user account passwords
+                                                       contain at least one lowercase alphabetic
+                                                       character.
+                                                       Set to Y to require that workspace administrator,
+                                                       developer, and end user account passwords
+                                                       contain at least one Arabic numeric character
+                                                       (0-9).
+
+                                                       Set to Y to require that workspace administrator,
+                                                       developer, and end user account passwords
+                                                       contain at least one punctuation character as
+                                                       specified in
+                                                       PASSWORD_PUNCTUATION_CHARACTERS.
+
+                                                                                                                   July 24, 2026
+                                                                                                                    Page 9 of 46
+                                                                            Chapter 34
+                                                       Available Parameter Values
+
+Parameter Name                                         Description
+PASSWORD_ONE_UPPER_CASE
+PASSWORD_PUNCTUATION_CHARACTERS                        Set to Y to require that workspace administrator,
+                                                       developer, and end user account passwords
+PERSISTENT_AUTHENTICATION_MAX_DAYS                     contain at least one uppercase alphabetic
+PLSQL_EDITING                                          character.
+PRINT_BIB_LICENSED                                     The punctuation characters used for password
+                                                       complexity rules. Default list of punctuation
+PRINT_SVR_HOST                                         characters include the following:
+PRINT_SVR_PASSWORD
+PRINT_SVR_PORT                                         !"#$%&()``*+,-/:;<=>?_
+PRINT_SVR_PROTOCOL
+PRINT_SVR_SCRIPT                                       Number of days after which persistent
+PRINT_SVR_TIMEOUT                                      authentication expires and user has to sign in
+PRINT_SVR_USERNAME                                     again.
+PROTECTED_COOKIES                                      If set to Y, the default, the SQL Workshop Object
+                                                       Browser is enabled to permit users to edit and
+                                                       compile PL/SQL. If set to N, users are not allowed.
+
+                                                       Specify the external print server. Valid values
+                                                       include:
+                                                       � STANDARD - requires Apache FOP.
+                                                       � DOCUMENT_GENERATOR - requires Oracle
+
+                                                             Document Generator Pre-built Function.
+                                                       � ADVANCED - requires Oracle BI Publisher.
+                                                       � AOP - requires APEX Office Print.
+                                                       � NONE- Native APEX printing.
+
+                                                       Specifies the host address of the print server
+                                                       converting engine, for example, localhost. Enter
+                                                       the appropriate host address if the print server is
+                                                       installed at another location.
+                                                       Defines the password APEX takes to authenticate
+                                                       itself against the print server, in conjunction with
+                                                       the parameter PRINT_SVR_USERNAME.
+
+                                                       Defines the port of the print server engine, for
+                                                       example 8888. Value must be a positive integer.
+
+                                                       Valid values include:
+                                                       � http
+                                                       � https
+
+                                                       Defines the script that is the print server engine, for
+                                                       example: /xmlpserver/convert
+
+                                                       Defines the transfer timeout for communicating with
+                                                       the print server in seconds. Value must be a
+                                                       positive integer.
+                                                       Defines the username APEX takes to authenticate
+                                                       itself against the print server. If
+                                                       PRINT_SVR_USERNAME is NULL, no authentication
+                                                       is used.
+                                                       Comma-separated list of cookie names that APEX
+                                                       should filter from the OWA arrays.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 10 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                              Chapter 34
+                                                                         Available Parameter Values
+
+Parameter Name                                         Description
+
+PWA_PUSH_NOTIFICATIONS_ALLOWED_ENDPOINT                Defines an optional list of additional allowed URLs
+S                                                      for push notification services. By default the APEX
+                                                       engine supports the following URLs:
+                                                       � android.googleapis.com
+
+                                                       � fcm.googleapis.com
+
+                                                       � updates.push.services.mozilla.com
+                                                       � notify.windows.com
+
+                                                       � push.apple.com
+
+REJOIN_EXISTING_SESSIONS                               If P (the default), session rejoining is supported for
+                                                       non-authenticated users and public pages.
+
+                                                       If Y, it is also supported for authenticated users and
+                                                       protected pages.
+
+                                                       If N, session rejoining is disabled for the whole
+                                                       instance.
+
+                                                       Session rejoining has to be enabled at application
+                                                       or page level. A more restrictive setting at instance
+                                                       level with this instance parameter overrides
+                                                       application and page settings.
+
+                                                       Unconditionally enabling session rejoining has
+                                                       serious security implications. Attackers could take
+                                                       over sessions via XSS or if they have development
+                                                       access, to a workspace.
+
+REQ_NEW_SCHEMA                                         If set to Y, the option for new schema for new
+REQUIRE_HTTPS                                          workspace requests is enabled. If set to N, the
+                                                       default, the option is disabled.
+
+                                                       If set to A, enforces HTTPS for the whole APEX
+                                                       instance.
+
+                                                       If I, enforces HTTPS within the Oracle APEX
+                                                       development and administration applications.
+
+                                                       If N, permits all application be used when the
+                                                       protocol is either HTTP or HTTPS.
+
+                                                                         Note
+
+                                                                         Developers can also
+                                                                         enforce HTTPS at the
+                                                                         application level, by
+                                                                         setting the Secure
+                                                                         attribute of an
+                                                                         application scheme's
+                                                                         cookie.
+
+REQUIRE_OUT_HTTPS                                      If set to Y, all outbound HTTP traffic has to use the
+REQUIRE_OUT_LDAPS                                      HTTPS protocol.
+RESTFUL_SERVICES_ENABLED
+                                                       If set to Y, all outbound LDAP traffic has to use
+                                                       TLS.
+
+                                                       If set to Y, the default, RESTful services
+                                                       development is enabled. If set to N, RESTful
+                                                       services are not enabled.
+
+API Reference                                                            July 24, 2026
+G26651-03                                                                Page 11 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                 Chapter 34
+                                                            Available Parameter Values
+
+                           Parameter Name                   Description
+                        RESTRICT_APPS_HEADER
+                                                            To restrict access to a specific list of applications,
+                        RESTRICT_DEV_HEADER                 enter a HTTP request header name. If the header
+                                                            exists, login to the application is only allowed if the
+                        RESTRICT_IP_RANGE                   application ID is contained in the comma-delimited
+                                                            list of applications in the header.
+                        RESTRICT_RESPONSE_HEADERS
+                                                            Controls access to the APEX development
+                        SAMESITE_COOKIE                     environment and Administration Services using an
+                        SAML_APEX_CALLBACK_URLS             HTTP request header. Specify the name of the
+                                                            header, for example Public-Access. If this
+                        SAML_APEX_CERTIFICATE               header exists in the request, access is blocked.
+                        SAML_APEX_CERTIFICATE2              Normally an external load balancer or a web server
+                        SAML_APEX_PRIVATE_KEY               adds this header. The value of the header is
+                        SAML_APEX_PRIVATE_KEY2              ignored.
+                        SAML_C14N_SKIP_UNUSED_INCLUSIVE_NS
+                        SAML_C14N_SKIP_UTILIZED_XMLNS       To restrict access to the Oracle APEX development
+                                                            environment to a specific range of IP addresses,
+                        SAML_ENABLED                        enter a comma-delimited list of IP addresses. If
+                        SAML_IP_ISSUER                      necessary, you can use an asterisk (*) as a
+                        SAML_IP_SIGNING_CERTIFICATE         wildcard, but do not include additional numeric
+                        SAML_IP_SIGNING_CERTIFICATE2        values after wildcard characters. For example,
+                                                            138.*.41.2 is not a valid value.
+API Reference
+G26651-03                                                   If Y or NULL (the default), show HTTP 500 when a
+Copyright � 2003, 2026, Oracle and/or its affiliates.       page contains unsupported HTTP response
+                                                            headers. These include status codes 301, 308 and
+                                                            410, and cache headers for POST requests.
+
+                                                            Default value of the cookie attribute "samesite".
+
+                                                            SAML authentication: Supported URLs for
+                                                            APEX_AUTHENTICATION.SAML_CALLBACK,
+                                                            separated by newlines. If set, APEX verifies that
+                                                            the domain in the browser is part of this list and
+                                                            sends it's index (starting at 0) in authentication
+                                                            requests as AssertionConsumerServiceIndex.
+
+                                                            SAML authentication: The primary certificate of the
+                                                            APEX side.
+
+                                                            (Optional) SAML authentication: The alternative
+                                                            certificate of the APEX side.
+
+                                                            SAML authentication: The private key of the APEX
+                                                            side.
+
+                                                            (Optional) SAML authentication: The alternative
+                                                            private key of the APEX side.
+
+                                                            SAML authentication: If Y (default null), skip
+                                                            unused InclusiveNamespaces when
+                                                            canonicalizing XML.
+
+                                                            SAML authentication: If Y (default null), skip
+                                                            superfluous xmlns from the root node when
+                                                            extracting the Assertion from a SAML Response,
+                                                            when canonicalizing XML.
+
+                                                            SAML authentication: Y if workspace applications
+                                                            should be able to use SAML authentication.
+
+                                                            SAML authentication: Issuer attribute from the
+                                                            identity provider's metadata.
+
+                                                            SAML authentication: The certificate from the
+                                                            identity provider's metadata.
+
+                                                            (Optional) SAML authentication: An alternative
+                                                            certificate from the identity provider's metadata.
+
+                                                                                                                        July 24, 2026
+                                                                                                                       Page 12 of 46
+                                                                                         Chapter 34
+                                                                    Available Parameter Values
+
+Parameter Name                                         Description
+
+SAML_NAMEID_FORMAT                                     SAML authentication: The NameID format that
+                                                       APEX expects. Defaults to
+                                                       urn:oasis:names:tc:SAML:2.0:nameid-
+                                                       format:persistent when NULL.
+
+SAML_SIGN_IN_URL                                       SAML authentication: The identity provider's sign in
+                                                       URL.
+
+SAML_SIGN_OUT_URL                                      (Optional) SAML authentication: The identity
+                                                       provider's sign out URL.
+
+SAML_SP_ISSUER                                         SAML authentication: The "issuer" attribute that
+                                                       APEX sends (defaults to the callback URL).
+
+SAML_USERNAME_ATTRIBUTE                                SAML authentication: Responses can contain
+                                                       additional attributes about the user. If set, APEX
+                                                       uses that attribute's value as the username
+                                                       (defaults to the assertion subject's NameID
+                                                       attribute).
+
+SELF_SERVICE_SCHEMA_PREFIX                             If set, all schemas created during self service
+                                                       workspace provisioning will be prefixed with this
+                                                       value.
+
+SERVICE_ADMIN_PASSWORD_MIN_LENGTH                      A positive integer or 0 which specifies the minimum
+                                                       character length for passwords for instance
+                                                       administrators, workspace administrators,
+                                                       developers, and end user Oracle APEX accounts,
+                                                       when the strong password rules are enabled (see
+                                                       STRONG_SITE_ADMIN_PASSWORD).
+
+SERVICE_ADMIN_PASSWORD_NEW_DIFFERS_BY                  A positive integer or 0 which specifies the number
+                                                       of differences required between old and new
+                                                       passwords. The passwords are compared
+                                                       character by character, and each difference that
+                                                       occurs in any position counts toward the required
+                                                       minimum difference. This setting applies to
+                                                       accounts for instance administrators, workspace
+                                                       administrators, developers, and end user Oracle
+                                                       APEX accounts, when the strong password rules
+                                                       are enabled (see
+                                                       STRONG_SITE_ADMIN_PASSWORD).
+
+SERVICE_ADMIN_PASSWORD_NOT_LIKE_USERNAM                If Y, prevent workspace administrator, developer,
+E                                                      and end user account passwords from containing
+                                                       the username, when the strong password rules are
+                                                       enabled (see STRONG_SITE_ADMIN_PASSWORD).
+
+SERVICE_ADMIN_PASSWORD_NOT_LIKE_WORDS                  Enter words, separated by colons, that workspace
+                                                       administrator, developer, and end user account
+                                                       passwords must not contain, when the strong
+                                                       password rules are enabled (see
+                                                       STRONG_SITE_ADMIN_PASSWORD). These words
+                                                       may not appear in the password in any combination
+                                                       of upper- or lowercase.
+
+SERVICE_ADMIN_PASSWORD_NOT_LIKE_WS_NAME                Set to Y to prevent workspace administrator,
+                                                       developer, and end user account passwords from
+                                                       containing the workspace name, when the strong
+                                                       password rules are enabled (see
+                                                       STRONG_SITE_ADMIN_PASSWORD).
+
+API Reference                                                       July 24, 2026
+G26651-03                                                           Page 13 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                            Chapter 34
+                                                       Available Parameter Values
+
+Parameter Name                                         Description
+SERVICE_ADMIN_PASSWORD_ONE_ALPHA
+                                                       Set to Y to require that workspace administrator,
+SERVICE_ADMIN_PASSWORD_ONE_LOWER_CASE                  developer, and end user account passwords
+SERVICE_ADMIN_PASSWORD_ONE_NUMERIC                     contain at least one alphabetic character as
+SERVICE_ADMIN_PASSWORD_ONE_PUNCTUATION                 specified in PASSWORD_ALPHA_CHARACTERS, when
+                                                       the strong password rules are enabled (see
+SERVICE_ADMIN_PASSWORD_ONE_UPPER_CASE                  STRONG_SITE_ADMIN_PASSWORD).
+SERVICE_REQUEST_FLOW
+                                                       Set to Y to require that workspace administrator,
+SERVICE_REQUESTS_ENABLED                               developer, and end user account passwords
+SMTP_ALLOW_WORKSPACE_CREDENTIALS                       contain at least one lowercase alphabetic
+SMTP_CLIENT_DOMAIN                                     character, when the strong password rules are
+SMTP_CONNECTION_REUSE_COUNT                            enabled (see STRONG_SITE_ADMIN_PASSWORD).
+SMTP_ENVELOPE_FROM
+                                                       Set to Y to require that workspace administrator,
+                                                       developer, and end user account passwords
+                                                       contain at least one Arabic numeric character
+                                                       (0-9), when the strong password rules are enabled
+                                                       (see STRONG_SITE_ADMIN_PASSWORD).
+
+                                                       Set to Y to require that workspace administrator,
+                                                       developer, and end user account passwords
+                                                       contain at least one punctuation character as
+                                                       specified in
+                                                       PASSWORD_PUNCTUATION_CHARACTERS, when the
+                                                       strong password rules are enabled (see
+                                                       STRONG_SITE_ADMIN_PASSWORD).
+
+                                                       Set to Y to require that workspace administrator,
+                                                       developer, and end user account passwords
+                                                       contain at least one uppercase alphabetic
+                                                       character, when the strong password rules are
+                                                       enabled (see STRONG_SITE_ADMIN_PASSWORD).
+
+                                                       Determines default provisioning mode. Valid values
+                                                       include:
+                                                       � MANUAL: (default) An administrator must
+
+                                                             manually create each workspace.
+                                                       � EMAIL: Link displayed on login page. Requests
+
+                                                             require administrator approval.
+                                                       � AUTO: Link displayed on login page. Requests
+
+                                                             automatically approved.
+
+                                                       If set to Y, the default, workspace service requests
+                                                       for schemas, storage, and termination is enabled. If
+                                                       set to N, these requests are disabled.
+
+                                                       If set to Y, workspaces can configure their own
+                                                       Web Credential to authenticate with the SMTP
+                                                       server. If set to N, only the instance configuration
+                                                       will be used.
+
+                                                       The domain name of the client to send as the
+                                                       HELO/EHLO argument. If not specified, the server
+                                                       domain is used.
+
+                                                       Number of mails that the mail job processes, before
+                                                       re-opening the SMTP connection (default 1).
+
+                                                       Defines the "MAIL FROM" SMTP envelope
+                                                       address. If not set, APEX_MAIL will use the p_from
+                                                       address.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 14 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                            Chapter 34
+                                                       Available Parameter Values
+
+Parameter Name                                         Description
+SMTP_FROM
+SMTP_HOST_ADDRESS                                      Defines the "From" address for administrative tasks
+SMTP_HOST_PORT                                         that generate email, such as approving a provision
+SMTP_PASSWORD                                          request or resetting a password. Enter a valid email
+SMTP_REST_EMAIL_MODE                                   address, for example:admin@example.com
+SMTP_REST_EMAIL_URL
+SMTP_RETRY_PERMANENT_ERROR_PATTERNS                    Defines the server address of the SMTP server. If
+                                                       you are using another server as an SMTP relay,
+SMTP_SECURE_HOST                                       change this parameter to that server's address.
+SMTP_TLS_MODE                                          Default setting: localhost.
+
+SMTP_USERNAME                                          Defines the port the SMTP server listens to for mail
+                                                       requests. Default setting: 25.
+SOCIAL_AUTH_CALLBACK
+                                                       Defines the password APEX takes to authenticate
+                                                       itself against the SMTP server, in conjunction with
+                                                       the parameter SMTP_USERNAME.
+
+                                                       Controls whether mail deliver is done via SMTP
+                                                       relay (the default, N) or if mail delivery is done via
+                                                       the Oracle Cloud Notification Service.
+
+                                                       URL to be used for mail delivery via the Oracle
+                                                       Cloud Notification Service. This setting is only
+                                                       relevant when SMTP_REST_EMAIL_MODE = Y.
+
+                                                       Defines a linefeed-delimited list of regex patterns to
+                                                       determine which "permanent errors" returned by an
+                                                       SMTP server are to be actually treated as
+                                                       temporary. If an error message is treated as
+                                                       temporary, the mail will be sent again when the job
+                                                       executes next time. If the error is treated as
+                                                       permanent, the mail will be removed from the
+                                                       queue immediately. Defaults to .* (means that all
+                                                       errors are treated as temporary) for backwards
+                                                       compatibility.
+
+                                                       Specify allowable hosts presented by certificate
+                                                       when TLS is used.
+
+                                                       Defines whether or not APEX opens an encrypted
+                                                       connection to the SMTP server.
+
+                                                       If set to N, the connection is unencrypted (default).
+
+                                                       If set to Y, the connection is encrypted before data
+                                                       is sent.
+
+                                                       If STARTTLS, APEX sends the SMTP commands
+                                                       EHLO [SMTP_CLIENT_DOMAIN] and STARTTLS
+                                                       before encrypting the connection.
+
+                                                       Defines the username APEX takes to authenticate
+                                                       itself against the SMTP server (default is NULL).
+                                                       Starting with database version 11.2.0.2, APEX
+                                                       uses UTL_MAIL's AUTH procedure for
+                                                       authentication. This procedure negotiates an
+                                                       authentication mode with the SMTP server. With
+                                                       earlier database versions, the authentication mode
+                                                       is always AUTH LOGIN. If SMTP_USERNAME is NULL,
+                                                       no authentication is used.
+
+                                                       Callback procedure name for Social Sign-In,
+                                                       defaults to APEX_AUTHENTICATION.CALLBACK.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 15 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                           Parameter Name                                                                       Chapter 34
+                        SOCIAL_AUTHENTICATION                                          Available Parameter Values
+
+                        SOCIAL_CLIENT_SECRET           Description
+                        SQL_SCRIPT_MAX_OUTPUT_SIZE
+                        SSO_LOGOUT_URL                 Social Sign-In authentication settings in flat JSON
+                                                       format. Supported keys are client_id,
+                        STRONG_SITE_ADMIN_PASSWORD     authentication_provider, discovery_url,
+                        SUBSCRIPTION_HASH_FUNCTION     authorization_endpoint_url,
+                        SWAGGER_UI_URL                 token_endpoint_url,
+                                                       user_info_endpoint_url, logout_url, scope,
+                        SYSTEM_DEBUG_LEVEL             authentication_uri_parameters, username,
+                        SYSTEM_HELP_URL                additional_user_attributes,
+                                                       uppercase_username,
+API Reference                                          token_authentication_method,
+G26651-03                                              verify_attributes, and
+Copyright � 2003, 2026, Oracle and/or its affiliates.  map_additional_user_attributes.
+                                                       Social Sign-In authentication: Client secret, stored
+                                                       in the internal AUTHN_SOCIAL credential.
+                                                       The maximum allowable size for an individual script
+                                                       result. Default is 200000.
+                                                       Defines the URL Oracle APEX redirects to in order
+                                                       to trigger a logout from the Single Sign-On server.
+                                                       APEX automatically appends "?
+                                                       p_done_url=...login url...".
+                                                       Example:
+
+                                                       https://login.example.com/pls/orasso/
+                                                       orasso.wwsso_app_admin.ls_logout
+
+                                                       If set to Y, the default, the APEX admin password
+                                                       must conform to the default set of strong
+                                                       complexity rules. If set to N, the password is not
+                                                       required to follow the strong complexity rules.
+                                                       Defines the algorithm that is used to create
+                                                       component checksums to validate subscriptions.
+                                                       Valid values are SH256 (SHA-2, 256 bit), SH384
+                                                       (SHA-2, 384 bit), SH512 (SHA-2, 512 bit) and NULL.
+                                                       A NULL value evaluates to the most secure
+                                                       algorithm available. Default is SH256.
+                                                       Defines a URL pointing to the SWAGGER UI
+                                                       server to be used by the ORDS REST Workshop
+                                                       when generating documentation for a module. If a
+                                                       URL is specified, the URI to the web service
+                                                       swagger doc will be passed to the Swagger server.
+                                                       If a there is no URL specified, raw JSON will be
+                                                       produced.
+                                                       Defines a default debug level for all incoming
+                                                       requests (NULL, 1-9) The SQLcl script
+                                                       utilities/debug/d0.sql can be used to switch
+                                                       between NULL (disabled) and level 9.
+                                                       Specifies the location of the help and
+                                                       documentation accessed via the Help link in the
+                                                       development environment. By default, this points to
+                                                       the documentation for the corresponding release.
+                                                       For example: http://oracleapex.com/doc261
+                                                       for APEX 26.1.
+
+                                                                                                                   July 24, 2026
+                                                                                                                  Page 16 of 46
+                           Parameter Name                                                                        Chapter 34
+                        SYSTEM_MESSAGE                                                  Available Parameter Values
+                        TASK_RETENTION_PERIOD_DAYS
+                        TRACE_HEADER_NAME               Description
+                        TRACING_ENABLED
+                                                        The text to be displayed on the development
+                        UPGRADE_DATE                    environment home page. This text can include
+                                                        HTML.
+                        UPGRADE_DEFERRED                Specifies the retention period for Tasks in
+                                                        Completed state in days. After the retention
+                        UPGRADE_STATUS                  period, tasks will be archived in a JSON zip file and
+                                                        purged from the table(s).
+                        UPGRADE_VERSION                 This parameter contains a HTTP request header
+                                                        name and defaults to ECID-CONTEXT. The name
+                        USERNAME_VALIDATION             must be in upper case. APEX writes the HTTP
+                        WALLET_PATH                     header value to the activity log's ECID column.
+                        WALLET_PWD
+                        WORKFLOW_RETENTION_PERIOD_DAYS  If set to Y (the default), an application with Debug
+                                                        enabled can also generate server-side db trace
+API Reference                                           files using "&p_trace=YES" on the URL.
+G26651-03
+Copyright � 2003, 2026, Oracle and/or its affiliates.   If set to N, the request to create a trace file will be
+                                                        ignored.
+
+                                                        This read-only parameter contains the date when
+                                                        the next scheduled APEX upgrade will
+                                                        automatically apply to your database or NULL when
+                                                        no upgrade is scheduled. The date follows the ISO
+                                                        8601 format in the UTC time zone. This parameter
+                                                        only applies to APEX on Autonomous AI Database.
+                                                        When N (default), future APEX upgrades are
+                                                        scheduled within the default upgrade window.
+                                                        When Y, future APEX upgrades are scheduled
+                                                        within the extended upgrade window.
+                                                        If the next APEX upgrade is already scheduled in
+                                                        this database, changing this parameter also
+                                                        reschedules this upgrade (for example, from the
+                                                        default upgrade window to the extended upgrade
+                                                        window).
+                                                        This parameter only applies to APEX on Oracle
+                                                        Autonomous AI Database.
+
+                                                        This parameter contains the status of the next
+                                                        scheduled APEX upgrade if available. The possible
+                                                        values are: UP-TO-DATE, SCHEDULED, RUNNING.
+                                                        Set this parameter to RUN to initiate the upgrade.
+                                                        This parameter only applies to APEX on
+                                                        Autonomous AI Database.
+                                                        This read-only parameter contains the APEX
+                                                        version to be installed with the next scheduled
+                                                        upgrade or NULL when no upgrade is scheduled.
+                                                        This parameter only applies to APEX on
+                                                        Autonomous AI Database.
+                                                        The case-sensitive regular expression used to
+                                                        validate a username when creating or modifying
+                                                        developer and workspace administrator accounts.
+                                                        Default is * (asterisk) (validation is disabled).
+
+                                                        The path to the wallet on the file system, for
+                                                        example: file:/home/<username>/wallets
+
+                                                        The password associated with the wallet.
+
+                                                        Specifies the retention period for Workflows in
+                                                        Completed state in days. After the retention
+                                                        period, workflows will be purged from the table(s).
+
+                                                                                                                    July 24, 2026
+                                                                                                                   Page 17 of 46
+                                                                            Chapter 34
+                                                       Available Parameter Values
+
+Parameter Name                                         Description
+WORKSPACE_FREE_SPACE_LIMIT
+WORKSPACE_ISSUE_FILES_YN                               Sets percentage limit for free space in a
+WORKSPACE_ISSUE_FS_LIMIT                               workspace. If available space is lower that the
+                                                       value set here, a report lists them for the APEX
+WORKSPACE_MAX_OUTPUT_SIZE                              Administrator Digest.
+WORKSPACE_NAME_USER_COOKIE
+WORKSPACE_PROVISION_DEMO_OBJECTS                       If set to Y, the default, new workspaces will allow
+WORKSPACE_TEAM_DEV_FILES_YN                            file uploads into the Issues application. If set to N,
+WORKSPACE_TEAM_DEV_FS_LIMIT                            new workspaces will not allow file uploads into
+                                                       Issues, thereby disabling the ability to upload
+ZIP_FILE_MAX_EXPANSION_FACTOR                          attachments for an issue.
+ZIP_FILE_MAX_UNCOMPRESSED_SIZE_MB
+                                                       The maximum per upload file size of an Issue file
+                                                       attachment. Default value is 15728640 (15 MB).
+                                                       All possible options are listed below:
+                                                       � 5 MB - 5242880
+                                                       � 10 MB - 10485760
+                                                       � 15 MB - 15728640
+                                                       � 20 MB - 20971520
+                                                       � 25 MB - 26214400
+
+                                                       The maximum space allocated for script results.
+                                                       Default is 2000000.
+
+                                                       If set to Y or NULL (the default), APEX sends
+                                                       persistent cookies for workspace name and
+                                                       username during login, as well as for language
+                                                       selection. If N, the cookies are not sent.
+
+                                                       If set to Y, the default, demonstration applications
+                                                       and database objects are created in new
+                                                       workspaces. If set to N, they are not created in new
+                                                       workspaces.
+
+                                                       If set to Y, the default, new workspaces will allow
+                                                       file uploads into Team Development. If set to N,
+                                                       new workspaces will not allow file uploads into
+                                                       Team Development, thereby disabling the ability to
+                                                       upload feature, bug, and feedback attachments.
+
+                                                       The maximum per upload file size of a Team
+                                                       Development file (feature, bug, and feedback
+                                                       attachments). Default value is 15728640 (15
+                                                       MB). All possible options are listed below:
+                                                       � 5 MB - 5242880
+                                                       � 10 MB - 10485760
+                                                       � 15 MB - 15728640
+                                                       � 20 MB - 20971520
+                                                       � 25 MB - 26214400
+
+                                                       The maximum factor by which a compressed file
+                                                       can expand after decompression. Default value is
+                                                       200.
+
+                                                       The maximum size to unzip a file. Default value is
+                                                       4096 MB.
+
+Instance and Workspace Parameters
+
+The following parameters can be configured at both the Instance level (using
+APEX_INSTANCE_ADMIN.SET_PARAMETER) and the Workspace level (using
+APEX_INSTANCE_ADMIN.SET_WORKSPACE_PARAMETER).
+
+API Reference                                                                 July 24, 2026
+G26651-03                                                                     Page 18 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                           Parameter                                                                            Chapter 34
+                        ACCOUNT_LIFETIME_DAYS                                          Available Parameter Values
+                        AI_IS_ENABLED
+                        AI_MAX_TOKENS                  Description
+                        ALLOW_HOSTING_EXTENSIONS
+                        ALLOW_HOSTNAMES                The maximum number of days an end-user
+                                                       account password may be used before the account
+                        AUTOMATION_LOG_MESSAGE_LIMIT   is expired.
+                        CONTENT_CACHE_MAX_FILE_SIZE    If set to Y (default), then AI Services can be
+                        CONTENT_CACHE_SIZE_TARGET      enabled and configured for workspaces. If set to N,
+                        ENV_BANNER_COLOR               AI functionality is disabled for all workspaces.
+                                                       The maximum number of Tokens used for
+                        ENV_BANNER_ENABLE              Generative AI Services allowed for each workspace
+                        ENV_BANNER_LABEL               in a rolling 24-hour period. No Default.
+                        ENV_BANNER_POS                 Default N. If Y, the workspace is enabled to publish
+                        EXPIRE_FND_USER_ACCOUNTS       Builder Extension apps through the Extension
+                        MAX_LOGIN_FAILURES             Menu.
+                        MAX_PROCESS_SCHEDULER_JOBS     If set, users can only navigate to an application if
+                                                       the URL's hostname part contains this value.
+                        MAX_SESSION_IDLE_SEC           Instance administrators can configure more specific
+                        MAX_SESSION_LENGTH_SEC         values at workspace level.
+                        MAX_WEBSERVICE_REQUESTS        Limits the number of messages written to the
+                                                       automation log for a single automation run. If not
+API Reference                                          set, messages will be logged without a limit.
+G26651-03                                              The individual file entry size limit for the content
+Copyright � 2003, 2026, Oracle and/or its affiliates.  cache, per workspace.
+                                                       The target size for the content cache, per
+                                                       workspace.
+                                                       Defines the color class name for the environment
+                                                       banner color. Use accent-1, accent-2,
+                                                       accent-3 (and so on). Maximum of 16 color
+                                                       classes.
+                                                       If set to Y (default is N), the environment banner
+                                                       displays in the APEX development environment to
+                                                       visually flag the environment.
+                                                       Defines the label for the environment banner.
+                                                       Defines the display position for the environment
+                                                       banner. Options: LEFT or TOP.
+                                                       If set to Y, expiration of APEX accounts is enabled.
+                                                       If set to N, they are not enabled.
+                                                       The maximum number of consecutive unsuccessful
+                                                       authentication attempts allowed before a developer
+                                                       or administrator account is locked.
+                                                       The maximum number of scheduler jobs for
+                                                       background processing. A setting at workspace
+                                                       level overrides the instance level setting, specified
+                                                       with the
+                                                       MAX_PROCESS_SCHEDULER_JOBS_DEFAULT
+                                                       instance parameter.
+                                                       The number of seconds an internal application may
+                                                       be idle.
+                                                       The number of seconds an internal application
+                                                       session may exist.
+                                                       The maximum number of outbound web service
+                                                       requests allowed for each workspace in a rolling
+                                                       24-hour period. Default is 1000.
+
+                                                                                                                   July 24, 2026
+                                                                                                                  Page 19 of 46
+                                                                            Chapter 34
+                                                       Available Parameter Values
+
+Parameter                                              Description
+QOS_MAX_SESSION_KILL_TIMEOUT
+                                                       Number of seconds that an active old session can
+QOS_MAX_SESSION_REQUESTS                               live, when QOS_MAX_SESSION_REQUESTS has
+QOS_MAX_WORKSPACE_REQUESTS                             been reached. The oldest DB session with
+RM_CONSUMER_GROUP                                      LAST_CALL_ET greater than
+                                                       QOS_MAX_SESSION_KILL_TIMEOUT will be killed.
+SESSION_TIMEOUT_WARNING_SEC
+WEBSERVICE_LOGGING                                     Number of allowed concurrent requests to one
+WORKSPACE_EMAIL_MAXIMUM                                session associated with this workspace.
+WORKSPACE_MAX_FILE_BYTES
+                                                       Number of allowed concurrent requests to sessions
+                                                       in this workspace.
+
+                                                       If set, this is the resource manager consumer
+                                                       group to be used for all page events. A more
+                                                       specific group can be configured at workspace
+                                                       level.
+
+                                                       The number of seconds before session timeout that
+                                                       a warning is displayed, for internal applications.
+
+                                                       Controls instance wide setting of web service
+                                                       activity log: [A]lways, [N]ever, [U]se workspace
+                                                       settings.
+
+                                                       Maximum number of emails allowed to be sent via
+                                                       APEX_MAIL per workspace in a 24 hour period.
+                                                       Default is 1000.
+
+                                                       The maximum number of bytes for uploaded files
+                                                       for a workspace. A setting at workspace level
+                                                       overrides the instance level setting.
+
+Workspace Parameters
+
+The following parameters can be configured only at the Workspace level (using
+APEX_INSTANCE_ADMIN.SET_WORKSPACE_PARAMETER).
+
+Parameter                                              Description
+OPENTELEMETRY_CLS_URL
+OPENTELEMETRY_TOKEN_RELAY_URL                          The external Client Logging Service (CLS) URL
+PATH_PREFIX                                            that is obtained during telemetry provisioning.
+
+SMTP_CREDENTIAL_STATIC_ID                              The REST service that obtains an access token for
+                                                       the currently logged in user. The token is used for
+                                                       authentication when calling the CLS.
+
+                                                       The unique URI path prefix used to access
+                                                       RESTful Services in a workspace. The default path
+                                                       prefix value is the name of the workspace. Note
+                                                       that this is a workspace parameter, it can not be set
+                                                       at instance level.
+
+                                                       Static ID of the Web Credential to be used to
+                                                       authenticate with the SMTP server when emails
+                                                       are sent from this workspace.
+
+API Reference                                                                  July 24, 2026
+G26651-03                                                                      Page 20 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                    Chapter 34
+                                                                     ADD_AUTO_PROV_RESTRICTIONS Procedure
+
+See Also
+
+� Configuring Email in a Runtime Environment in the Oracle APEX Administration
+     Guide
+
+� Configuring Wallet Information in the Oracle APEX Administration Guide
+
+� Configuring Report Printing for an Instance in the Oracle APEX Administration
+     Guide
+
+� Workspace and Application Administration in the Oracle APEX Administration
+     Guide
+
+34.2 ADD_AUTO_PROV_RESTRICTIONS Procedure
+
+                       This procedure adds blocking email patterns when an instance has auto-provisioning or self-
+                       provisioning enabled for workspaces.
+                       If auto/self-provisioning is disabled, this procedure has no runtime effect.
+                       Syntax
+
+                       APEX_INSTANCE_ADMIN.ADD_AUTO_PROV_RESTRICTIONS (
+                             p_block_email_patterns IN apex_t_varchar2 DEFAULT NULL )
+
+                       Parameters
+
+ Parameter                                             Description
+p_block_email_patterns
+                                                       Add one or more email patterns to be removed from the
+Example                                                apex_auto_prov_email_patterns table.
+
+BEGIN
+      apex_instance_admin.add_auto_prov_restrictions (
+            p_block_email_patterns =>
+
+apex_t_varchar2('%@gmail.com','%@example.com') );
+END;
+
+34.3 ADD_SCHEMA Procedure
+
+                       This procedure adds a schema to a workspace to schema mapping.
+                       Syntax
+
+APEX_INSTANCE_ADMIN.ADD_SCHEMA (
+
+p_workspace                                            IN VARCHAR2,
+
+p_schema                                               IN VARCHAR2,
+
+p_grant_apex_privileges IN VARCHAR2 DEFAULT FALSE )
+
+API Reference                                                                          July 24, 2026
+G26651-03                                                                              Page 21 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                          Chapter 34
+                                                       ADD_WEB_ENTRY_POINT Procedure
+
+Parameters
+
+Parameter                                              Description
+p_workspace
+p_schema                                               The name of the workspace to which the schema mapping is added.
+p_grant_apex_privileges                                The schema to add to the schema to workspace mapping.
+                                                       Grant the privileges needed by Oracle APEX to this schema. Default
+                                                       FALSE.
+
+Example
+
+The following example demonstrates how to use the ADD_SCHEMA procedure to map a schema
+mapped to a workspace.
+
+BEGIN
+      APEX_INSTANCE_ADMIN.ADD_SCHEMA('MY_WORKSPACE','FRANK',true );
+
+END;
+
+34.4 ADD_WEB_ENTRY_POINT Procedure
+
+Purpose
+Add a public procedure to the list of allowed objects that can be called via the URL.
+The parsing schema (such as APEX_PUBLIC_USER) must have privileges to execute the
+procedure. You must enable EXECUTE to PUBLIC or the parsing schema.
+
+Syntax
+
+APEX_INSTANCE_ADMIN.ADD_WEB_ENTRY_POINT (
+      p_name IN VARCHAR2,
+      p_methods IN VARCHAR2 DEFAULT 'GET' );
+
+Parameters
+
+Parameter                                              Description
+p_name                                                 The procedure name, prefixed by package name and schema, unless a
+                                                       public synonym exists.
+p_methods (deprecated)
+                                                                                    Note
+
+                                                                                          This parameter is deprecated and will be
+                                                                                          removed in a future release.
+
+                                                       The comma-separated HTTP request methods (such as GET or POST).
+                                                       Default GET.
+
+API Reference                                                        July 24, 2026
+G26651-03                                                            Page 22 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                              Chapter 34
+                                                                                    ADD_WORKSPACE Procedure
+
+Examples
+
+This example enables myschema.mypkg.proc to be called via GET and POST requests, such as
+https://www.example.com/apex/myschema.mypkg.proc
+
+BEGIN
+      apex_instance_admin.add_web_entry_point (
+            p_name => 'MYSCHEMA.MYPKG.PROC',
+            p_methods => 'GET,POST' );
+      COMMIT;
+
+END;
+
+34.5 ADD_WORKSPACE Procedure
+
+                       Adds a workspace to an Oracle APEX instance.
+                       Syntax
+
+APEX_INSTANCE_ADMIN.ADD_WORKSPACE (
+
+p_workspace_id                                         IN NUMBER DEFAULT NULL,
+
+p_workspace                                            IN VARCHAR2,
+
+p_source_identifier IN VARCHAR2 DEFAULT NULL,
+
+p_primary_schema                                       IN VARCHAR2,
+
+p_additional_schemas IN VARCHAR2,
+
+p_rm_consumer_group IN VARCHAR2 DEFAULT NULL,
+
+p_host_prefix                                          IN VARCHAR2 DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_workspace_id
+                                                       The ID to uniquely identify the workspace in an APEX instance. This
+p_workspace                                            may be left null and a new unique ID is assigned.
+p_source_identifier                                    The name of the workspace to be added.
+
+p_primary_schema                                       A short identifier for the workspace used when synchronizing feedback
+p_additional_schemas                                   between different instances.
+                                                       The primary database schema to associate with the new workspace.
+p_rm_consumer_group
+                                                       A colon delimited list of additional schemas to associate with this
+p_host_prefix                                          workspace.
+                                                       Resource Manager consumer group which is used when executing
+                                                       applications of this workspace.
+                                                       If set, users can only navigate to an application if the URL's hostname
+                                                       part contains this value.
+
+Example
+
+The following example demonstrates how to use the ADD_WORKSPACE procedure to add a new
+workspace named MY_WORKSPACE using the primary schema, SCOTT, along with additional
+schema mappings for HR and OE.
+
+BEGIN
+
+APEX_INSTANCE_ADMIN.ADD_WORKSPACE (
+
+       p_workspace_id                                  => 8675309,
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 23 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                      Chapter 34
+                                                                            CREATE_CLOUD_CREDENTIAL Procedure
+
+       p_workspace                                     => 'MY_WORKSPACE',
+
+       p_primary_schema => 'SCOTT',
+
+       p_additional_schemas => 'HR:OE' );
+
+END;
+
+34.6 CREATE_CLOUD_CREDENTIAL Procedure
+
+                       This procedure creates a new DBMS_CLOUD OCI API Key credential. This procedure creates
+                       a credential in DBMS_CLOUD using DBMS_CLOUD.CREATE_CREDENTIAL.
+
+                       Syntax
+
+APEX_INSTANCE_ADMIN.CREATE_CLOUD_CREDENTIAL (
+
+      p_credential_name                                IN VARCHAR2,
+
+      p_user_ocid                                      IN VARCHAR2,
+
+      p_tenancy_ocid                                   IN VARCHAR2,
+
+      p_private_key                                    IN VARCHAR2,
+
+      p_fingerprint                                    IN VARCHAR2 )
+
+Parameters
+
+Parameter                                                  Description
+p_credential_name
+p_user_ocid                                                Name for credential.
+p_tenancy_ocid                                             Oracle Cloud identifier (OCID) for the user.
+p_private_key                                              Oracle Cloud identifier (OCID) for the tenancy.
+p_fingerprint                                              Private key.
+                                                           Specifies a fingerprint.
+
+Example
+The following example creates the MY_CREDENTIAL credential.
+
+BEGIN
+
+APEX_INSTANCE_ADMIN.CREATE_CLOUD_CREDENTIAL (
+
+p_credential_name                                      => 'MY_CREDENTIAL',
+
+p_user_ocid                                            => 'ocid1.user.oc1...',
+
+p_tenancy_ocid                                         => 'ocid1.tenancy.oc1..',
+
+p_private_key                                          => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+
+p_fingerprint                                          =>
+
+'12:34:56:78:90:ab:cd:ef:12:34:56:78:90:ab:cd:ef' );
+
+END;
+
+34.7 CREATE_OR_UPDATE_ADMIN_USER Procedure
+
+                       This procedure creates an instance administration user account (that is, a user in the INTERNAL
+                       workspace). If the account already exists, this procedure also unlocks it and updates the
+                       account with a random password (not used when the builder authentication is Database
+                       Accounts).
+
+                       This is the procedural equivalent of calling the apxchpwd.sql script.
+
+API Reference                                                                                               July 24, 2026
+G26651-03                                                                                                   Page 24 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                  Chapter 34
+                                                                       CREATE_SCHEMA_EXCEPTION Procedure
+
+Syntax
+
+APEX_INSTANCE_ADMIN.CREATE_OR_UPDATE_ADMIN_USER (
+      p_username IN VARCHAR2 )
+
+Parameters
+
+Parameter                                              Description
+p_username                                             The username.
+
+Example
+The following example creates or updates the user ADMIN.
+
+BEGIN
+      apex_instance_admin.create_or_update_admin_user (
+            p_username => 'ADMIN',
+      COMMIT;
+
+END;
+
+34.8 CREATE_SCHEMA_EXCEPTION Procedure
+
+                       This procedure creates an exception which enables the assignment of a restricted schema to a
+                       specific workspace.
+
+                       Syntax
+
+APEX_INSTANCE_ADMIN.CREATE_SCHEMA_EXCEPTION (
+      p_schema IN VARCHAR2,
+      p_workspace IN VARCHAR2 )
+
+Parameter
+
+Parameter                                              Description
+p_schema                                               The schema.
+p_workspace                                            The workspace.
+
+Example
+This example allows the assignment of restricted schema HR to workspace HR_WORKSPACE.
+
+BEGIN
+      apex_instance_admin.create_schema_exception (
+            p_schema => 'HR',
+            p_workspace => 'HR_WORKSPACE' );
+      COMMIT;
+
+END;
+
+API Reference                                                          July 24, 2026
+G26651-03                                                              Page 25 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                           Chapter 34
+                                                                                                                         DB_SIGNATURE Function
+
+                              See Also
+                                 � RESTRICT_SCHEMA Procedure
+                                 � UNRESTRICT_SCHEMA Procedure
+                                 � REMOVE_SCHEMA_EXCEPTION Procedure
+                                 � REMOVE_SCHEMA_EXCEPTIONS Procedure
+                                 � REMOVE_WORKSPACE_EXCEPTIONS Procedure
+
+34.9 DB_SIGNATURE Function
+
+                       This function computes the current database signature value.
+                       Syntax
+
+                       APEX_INSTANCE_ADMIN.DB_SIGNATURE
+                              RETURN VARCHAR2;
+
+                       Example
+                       The following example sets the DB_SIGNATURE instance parameter to the current database
+                       signature.
+
+                       BEGIN
+                               apex_instance_admin.set_parameter (
+                                     p_parameter => 'DB_SIGNATURE',
+                                     p_value => apex_instance_admin.db_signature );
+
+                       END;
+
+See Also
+� IS_DB_SIGNATURE_VALID Function
+� Available Parameter Values
+
+34.10 DROP_CLOUD_CREDENTIAL Procedure
+
+                       This procedure Drops an existing DBMS_CLOUD OCI API Key credential. The procedure
+                       drops a credential in the internal Oracle APEX schema using DBMS_CLOUD.DROP_CREDENTIAL.
+
+                       Syntax
+
+APEX_INSTANCE_ADMIN.DROP_CLOUD_CREDENTIAL (
+
+p_credential_name                                      IN VARCHAR2 )
+
+API Reference                                                         July 24, 2026
+G26651-03                                                             Page 26 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                       Chapter 34
+                                                                              FREE_WORKSPACE_APP_IDS Procedure
+
+Parameters
+
+Parameter                                              Description
+p_credential_name                                      Name for credential.
+
+Example
+The following example drops the MY_CREDENTIAL credential.
+
+BEGIN
+
+APEX_INSTANCE_ADMIN.DROP_CLOUD_CREDENTIAL (
+
+p_credential_name                                      => 'MY_CREDENTIAL' );
+
+END;
+
+34.11 FREE_WORKSPACE_APP_IDS Procedure
+
+                       This procedure removes the reservation of application IDs for a given workspace ID. Use this
+                       procedure to undo a reservation, when the reservation is not necessary anymore because it
+                       happened by mistake or the workspace no longer exists. To reserve application IDs for a given
+                       workspace, see RESERVE_WORKSPACE_APP_IDS Procedure.
+
+                       Syntax
+
+APEX_INSTANCE_ADMIN.FREE_WORKSPACE_APP_IDS (
+      p_workspace_id IN NUMBER )
+
+Parameters
+
+Parameter                                              Description
+p_workspace_id                                         The unique ID of the workspace.
+
+Example
+
+This example illustrates how to undo the reservation of application IDs that belong to a
+workspace with an ID of 1234567890.
+
+begin
+      apex_instance_admin.free_workspace_app_ids(1234567890);
+
+end;
+
+34.12 GET_PARAMETER Function
+
+                       This function retrieves the value of a parameter used in administering a runtime environment.
+                       Syntax
+
+APEX_INSTANCE_ADMIN.GET_PARAMETER (
+      p_parameter IN VARCHAR2 )
+
+RETURN VARCHAR2;
+
+API Reference                                                                           July 24, 2026
+G26651-03                                                                               Page 27 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                   Chapter 34
+                                                                                                GET_SCHEMAS Function
+
+Parameters
+
+Parameter                                              Description
+p_parameter
+                                                       The instance parameter to be retrieved.
+                                                       See Available Parameter Values.
+
+Example
+
+The following example demonstrates how to use the GET_PARAMETER function to retrieve the
+SMTP_HOST_ADDRESS parameter currently defined for an APEX instance.
+
+DECLARE
+      L_VAL VARCHAR2(4000);
+
+BEGIN
+      L_VAL :=APEX_INSTANCE_ADMIN.GET_PARAMETER('SMTP_HOST_ADDRESS');
+      DBMS_OUTPUT.PUT_LINE('The SMTP Host Setting Is: '||L_VAL);
+
+END;
+
+34.13 GET_SCHEMAS Function
+
+                       The GET_SCHEMAS function retrieves a comma-delimited list of schemas that are mapped to a
+                       given workspace.
+
+                       Syntax
+
+APEX_INSTANCE_ADMIN.GET_SCHEMAS (
+      p_workspace IN VARCHAR2 )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_workspace                                            The name of the workspace from which to retrieve the schema list.
+
+Example
+
+The following example demonstrates how to use the GET_SCHEMA function to retrieve the
+underlying schemas mapped to a workspace.
+
+DECLARE
+      L_VAL VARCHAR2(4000);
+
+BEGIN
+      L_VAL :=APEX_INSTANCE_ADMIN.GET_SCHEMAS('MY_WORKSPACE');
+      DBMS_OUTPUT.PUT_LINE('The schemas for my workspace: '||L_VAL);
+
+END;
+
+34.14 GET_WORKSPACE_PARAMETER Procedure
+
+                       Gets the workspace parameter.
+
+API Reference                                                                                   July 24, 2026
+G26651-03                                                                                       Page 28 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                      Chapter 34
+                                                       GRANT_EXTENSION_WORKSPACE Procedure
+
+Syntax
+
+APEX_INSTANCE_ADMIN.GET_WORKSPACE_PARAMETER (
+      p_workspace IN VARCHAR2,
+      p_parameter IN VARCHAR2 )
+
+Parameters
+
+Parameter                                              Description
+p_workspace
+                                                       The name of the workspace from which you are getting the workspace
+p_parameter                                            parameter.
+                                                       The name of the parameter to get. Parameter names include:
+                                                       � ACCOUNT_LIFETIME_DAYS
+                                                       � ALLOW_HOSTNAMES
+                                                       � ENV_BANNER_COLOR
+                                                       � ENV_BANNER_LABEL
+                                                       � ENV_BANNER_POS
+                                                       � ENV_BANNER_YN
+                                                       � EXPIRE_FND_USER_ACCOUNTS
+                                                       � MAX_LOGIN_FAILURES
+                                                       � MAX_SESSION_IDLE_SEC
+                                                       � MAX_SESSION_LENGTH_SEC
+                                                       � MAX_WEBSERVICE_REQUESTS
+                                                       � QOS_MAX_SESSION_KILL_TIMEOUT
+                                                       � QOS_MAX_SESSION_REQUESTS
+                                                       � QOS_MAX_WORKSPACE_REQUESTS
+                                                       � RM_CONSUMER_GROUP
+                                                       � WEBSERVICE_LOGGING
+                                                       � WORKSPACE_EMAIL_MAXIMUM
+                                                       � WORKSPACE_MAX_FILE_BYTES
+
+Example
+The following example prints the value of ALLOW_HOSTNAMES for the HR workspace.
+
+BEGIN
+      DBMS_OUTPUT.PUT_LINE (
+
+APEX_INSTANCE_ADMIN.GET_WORKSPACE_PARAMETER (
+                   p_workspace => 'HR',
+                   p_parameter => 'ALLOW_HOSTNAMES' ));
+
+END;
+
+34.15 GRANT_EXTENSION_WORKSPACE Procedure
+
+                       This procedure grants read access for a workspace to an extension workspace. Builder
+                       extension menu links of the extension workspace appear in the grantor workspace's extension
+                       menu.
+
+API Reference                                                                    July 24, 2026
+G26651-03                                                                        Page 29 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                    Chapter 34
+                                                                                   IS_DB_SIGNATURE_VALID Function
+
+Syntax
+
+APEX_INSTANCE_ADMIN.GRANT_EXTENSION_WORKSPACE (
+
+      p_from_workspace IN VARCHAR2,
+
+      p_to_workspace                                   IN VARCHAR2,
+
+      p_read_access                                    IN BOOLEAN DEFAULT FALSE,
+
+      p_menu_label                                     IN VARCHAR2 DEFAULT NULL )
+
+Parameters
+
+Parameter                                              Description
+p_from_workspace
+p_to_workspace                                         Name of workspace granting access.
+p_read_access                                          Name of extension workspace.
+                                                       Default FALSE.
+p_menu_label                                           If TRUE, the extension workspace has read access to the
+                                                       grantor's repository views.
+
+                                                       (Optional) Overwrite the extension menu parent label.
+                                                       Otherwise, shows the name of the extension workspace.
+
+Example
+
+The following example grants extension workspace EXTENSIONS read access to workspace
+MY_WORKSPACE and overwrites the extension menu parent label with "Tools."
+
+BEGIN
+
+apex_instance_admin.grant_extension_workspace(
+
+        p_from_workspace                               => 'MY_WORKSPACE',
+
+        p_to_workspace                                 => 'EXTENSIONS',
+
+        p_read_access                                  => true,
+
+        p_menu_label                                   => 'Tools' );
+
+END;
+
+34.16 IS_DB_SIGNATURE_VALID Function
+
+                       The IS_DB_SIGNATURE_VALID function returns whether the instance parameter DB_SIGNATURE
+                       matches the value of the function db_signature. If the instance parameter is not set (the
+                       default), also return true.
+
+                       Syntax
+
+APEX_INSTANCE_ADMIN.IS_DB_SIGNATURE_VALID
+      RETURN BOOLEAN;
+
+Example
+The following example prints the signature is valid.
+
+begin
+      sys.dbms_output.put_line (
+            case when apex_instance_admin.is_db_signature_valid
+            then 'signature is valid, features are enabled'
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 30 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                   Chapter 34
+                                                                                   REMOVE_APPLICATION Procedure
+
+      else 'signature differs (cloned db), features are disabled'
+      end );
+
+end;
+
+      See Also
+      � DB_SIGNATURE Function
+      � Available Parameter Values
+
+34.17 REMOVE_APPLICATION Procedure
+
+                       Removes the application specified from the Oracle APEX instance.
+                       Syntax
+
+                       APEX_INSTANCE_ADMIN.REMOVE_APPLICATION (
+                              p_application_id IN NUMBER );
+
+                       Parameters
+
+Parameter                                              Description
+p_application_id                                       The ID of the application.
+
+Example
+
+The following example demonstrates how to use the REMOVE_APPLICATION procedure to
+remove an application with an ID of 100 from an APEX instance.
+
+BEGIN
+      APEX_INSTANCE_ADMIN.REMOVE_APPLICATION(100);
+
+END;
+
+34.18 REMOVE_AUTO_PROV_RESTRICTIONS Procedure
+
+                       This procedure removes blocking email patterns when an instance has auto-provisioning or
+                       self-provisioning enabled for workspaces.
+                       If auto/self-provisioning is disabled, this procedure has no runtime effect.
+
+                       Syntax
+
+APEX_INSTANCE_ADMIN.REMOVE_AUTO_PROV_RESTRICTIONS (
+      p_block_email_patterns IN apex_t_varchar2 DEFAULT NULL )
+
+API Reference                                                                            July 24, 2026
+G26651-03                                                                                Page 31 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                         Chapter 34
+                                                                     REMOVE_SAVED_REPORT Procedure
+
+Parameters
+
+ Parameter                                             Description
+p_block_email_patterns
+                                                       Add one or more email patterns to be added to the
+Example                                                apex_auto_prov_email_patterns table.
+
+BEGIN
+      apex_instance_admin.remove_auto_prov_restrictions (
+            p_block_email_patterns =>
+
+apex_t_varchar2('%@gmail.com','%@example.com') );
+END;
+
+34.19 REMOVE_SAVED_REPORT Procedure
+
+                       The REMOVE_SAVED_REPORT procedure removes a specific user's saved interactive report
+                       settings for a particular application.
+
+                       Syntax
+
+APEX_INSTANCE_ADMIN.REMOVE_SAVED_REPORT (
+
+p_application_id IN NUMBER,
+
+p_report_id                                            IN NUMBER );
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+                                                       The ID of the application for which to remove user saved interactive
+p_report_id                                            report information.
+                                                       The ID of the saved user interactive report to be removed.
+
+Example
+
+The following example removes the user-saved interactive report with the ID 123 for the
+application with an ID of 100.
+
+BEGIN
+      APEX_INSTANCE_ADMIN.REMOVE_SAVED_REPORT(100,123);
+
+END;
+
+34.20 REMOVE_SAVED_REPORTS Procedure
+
+                       The REMOVE_SAVED_REPORTS procedure removes all user saved interactive report settings for a
+                       particular application or for the entire instance.
+
+API Reference                                                        July 24, 2026
+G26651-03                                                            Page 32 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                Chapter 34
+                                                                      REMOVE_SCHEMA Procedure
+
+Syntax
+
+APEX_INSTANCE_ADMIN.REMOVE_SAVED_REPORTS (
+      p_application_id IN NUMBER DEFAULT NULL )
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+                                                       The ID of the application for which to remove user-saved interactive
+                                                       report information. If NULL, all user-saved interactive reports for the
+                                                       entire instance are removed.
+
+Example
+
+The following example demonstrates how to use the REMOVE_SAVED_REPORTS procedure to
+remove user saved interactive report information for the application with an ID of 100.
+
+BEGIN
+      APEX_INSTANCE_ADMIN.REMOVE_SAVED_REPORTS(100);
+
+END;
+
+34.21 REMOVE_SCHEMA Procedure
+
+                       Removes a workspace to schema mapping.
+                       Syntax
+
+APEX_INSTANCE_ADMIN.REMOVE_SCHEMA (
+
+p_workspace IN VARCHAR2,
+
+p_schema                                               IN VARCHAR2 )
+
+Parameters
+
+Parameter                                              Description
+p_workspace
+                                                       The name of the workspace from which the schema mapping is
+p_schema                                               removed.
+                                                       The schema to remove from the schema to workspace mapping.
+
+Example
+
+The following example demonstrates how to use the REMOVE_SCHEMA procedure to remove the
+schema named FRANK from the MY_WORKSPACE workspace to schema mapping.
+
+BEGIN
+      APEX_INSTANCE_ADMIN.REMOVE_SCHEMA('MY_WORKSPACE','FRANK');
+
+END;
+
+API Reference                                                         July 24, 2026
+G26651-03                                                             Page 33 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                   Chapter 34
+                                                                       REMOVE_SCHEMA_EXCEPTION Procedure
+
+34.22 REMOVE_SCHEMA_EXCEPTION Procedure
+
+                       This procedure removes an exception that allows the assignment of a restricted schema to a
+                       given workspace.
+
+                       Syntax
+
+                       APEX_INSTANCE_ADMIN.REMOVE_SCHEMA_EXCEPTION (
+                              p_schema IN VARCHAR2,
+                              p_workspace IN VARCHAR2 )
+
+                       Parameter
+
+Parameter                                              Description
+p_schema                                               The schema.
+p_workspace                                            The workspace.
+
+Example
+
+This example removes the exception that allows the assignment of schema HR to workspace
+HR_WORKSPACE.
+
+BEGIN
+      apex_instance_admin.remove_schema_exception (
+            p_schema => 'HR',
+            p_workspace => 'HR_WORKSPACE' );
+      commit;
+
+END;
+
+                              See Also
+                                 � CREATE_SCHEMA_EXCEPTION Procedure
+                                 � RESTRICT_SCHEMA Procedure
+                                 � UNRESTRICT_SCHEMA Procedure
+                                 � REMOVE_SCHEMA_EXCEPTIONS Procedure
+                                 � REMOVE_WORKSPACE_EXCEPTIONS Procedure
+
+34.23 REMOVE_SCHEMA_EXCEPTIONS Procedure
+
+                       This procedure removes all exceptions that enable the assignment of a restricted schema to a
+                       specific workspace.
+
+API Reference                                                          July 24, 2026
+G26651-03                                                              Page 34 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                               Chapter 34
+                                                                            REMOVE_SUBSCRIPTION Procedure
+
+Syntax
+
+APEX_INSTANCE_ADMIN.REMOVE_SCHEMA_EXCEPTIONS (
+         p_schema IN VARCHAR2 )
+
+Parameter
+
+Parameter                                              Description
+p_schema                                               The schema.
+
+Example
+
+This example removes all exceptions that allow the assignment of the HR schema to
+workspaces.
+
+BEGIN
+      apex_instance_admin.remove_schema_exceptions (
+                   p_schema => 'HR' );
+      COMMIT;
+
+END;
+
+See Also
+� CREATE_SCHEMA_EXCEPTION Procedure
+� RESTRICT_SCHEMA Procedure
+� UNRESTRICT_SCHEMA Procedure
+� REMOVE_SCHEMA_EXCEPTION Procedure
+� REMOVE_WORKSPACE_EXCEPTIONS Procedure
+
+34.24 REMOVE_SUBSCRIPTION Procedure
+
+                       Removes a specific interactive report subscription.
+                       Syntax
+
+                       APEX_INSTANCE_ADMIN.REMOVE_SUBSCRIPTION (
+                              p_subscription_id IN NUMBER )
+
+                       Parameters
+
+Parameter                                              Description
+p_subscription_id                                      The ID of the interactive report subscription to be removed.
+
+API Reference                                                                                                        July 24, 2026
+G26651-03                                                                                                            Page 35 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                          Chapter 34
+                                                                                 REMOVE_WEB_ENTRY_POINT Procedure
+
+                       Example
+                       The following example removes the interactive report subscription with the ID 12345. Use of
+                       APEX_APPLICATION_PAGE_IR_SUB view can help identifying the subscription ID to remove.
+
+                       BEGIN
+                              APEX_INSTANCE_ADMIN.REMOVE_SUBSCRIPTION (
+                                    p_subscription_id => 12345);
+
+                       END;
+
+34.25 REMOVE_WEB_ENTRY_POINT Procedure
+
+                       Removes a public procedure from the list of allowed objects that can be called via the URL.
+                       Syntax
+
+                       APEX_INSTANCE_ADMIN.REMOVE_WEB_ENTRY_POINT (
+                              p_name IN VARCHAR2 )
+
+                       Parameters
+
+Parameter                                                            Description
+p_name
+                                                                     The procedure name, prefixed by package name
+                                                                     and schema, unless a public synonym exists.
+
+Examples
+Prevent myschema.mypkg.proc from being called via POST requests.
+
+BEGIN
+      APEX_INSTANCE_ADMIN.REMOVE_WEB_ENTRY_POINT (
+            p_name 'MYSCHEMA.MYPKG.PROC' );
+      COMMIT;
+
+END;
+
+34.26 REMOVE_WORKSPACE Procedure
+
+                       This procedure removes a workspace from an Oracle APEX instance.
+                       Syntax
+
+APEX_INSTANCE_ADMIN.REMOVE_WORKSPACE (
+
+p_workspace                                            IN VARCHAR2,
+
+p_drop_users                                           IN VARCHAR2 DEFAULT 'N',
+
+p_drop_tablespaces IN VARCHAR2 DEFAULT 'N' )
+
+API Reference                                                                            July 24, 2026
+G26651-03                                                                                Page 36 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                          Chapter 34
+                                                                       REMOVE_WORKSPACE_EXCEPTIONS Procedure
+
+Parameters
+
+Parameter                                              Description
+p_workspace
+p_drop_users                                           The name of the workspace to be removed.
+                                                       Y to drop the database user associated with the workspace. The
+p_drop_tablespaces                                     default is N.
+                                                       Y to drop the tablespace associated with the database user associated
+                                                       with the workspace. The default is N.
+
+Example
+
+The following example demonstrates how to use the REMOVE_WORKSPACE procedure to remove
+an existing workspace named MY_WORKSPACE, along with the associated database users and
+tablespace.
+
+BEGIN
+      APEX_INSTANCE_ADMIN.REMOVE_WORKSPACE('MY_WORKSPACE','Y','Y');
+
+END;
+
+34.27 REMOVE_WORKSPACE_EXCEPTIONS Procedure
+
+                       This procedure removes all exceptions that enable the assignment of restricted schemas to a
+                       given workspace.
+
+                       Syntax
+
+APEX_INSTANCE_ADMIN.REMOVE_WORKSPACE_EXCEPTIONS (
+      p_workspace IN VARCHAR2 )
+
+Parameter
+
+Parameter                                              Description
+p_workspace                                            The workspace.
+
+Example
+
+This example removes all exceptions that allow the assignment of restricted schemas to
+HR_WORKSPACE.
+
+BEGIN
+      apex_instance_admin.remove_schema_exceptions (
+                   p_workspace => 'HR_WORKSPACE' );
+      COMMIT;
+
+END;
+
+API Reference                                                          July 24, 2026
+G26651-03                                                              Page 37 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                     Chapter 34
+                                                       RESERVE_WORKSPACE_APP_IDS Procedure
+
+See Also
+� CREATE_SCHEMA_EXCEPTION Procedure
+� RESTRICT_SCHEMA Procedure
+� UNRESTRICT_SCHEMA Procedure
+� REMOVE_SCHEMA_EXCEPTION Procedure
+� REMOVE_SCHEMA_EXCEPTIONS Procedure
+
+34.28 RESERVE_WORKSPACE_APP_IDS Procedure
+
+                       This procedure permanently reserves the IDs of websheet and database applications in a
+                       given workspace. Even if the workspace and its applications get removed, developers can not
+                       create other applications with one of these IDs.
+
+                       Syntax
+
+                       APEX_INSTANCE_ADMIN.RESERVE_WORKSPACE_APP_IDS (
+                              p_workspace_id IN NUMBER )
+
+                       Parameters
+
+Parameter                                              Description
+p_workspace_id                                         The unique ID of the workspace.
+
+Example
+
+This example demonstrates setting up two separate Oracle APEX instances where the
+application IDs are limited to within a specific range. At a later point, a workspace and all of its
+applications are moved from instance 1 to instance 2. For the workspace that is moved, the
+developer reserves all of its application IDs to ensure that no applications with the same IDs
+are created on instance 1.
+
+1. After setting up APEX instance 1, ensure that application IDs are between 100000 and
+     199999.
+
+     begin
+           apex_instance_admin.set_parameter('APPLICATION_ID_MIN', 100000);
+           apex_instance_admin.set_parameter('APPLICATION_ID_MAX', 199999);
+
+     end;
+
+2. After setting up APEX instance 2, ensure that application IDs are between 200000 and
+     299999.
+
+     begin
+           apex_instance_admin.set_parameter('APPLICATION_ID_MIN', 200000);
+           apex_instance_admin.set_parameter('APPLICATION_ID_MAX', 299999);
+
+     end;
+
+3. Later, the operations team decides that workspace MY_WORKSPACE with ID 1234567890
+     should be moved from instance 1 to instance 2. The required steps are:
+
+API Reference                                                                           July 24, 2026
+G26651-03                                                                               Page 38 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                           Chapter 34
+                                                                                     RESTRICT_SCHEMA Procedure
+
+a. Export the workspace, applications and data on instance 1 (not shown here).
+b. Ensure that no other application on instance 1 can reuse application IDs of this
+
+     workspace.
+
+     begin
+           apex_instance_admin.reserve_workspace_app_ids(1234567890);
+
+     end;
+
+c. Drop workspace, accompanying data and users on instance 1.
+
+     begin
+           apex_instance_admin.remove_workspace('MY_WORKSPACE');
+
+     end;
+
+d. Import the workspace, applications and data on instance 2 (not shown here).
+
+See Also
+To undo a reservation, see FREE_WORKSPACE_APP_IDS Procedure.
+
+34.29 RESTRICT_SCHEMA Procedure
+
+                       This procedure revokes the privilege to assign a schema to workspaces.
+                       Syntax
+
+                       APEX_INSTANCE_ADMIN.RESTRICT_SCHEMA (
+                             p_schema IN VARCHAR2 )
+
+                       Parameter
+
+Parameter                                              Description
+p_schema                                               The schema.
+
+Example
+This example revokes the privilege to assign schema HR to workspaces.
+
+BEGIN
+      apex_instance_admin.restrict_schema(p_schema => 'HR');
+      COMMIT;
+
+END;
+
+API Reference                                                                                  July 24, 2026
+G26651-03                                                                                      Page 39 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                       Chapter 34
+                                                                      REVOKE_EXTENSION_WORKSPACE Procedure
+
+       See Also
+       � CREATE_SCHEMA_EXCEPTION Procedure
+       � UNRESTRICT_SCHEMA Procedure
+       � REMOVE_SCHEMA_EXCEPTION Procedure
+       � REMOVE_SCHEMA_EXCEPTIONS Procedure
+       � REMOVE_WORKSPACE_EXCEPTIONS Procedure
+
+34.30 REVOKE_EXTENSION_WORKSPACE Procedure
+
+                       This procedure revokes an existing grant from an extension workspace.
+                       Syntax
+
+APEX_INSTANCE_ADMIN.REVOKE_EXTENSION_WORKSPACE (
+
+p_from_workspace                                       IN VARCHAR2,
+
+p_to_workspace                                         IN VARCHAR2 )
+
+Parameters
+
+Parameter                                              Description
+p_from_workspace                                       Name of workspace granting access.
+p_to_workspace                                         Name of extension workspace.
+
+Example
+
+The following example revokes grant from extension workspace EXTENSIONS to workspace
+MY_WORKSPACE.
+
+BEGIN
+
+apex_instance_admin.revoke_extension_workspace(
+
+       p_from_workspace                                => 'MY_WORKSPACE',
+
+       p_to_workspace                                  => 'EXTENSIONS' );
+
+END;
+
+34.31 SET_LOG_SWITCH_INTERVAL Procedure
+
+                       Set the log switch interval for each of the logs maintained by Oracle APEX.
+                       Syntax
+
+APEX_INSTANCE_ADMIN.SET_LOG_SWITCH_INTERVAL(
+
+      p_log_name                                       IN VARCHAR2,
+
+      p_log_switch_after_days IN NUMBER );
+
+API Reference                                                                                       July 24, 2026
+G26651-03                                                                                           Page 40 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                             Chapter 34
+                                                                                    SET_PARAMETER Procedure
+
+Parameters
+
+Parameters                                             Description
+p_log_name
+                                                       Specifies the name of the log. Valid values include
+p_log_switch_after_days                                ACCESS, ACTIVITY, AUTOMATION, CLICKTHRU, DEBUG,
+                                                       WEBSERVICE, and WEBSOURCESYNC.
+
+                                                       This interval must be a positive integer between 1 and
+                                                       180.
+
+Example
+This example sets the log switch interval for the ACTIVITY log to 30 days.
+
+BEGIN
+      apex_instance_admin.set_log_switch_interval( p_log_name => 'ACTIVITY',
+
+p_log_switch_after_days => 30 );
+      COMMIT;
+
+END;
+
+34.32 SET_PARAMETER Procedure
+
+                       This procedure sets a parameter used in administering a runtime environment. You must issue
+                       a commit for the parameter change to take affect.
+
+                       Syntax
+
+APEX_INSTANCE_ADMIN.SET_PARAMETER (
+
+p_parameter IN VARCHAR2,
+
+p_value                                                IN VARCHAR2 DEFAULT 'N',
+
+p_force                                                IN BOOLEAN DEFAULT FALSE );
+
+Parameters
+
+Parameter                                              Description
+p_parameter
+p_value                                                The instance parameter to be set.
+
+p_force                                                The value of the parameter.
+                                                       See Available Parameter Values.
+
+                                                       Default FALSE.
+
+                                                       If TRUE, accepts the value even if it is missing some quality criteria.
+                                                       Basic data type validation occurs (such as numeric, Y/N) , but Oracle
+                                                       APEX accepts more values. For example, credentials can be SHA-1
+                                                       and shorter than 2048 bit. ALLOW_HASH_FUNCTIONS parameter must
+                                                       also support SHA-1.
+
+                                                       The parameter only applies for the parameters:
+                                                       � SAML_APEX_CERTIFICATE
+                                                       � SAML_APEX_CERTIFICATE2
+                                                       � SAML_IP_SIGNING_CERTIFICATE
+                                                       � SAML_IP_SIGNING_CERTIFICATE2
+                                                       The parameter forces the storage of the certificate in case the quality
+                                                       check of the certificate raises an error.
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 41 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                              Chapter 34
+                                                       SET_WORKSPACE_CONSUMER_GROUP Procedure
+
+                       Example
+                       The following example demonstrates how to use the SET_PARAMETER procedure to set the
+                       SMTP_HOST_ADDRESS parameter for an Oracle APEX instance.
+
+                       BEGIN
+                              APEX_INSTANCE_ADMIN.SET_PARAMETER('SMTP_HOST_ADDRESS',
+
+                       'mail.example.com');
+                              COMMIT;
+
+                       END;
+
+34.33 SET_WORKSPACE_CONSUMER_GROUP Procedure
+
+                       Sets a Resource Manager Consumer Group to a workspace.
+
+                       Syntax
+
+                       SET_WORKSPACE_CONSUMER_GROUP (
+                              p_workspace IN VARCHAR2,
+                              p_rm_consumer_group IN VARCHAR2 )
+
+                       Parameters
+
+Parameters                                             Description
+p_workspace
+                                                       This is the name of the workspace for which the resource consumer
+p_rm_consumer_group                                    group is to be set.
+
+                                                       The parameter P_RM_CONSUMER_GROUP is the Oracle Database
+                                                       Resource Manager Consumer Group name. The consumer group does
+                                                       not have to exist at the time this procedure is invoked. But if the
+                                                       Resource Manager Consumer Group is set for a workspace and the
+                                                       consumer group does not exist, then an error will be raised when
+                                                       anyone attempts to login to this workspace or execute any application
+                                                       in the workspace.
+
+                                                       If the value of P_RM_CONSUMER_GROUP is null, then the Resource
+                                                       Manager consumer group associated with the specified workspace is
+                                                       cleared.
+
+Example
+
+The following example sets the workspace to the Resource Manager consumer group
+"CUSTOM_GROUP1":
+
+BEGIN
+            apex_instance_admin.set_workspace_consumer_group(
+            p_workspace => 'MY_WORKSPACE',
+            p_rm_consumer_group => 'CUSTOM_GROUP1' );
+
+      COMMIT;
+END;
+/
+
+API Reference                                                  July 24, 2026
+G26651-03                                                      Page 42 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                   Chapter 34
+                                                                       SET_WORKSPACE_PARAMETER Procedure
+
+34.34 SET_WORKSPACE_PARAMETER Procedure
+
+                       This procedure sets the designated workspace parameter.
+                       Syntax
+
+APEX_INSTANCE_ADMIN.SET_WORKSPACE_PARAMETER (
+
+p_workspace IN VARCHAR2,
+
+p_parameter IN VARCHAR2,
+
+p_value                                                IN VARCHAR2 );
+
+Parameters
+
+Parameter    Description
+p_workspace
+p_parameter  The name of the workspace to which you are setting the workspace parameter.
+             The parameter name which overrides the instance parameter value of the same
+p_value      name for this workspace. See "Instance and Workspace Parameters" and
+             "Workspace Parameters" in Available Parameter Values.
+
+             The parameter value.
+
+Example
+
+The following example demonstrates how to use the set_workspace_parameter procedure to
+restrict URLs for accessing applications in the HR workspace that have hr.example.com in the
+hostname or domain name.
+
+BEGIN
+   apex_instance_admin.set_workspace_parameter (
+      p_workspace => 'HR',
+      p_parameter => 'ALLOW_HOSTNAMES',
+      p_value => 'hr.example.com' );
+   COMMIT;
+
+END;
+
+                              See Also
+                                 � Available Parameter Values
+
+34.35 TRUNCATE_LOG Procedure
+
+                       Truncates the log entries specified by the input parameter.
+                       Syntax
+
+                       APEX_INSTANCE_ADMIN.TRUNCATE_LOG (
+                              p_log IN VARCHAR2 )
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 43 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                    Chapter 34
+                                                                               UNLOCK_USER Procedure
+
+Parameters
+
+Parameter    Description
+p_log
+             This parameter can have one of the following values:
+
+             � ACTIVITY - removes all entries that record page access.
+             � AUTOMATION - removes all entries from the automation logs.
+             � CLICKS - removes all entries that record clicks tracked to external sites.
+             � DEBUG - removes all entries captured during debug sessions.
+             � FILE - removes all entries that record automatic file purge activity.
+             � LOCK_INSTALL_SCRIPT - removes all entries that record developer locking
+
+                   of supporting objects script.
+             � LOCK_PAGE - removes all entries that record developer locking of pages.
+             � MAIL - removes all entries that record mail sent.
+             � PURGE - removes all entries that record automatic workspace purge activity.
+             � REST_SYNCHRONIZATION - removes all entries to record REST Source
+
+                   Synchronizations.
+             � SCRIPT - removes all entries that record results of SQL scripts executed in
+
+                   SQL Workshop.
+             � SQL - removes all entries that record the history of commands executed in
+
+                   SQL Workshop SQL Commands
+             � USER_ACCESS - removes all entries that record user login.
+             � WEB_SERVICES - removes all entries that record web service calls initiated
+
+                   from this APEX instance.
+             � WORKSPACE_HIST - removes all entries that record daily workspace
+
+                   summary.
+
+Example
+
+The following example demonstrates how to use the TRUNCATE_LOG procedure to remove all log
+entries that record access to APEX application pages.
+
+BEGIN
+   APEX_INSTANCE_ADMIN.TRUNCATE_LOG('ACTIVITY');
+
+END;
+
+34.36 UNLOCK_USER Procedure
+
+                       This procedure unlocks an Oracle APEX workspace user account and optionally also changes
+                       the user's password.
+
+                       Syntax
+
+APEX_INSTANCE_ADMIN.UNLOCK_USER (
+      p_workspace IN VARCHAR2,
+      p_username IN VARCHAR2,
+      p_password IN VARCHAR2 DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_workspace                                            Workspace of the user.
+
+API Reference                                                                  July 24, 2026
+G26651-03                                                                      Page 44 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                    Chapter 34
+                                                                    UNRESTRICT_SCHEMA Procedure
+
+Parameter                                              Description
+p_username                                             Name of the user.
+p_password                                             New password. If not set, only unlocks the account.
+
+Example 1
+
+The following example unlocks the user ADMIN in the instance administration workspace and
+changes the password.
+
+BEGIN
+      apex_instance_admin.unlock_user (
+            p_workspace => 'INTERNAL',
+            p_username => 'ADMIN',
+            p_password => 'example password' );
+      COMMIT;
+
+END;
+
+Example 2
+
+The following example unlocks the user EXAMPLE_USER in SOME_WORKSPACE without updating
+the password.
+
+BEGIN
+      apex_instance_admin.unlock_user (
+            p_workspace => 'SOME_WORKSPACE',
+            p_username => 'EXAMPLE_USER' );
+      COMMIT;
+
+END;
+
+34.37 UNRESTRICT_SCHEMA Procedure
+
+                       This procedure re-grants the privilege to assign a schema to workspaces, if it has been
+                       revoked before.
+
+                       Syntax
+
+APEX_INSTANCE_ADMIN.UNRESTRICT_SCHEMA (
+      p_schema IN VARCHAR2 )
+
+Parameter
+
+Parameter                                              Description
+p_schema                                               The schema.
+
+Example
+This example re-grants the privilege to assign schema HR to workspaces.
+
+BEGIN
+      apex_instance_admin.unrestrict_schema(p_schema => 'HR');
+
+API Reference                                                            July 24, 2026
+G26651-03                                                                Page 45 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                           Chapter 34
+                                                       VALIDATE_EMAIL_CONFIG Procedure
+
+      COMMIT;
+END;
+
+                              See Also
+                                 � CREATE_SCHEMA_EXCEPTION Procedure
+                                 � RESTRICT_SCHEMA Procedure
+                                 � REMOVE_SCHEMA_EXCEPTION Procedure
+                                 � REMOVE_SCHEMA_EXCEPTIONS Procedure,
+                                 � REMOVE_WORKSPACE_EXCEPTIONS Procedure
+
+34.38 VALIDATE_EMAIL_CONFIG Procedure
+
+                       This procedure attempts to establish a connection with the email server configured in an
+                       Oracle APEX instance. An error is raised if the connection is unsuccessful. This can indicate
+                       incorrect SMTP instance parameters, missing Network ACL, missing SSL certificate in Oracle
+                       Wallet, or a problem on the email server side. Correct the instance configuration and re-
+                       execute this procedure to confirm.
+                       This procedure exits if the connection successfully establishes.
+
+                       Syntax
+
+                       APEX_INSTANCE_ADMIN.VALIDATE_EMAIL_CONFIG
+
+                       Parameters
+                       None.
+
+                       Example
+
+                       BEGIN
+                              APEX_INSTANCE_ADMIN.VALIDATE_EMAIL_CONFIG;
+
+                       END;
+
+See Also
+� APEX_MAIL
+� Configuring Email in Oracle APEX Administration Guide
+
+API Reference                                            July 24, 2026
+G26651-03                                                Page 46 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+35                                                                          July 24, 2026
+                                                                              Page 1 of 4

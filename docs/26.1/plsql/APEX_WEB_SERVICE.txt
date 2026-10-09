@@ -1,0 +1,2181 @@
+# APEX_WEB_SERVICE (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 73482-75661)
+
+APEX_WEB_SERVICE
+
+                       The APEX_WEB_SERVICE API enables you to integrate other systems with APEX by
+                       enabling you to interact with Web Services anywhere you can use PL/SQL in your application.
+
+                       The API contains procedures and functions to call both SOAP and RESTful style Web
+                       Services. Functions parse the responses from Web Services and encode/decode into SOAP-
+                       friendly base64 encoding.
+
+                       This API also contains package globals for managing cookies and HTTP headers when calling
+                       Web Services whether from the API or by using standard processes of type Web Service.
+                       Cookies and HTTP headers can be set before invoking a call to a Web Service by populating
+                       the globals and the cookies and HTTP headers returned from the Web Service response can
+                       be read from other globals.
+
+                       � About the APEX_WEB_SERVICE API
+                       � About Web Credentials and APEX_WEB_SERVICE
+                       � Data Types
+                       � Global Variables
+                       � APPEND_TO_MULTIPART Procedure Signature 1
+                       � APPEND_TO_MULTIPART Procedure Signature 2
+                       � BLOB2CLOBBASE64 Function
+                       � CLEAR_REQUEST_COOKIES Procedure
+                       � CLEAR_REQUEST_HEADERS Procedure
+                       � CLOBBASE642BLOB Function
+                       � GENERATE_REQUEST_BODY Function
+                       � GET_REQUEST_HEADER Function
+                       � MAKE_REQUEST Function Signature 1
+                       � MAKE_REQUEST Function Signature 2
+                       � MAKE_REQUEST Procedure Signature 1
+                       � MAKE_REQUEST Procedure Signature 2
+                       � MAKE_REST_REQUEST Function
+                       � MAKE_REST_REQUEST_B Function
+                       � OAUTH_AUTHENTICATE Procedure Signature 1
+                       � OAUTH_AUTHENTICATE Procedure Signature 2 (Deprecated)
+                       � OAUTH_AUTHENTICATE_CREDENTIAL Procedure
+                       � OAUTH_GET_LAST_TOKEN Function
+                       � OAUTH_SET_TOKEN Procedure
+                       � PARSE_RESPONSE Function
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 1 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                           Chapter 64
+                                                                                                             About the APEX_WEB_SERVICE API
+
+                       � PARSE_RESPONSE_CLOB Function
+                       � PARSE_XML Function
+                       � PARSE_XML_CLOB Function
+                       � REMOVE_REQUEST_HEADER Procedure
+                       � SET_REQUEST_ECID_CONTEXT Procedure
+                       � SET_REQUEST_HEADERS Procedure
+
+64.1 About the APEX_WEB_SERVICE API
+
+                       Use the APEX_WEB_SERVICE API to invoke a Web service and examine the response anywhere
+                       you can use PL/SQL in Oracle APEX.
+
+                       The following are examples of when you might use the APEX_WEB_SERVICE API:
+                       � When you want to invoke a Web service by using an On Demand Process using Ajax.
+                       � When you want to invoke a Web service as part of an Authentication Scheme.
+                       � When you want to invoke a Web service as part of a validation.
+                       � When you need to pass a large binary parameter to a Web service that is base64
+
+                             encoded.
+
+                       Enable network services that are disabled by default in Oracle Database 11g release 2 (11.2)
+                       and newer. See Enabling Network Services in Oracle Database in Oracle APEX Installation
+                       Guide.
+
+                       � Invoking a SOAP-style Web Service
+                       � Invoking a RESTful-style Web Service
+                       � Setting Cookies and HTTP Headers
+                       � Retrieving Cookies and HTTP Headers
+
+64.1.1 Invoking a SOAP-style Web Service
+
+                       There is a procedure and a function to invoke a SOAP-style Web service.
+
+                       The procedure stores the response in the collection specified by the parameter
+                       p_collection_name.
+
+                       The function returns the results as an XMLTYPE.
+
+                       To retrieve a specific value from the response, you use either the PARSE_RESPONSE function if
+                       the result is stored in a collection or the PARSE_XML function if the response is returned as an
+                       XMLTYPE.
+
+                       To pass a binary parameter to the Web service as base64 encoded character data, use the
+                       function BLOB2CLOBBASE64. Conversely, to transform a response that contains a binary
+                       parameter that is base64 encoded use the function CLOBBASE642BLOB.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 2 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                         Chapter 64
+                                                       About the APEX_WEB_SERVICE API
+
+Example
+
+The following is an example of using the BLOB2CLOBBASE64 function to encode a parameter, the
+MAKE_REQUEST procedure to call a Web service, and the PARSE_RESPONSE function to extract a
+specific value from the response.
+
+DECLARE
+ l_filename varchar2(255);
+ l_BLOB BLOB;
+ l_CLOB CLOB;
+ l_envelope CLOB;
+ l_response_msg varchar2(32767);
+
+BEGIN
+   IF :P1_FILE IS NOT NULL THEN
+       SELECT filename, BLOB_CONTENT
+           INTO l_filename, l_BLOB
+           FROM APEX_APPLICATION_FILES
+           WHERE name = :P1_FILE;
+
+      l_CLOB := apex_web_service.blob2clobbase64(l_BLOB);
+
+      l_envelope := q'!<?xml version='1.0' encoding='UTF-8'?>!';
+      l_envelope := l_envelope|| '<soapenv:Envelope xmlns:soapenv="http://
+schemas.xmlsoap.org/soap/envelope/" xmlns:chec="http://www.stellent.com/
+CheckIn/">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <chec:CheckInUniversal>
+
+            <chec:dDocName>'||l_filename||'</chec:dDocName>
+            <chec:dDocTitle>'||l_filename||'</chec:dDocTitle>
+            <chec:dDocType>Document</chec:dDocType>
+            <chec:dDocAuthor>GM</chec:dDocAuthor>
+            <chec:dSecurityGroup>Public</chec:dSecurityGroup>
+            <chec:dDocAccount></chec:dDocAccount>
+            <chec:CustomDocMetaData>
+
+                   <chec:property>
+                      <chec:name></chec:name>
+                      <chec:value></chec:value>
+
+                   </chec:property>
+            </chec:CustomDocMetaData>
+            <chec:primaryFile>
+
+                 <chec:fileName>'||l_filename'||</chec:fileName>
+                 <chec:fileContent>'||l_CLOB||'</chec:fileContent>
+            </chec:primaryFile>
+            <chec:alternateFile>
+                 <chec:fileName></chec:fileName>
+                 <chec:fileContent></chec:fileContent>
+            </chec:alternateFile>
+            <chec:extraProps>
+                 <chec:property>
+
+                      <chec:name></chec:name>
+                      <chec:value></chec:value>
+                 </chec:property>
+            </chec:extraProps>
+       </chec:CheckInUniversal>
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 3 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                           Chapter 64
+                                                                         About the APEX_WEB_SERVICE API
+
+   </soapenv:Body>
+</soapenv:Envelope>';
+
+apex_web_service.make_request(
+
+p_url                                                  => 'http://192.0.2.1/idc/idcplg',
+
+p_action                                               => 'http://192.0.2.1/CheckIn/',
+
+p_collection_name => 'STELLENT_CHECKIN',
+
+p_envelope                                             => l_envelope,
+
+p_username                                             => 'sysadmin',
+
+p_password                                             => 'password' );
+
+ l_response_msg := apex_web_service.parse_response(
+      p_collection_name=>'STELLENT_CHECKIN',
+
+p_xpath=>'//idc:CheckInUniversalResponse/idc:CheckInUniversalResult/
+idc:StatusInfo/idc:statusMessage/text()',
+
+      p_ns=>'xmlns:idc="http://www.stellent.com/CheckIn/"');
+
+:P1_RES_MSG := l_response_msg;
+
+   END IF;
+END;
+
+64.1.2 Invoking a RESTful-style Web Service
+
+                       RESTful-style Web services use a simpler architecture than SOAP. Often the input to a
+                       RESTful-style Web service is a collection of name/value pairs. The response can be an XML
+                       document or simply text such as a comma-separated response or JSON.
+
+                       Example
+
+                       The following is an example of MAKE_REST_REQUEST in an application process that is
+                       callable by Ajax.
+
+DECLARE          varchar2(32767);
+   l_clob clob;  number;
+   l_buffer      number;
+   l_amount
+   l_offset
+
+BEGIN
+
+   l_clob := apex_web_service.make_rest_request(
+                      p_url => 'http://us.music.yahooapis.com/ video/v1/list/
+
+published/popular',
+                      p_http_method => 'GET',
+                      p_parm_name => apex_util.string_to_table('appid:format'),
+                      p_parm_value =>
+
+apex_util.string_to_table(apex_application.g_x01||':'||
+apex_application.g_x02));
+
+l_amount := 32000;
+l_offset := 1;
+BEGIN
+
+      LOOP
+            dbms_lob.read( l_clob, l_amount, l_offset, l_buffer );
+            htp.p(l_buffer);
+
+API Reference                                                                             July 24, 2026
+G26651-03                                                                                 Page 4 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                           Chapter 64
+                                                                                                             About the APEX_WEB_SERVICE API
+
+                                          l_offset := l_offset + l_amount;
+                                          l_amount := 32000;
+                                    END LOOP;
+                             EXCEPTION
+                                    WHEN no_data_found THEN
+                                          NULL;
+                             END;
+
+                       END;
+
+64.1.3 Setting Cookies and HTTP Headers
+
+                       Set cookies and HTTP headers that should be sent along with a Web Service request by
+                       populating the globals g_request_cookies and g_request_headers before the process that
+                       invokes the Web Service.
+
+                       The following example populates the globals to send cookies and HTTP headers with a
+                       request.
+
+                       FOR c1 IN (select seq_id, c001, c002, c003, c004, c005, c006, c007
+                                          FROM apex_collections
+                                          WHERE collection_name = 'P31_RESP_COOKIES' ) LOOP
+
+                          apex_web_service.g_request_cookies(c1.seq_id).name := c1.c001;
+                          apex_web_service.g_request_cookies(c1.seq_id).value := c1.c002;
+                          apex_web_service.g_request_cookies(c1.seq_id).domain := c1.c003;
+                          apex_web_service.g_request_cookies(c1.seq_id).expire := c1.c004;
+                          apex_web_service.g_request_cookies(c1.seq_id).path := c1.c005;
+                          IF c1.c006 = 'Y' THEN
+
+                             apex_web_service.g_request_cookies(c1.seq_id).secure := TRUE;
+                          ELSE
+
+                             apex_web_service.g_request_cookies(c1.seq_id).secure := FALSE;
+                          END IF;
+                          apex_web_service.g_request_cookies(c1.seq_id).version := c1.c007;
+                       END LOOP;
+
+                       FOR c1 IN (select seq_id, c001, c002
+                                          FROM apex_collections
+                                          WHERE collection_name = 'P31_RESP_HEADERS' ) LOOP
+
+                          apex_web_service.g_request_headers(c1.seq_id).name := c1.c001;
+                          apex_web_service.g_request_headers(c1.seq_id).value := c1.c002;
+                       END LOOP;
+
+See Also
+� Global Variables
+� Retrieving Cookies and HTTP Headers
+
+64.1.4 Retrieving Cookies and HTTP Headers
+
+                       When you invoke a Web service using any of the supported methods in Oracle APEX, the
+                       g_response_cookies and g_headers globals are populated if the Web service response
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 5 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                 Chapter 64
+                                                                                     About the APEX_WEB_SERVICE API
+
+included any cookies or HTTP headers. You can interrogate these globals and store the
+information in collections.
+
+When you invoke a Web service using any of the supported methods in APEX, the
+g_status_code global is populated with the numeric HTTP status code of the response (for
+example, 200 or 404). The g_response_cookies and g_headers globals are populated if the
+Web service response included any cookies or HTTP headers.
+
+The following are examples of interrogating the APEX_WEB_SERVICE globals to store cookie and
+HTTP header responses in collections.
+
+DECLARE
+   i number;
+   secure varchar2(1);
+
+BEGIN
+   apex_collection.create_or_truncate_collection('P31_RESP_COOKIES');
+   FOR i in 1.. apex_web_service.g_response_cookies.count LOOP
+      IF (apex_web_service.g_response_cookies(i).secure) THEN
+         secure := 'Y';
+      ELSE
+         secure := 'N';
+      END IF;
+      apex_collection.add_member(p_collection_name => 'P31_RESP_COOKIES',
+         p_c001 => apex_web_service.g_response_cookies(i).name,
+         p_c002 => apex_web_service.g_response_cookies(i).value,
+         p_c003 => apex_web_service.g_response_cookies(i).domain,
+         p_c004 => apex_web_service.g_response_cookies(i).expire,
+         p_c005 => apex_web_service.g_response_cookies(i).path,
+         p_c006 => secure,
+         p_c007 => apex_web_service.g_response_cookies(i).version );
+   END LOOP;
+
+END;
+
+DECLARE
+   i number;
+
+BEGIN
+apex_collection.create_or_truncate_collection('P31_RESP_HEADERS');
+
+FOR i in 1.. apex_web_service.g_headers.count LOOP
+   apex_collection.add_member(p_collection_name => 'P31_RESP_HEADERS',
+      p_c001 => apex_web_service.g_headers(i).name,
+      p_c002 => apex_web_service.g_headers(i).value,
+      p_c003 => apex_web_service.g_status_code);
+
+END LOOP;
+END;
+
+        See Also
+         � Global Variables
+         � Setting Cookies and HTTP Headers
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 6 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                           Chapter 64
+                                                                                              About Web Credentials and APEX_WEB_SERVICE
+
+64.2 About Web Credentials and APEX_WEB_SERVICE
+
+                       You can use the MAKE_REQUEST and MAKE_REST_REQUEST procedures to enable Web Credentials
+                       in order to authenticate against the remote Web Service.
+                       Web Credentials can be used with the APEX_WEB_SERVICE package from outside the context of
+                       an Oracle APEX application (such as from SQLcl or from a Database Scheduler job) as long
+                       as the database user making the call is mapped to an APEX workspace.
+                       If the database user is mapped to multiple workspaces, you must first call
+                       APEX_UTIL.SET_WORKSPACE or APEX_UTIL.SET_SECURITY_GROUP_ID as in the following
+                       examples.
+                       If the database user is mapped to multiple workspaces, you must first call
+                       APEX_UTIL.SET_WORKSPACE or APEX_UTIL.SET_SECURITY_GROUP_ID as in the following
+                       examples. The APEX_WEB_SERVICE package cannot be used by database users that are not
+                       mapped to any workspace unless they have been granted the role APEX_ADMINISTRATOR_ROLE.
+
+                       Examples
+                       Example 1
+
+                       apex_util.set_workspace(p_workspace => 'MY_WORKSPACE');
+
+                       Example 2
+
+                       FOR c1 in (
+                            select workspace_id
+                               from apex_applications
+                              where application_id = 100 )
+
+                       LOOP
+                            apex_util.set_security_group_id(p_security_group_id => c1.workspace_id);
+
+                       END LOOP;
+
+                              See Also
+                                 Managing Web Credentials in Oracle APEX App Builder User's Guide.
+
+64.3 Data Types
+
+                       The APEX_WEB_SERVICE package uses the following data types.
+
+                       type header is record (
+                              name varchar2(256),
+                              value varchar2(32767) );
+
+                       type header_table is table of header index by binary_integer;
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 7 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                          Chapter 64
+                                                                                                   Global Variables
+
+64.4 Global Variables
+
+Global Variable                                            Data Type                  Description
+g_headers
+g_reason_phrase                                            header_table               Global holding HTTP headers
+                                                           varchar2(32767)            received with the HTTP response.
+g_request_cookies
+g_request_headers                                          sys.utl_http.cookie_table  Reason phrase corresponding
+g_response_cookies                                         header_table               with the status code received with
+g_status_code                                              sys.utl_http.cookie_table  the HTTP response.
+                                                           pls_integer
+                                                                                      Global holding cookies to send
+                                                                                      with a HTTP request.
+
+                                                                                      Global holding HTTP headers to
+                                                                                      send with a HTTP request.
+
+                                                                                      Global holding cookies received
+                                                                                      with the HTTP response.
+
+                                                                                      Status code received from the
+                                                                                      HTTP request.
+
+The g_status_code and g_reason_phrase globals are set after each HTTP request so that you
+can get its outcome (for example, 200=OK. 400=Bad Request).
+
+See Also
+� Setting Cookies and HTTP Headers
+� Retrieving Cookies and HTTP Headers
+
+64.5 APPEND_TO_MULTIPART Procedure Signature 1
+
+                       This procedure adds a BLOB to a multipart/form request body.
+                       Syntax
+
+APEX_WEB_SERVICE.APPEND_TO_MULTIPART (
+
+p_multipart IN OUT NOCOPY t_multipart_parts,
+
+p_name                                                 IN  VARCHAR2,
+
+p_filename                                             IN  VARCHAR2 DEFAULT NULL,
+
+p_content_type IN                                          VARCHAR2 DEFAULT 'application/octet-stream',
+
+p_body_blob IN                                             BLOB );
+
+Parameters
+
+Parameter                                              Description
+p_multipart
+p_name                                                 The table type for the multipart/request body, t_multipart_parts.
+p_filename                                             The name of the multipart data.
+p_content_type                                         The filename of the multipart data if it exists.
+p_body_blob                                            The content type of the multipart data.
+                                                       The content to add in BLOB.
+
+API Reference                                                                                                             July 24, 2026
+G26651-03                                                                                                                 Page 8 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                          Chapter 64
+                                                                         APPEND_TO_MULTIPART Procedure Signature 2
+
+Example
+
+DECLARE
+
+l_multipart apex_web_service.t_multipart_parts;
+
+BEGIN
+
+apex_web_service.append_to_multipart (
+
+         p_multipart => l_multipart,
+
+         p_name                                            => 'param1',
+
+         p_content_type => 'application/octet-stream',
+
+         p_body_blob => (select blob from table where id = 1) );
+
+END;
+
+64.6 APPEND_TO_MULTIPART Procedure Signature 2
+
+                       This procedure adds a CLOB to a multipart/form request body.
+                       Syntax
+
+APEX_WEB_SERVICE.APPEND_TO_MULTIPART (
+
+p_multipart IN OUT NOCOPY t_multipart_parts,
+
+p_name                                                 IN  VARCHAR2,
+
+p_filename                                             IN  VARCHAR2 DEFAULT NULL,
+
+p_content_type IN                                          VARCHAR2 DEFAULT 'application/octet-stream',
+
+p_body                                                 IN  CLOB );
+
+Parameters
+
+ Parameter                                                 Description
+p_multipart
+p_name                                                     The table type for the multipart/request body, t_multipart_parts.
+p_filename                                                 The name of the multipart data.
+p_content_type                                             The filename of the multipart data if it exists.
+p_body                                                     The content type of the multipart data.
+                                                           The content to add in CLOB.
+Example
+
+DECLARE
+
+l_multipart apex_web_service.t_multipart_parts;
+
+BEGIN
+
+apex_web_service.append_to_multipart (
+
+         p_multipart => l_multipart,
+
+         p_name                                            => 'param1',
+
+         p_content_type => 'application/json',
+
+         p_body                                            => to_clob( '{"hello":"world"}' ) );
+
+END;
+
+64.7 BLOB2CLOBBASE64 Function
+
+                       This function converts a BLOB data type into a CLOB that is base64-encoded. This is often used
+                       when sending a binary as an input to a web service.
+
+API Reference                                                                                    July 24, 2026
+G26651-03                                                                                        Page 9 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                              Chapter 64
+                                                       CLEAR_REQUEST_COOKIES Procedure
+
+Syntax
+
+APEX_WEB_SERVICE.BLOB2CLOBBASE64 (
+
+p_blob        IN BLOB,
+
+p_newlines IN VARCHAR2 DEFAULT 'Y',
+
+p_padding IN VARCHAR2 DEFAULT 'N' )
+
+RETURN CLOB;
+
+Parameters
+
+Parameter                                              Description
+p_blob
+p_newlines                                             The BLOB to convert into base64-encoded CLOB.
+p_padding                                              Whether the generated base64 content contains line breaks.
+                                                       Whether to pad the generated base64 content with "=" so that the
+                                                       length becomes a multiple of 4.
+
+Example
+
+The following example gets a file that was uploaded from the apex_application_files view
+and converts the BLOB into a CLOB that is base64-encoded.
+
+DECLARE
+      l_clob CLOB;
+      l_blob BLOB;
+
+BEGIN
+      SELECT BLOB_CONTENT
+         INTO l_BLOB
+         FROM APEX_APPLICATION_FILES
+         WHERE name = :P1_FILE;
+
+      l_CLOB := apex_web_service.blob2clobbase64(l_BLOB);
+END;
+
+64.8 CLEAR_REQUEST_COOKIES Procedure
+
+                       This procedure clears all cookies, so that the next MAKE_REST_REQUEST call executes
+                       without sending any cookies. This procedure clears the cookie globals in
+                       APEX_WEB_SERVICE and in UTL_HTTP.
+
+                       Syntax
+
+APEX_WEB_SERVICE.CLEAR_REQUEST_COOKIES;
+
+Parameters
+None.
+
+API Reference                                              July 24, 2026
+G26651-03                                                  Page 10 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                               Chapter 64
+                                                       CLEAR_REQUEST_HEADERS Procedure
+
+                       Example
+
+                       begin
+                          apex_web_service.clear_request_cookies;
+
+                       end;
+
+64.9 CLEAR_REQUEST_HEADERS Procedure
+
+                       This procedure clears the current request headers.
+                       Syntax
+
+                       APEX_WEB_SERVICE.CLEAR_REQUEST_HEADERS;
+
+                       Parameters
+                       None.
+                       Example
+
+                       begin
+                          apex_web_service.clear_request_headers;
+
+                       end;
+
+64.10 CLOBBASE642BLOB Function
+
+                       This function converts a CLOB datatype that is base64-encoded into a BLOB. This is often used
+                       when receiving output from a Web service that contains a binary parameter.
+                       Syntax
+
+                       APEX_WEB_SERVICE.CLOBBASE642BLOB (
+                              p_clob IN CLOB)
+
+                       RETURN BLOB;
+
+                       Parameters
+
+Parameter                                              Description
+p_clob                                                 The base64-encoded CLOB to convert into a BLOB.
+
+Example
+
+The following example retrieves a base64-encoded node from an XML document as a CLOB
+and converts it into a BLOB.
+
+DECLARE
+      l_base64 CLOB;
+      l_blob BLOB;
+      l_xml XMLTYPE;
+
+BEGIN
+
+API Reference                                                                                           July 24, 2026
+G26651-03                                                                                               Page 11 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                    Chapter 64
+                                                                              GENERATE_REQUEST_BODY Function
+
+      l_base64 := apex_web_service.parse_xml_clob(l_xml, ' //runReportReturn/
+reportBytes/text()');
+
+            l_blob := apex_web_service.clobbase642blob(l_base64);
+END;
+
+64.11 GENERATE_REQUEST_BODY Function
+
+                       This function generates the multipart/form-data request body from the data in the
+                       t_multiparts array.
+
+                       Syntax
+
+APEX_WEB_SERVICE.GENERATE_REQUEST_BODY(
+
+p_multipart                                            IN t_multipart_parts,
+
+p_to_charset IN VARCHAR2 DEFAULT wwv_flow_lang.get_db_charset )
+
+RETURN BLOB;
+
+Parameters
+
+Parameter                                              Description
+p_multipart
+                                                       The table type for the multipart/request body,
+p_to_charset                                           t_multipart_parts.
+
+                                                       The target character set for the parts that are
+                                                       CLOBs. This parameter defaults to the current
+                                                       character set of the database.
+
+Examples
+This example stores the multipart/form request in a local BLOB variable.
+
+DECLARE
+      l_multipart apex_web_service.t_multipart_parts;
+      l_request_blob blob;
+
+BEGIN
+       l_request_blob := apex_web_service.generate_request_body (
+                                          p_multipart => l_multipart );
+
+END;
+
+64.12 GET_REQUEST_HEADER Function
+
+                       This function gets a specific request header value out of the request headers array.
+                       Syntax
+
+APEX_WEB_SERVICE.GET_REQUEST_HEADER (
+      p_header_name VARCHAR2 )
+      RETURN VARCHAR2;
+
+API Reference                                                                                                July 24, 2026
+G26651-03                                                                                                    Page 12 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                      Chapter 64
+                                                                                  MAKE_REQUEST Function Signature 1
+
+Parameters
+
+ Parameter                                             Description
+p_header_name
+                                                       The parameter name (case is normalized for the search in
+Example                                                the header array).
+
+select apex_web_service.get_request_header('ECID-Context') from dual;
+
+64.13 MAKE_REQUEST Function Signature 1
+
+                       This function invokes a SOAP-style web service with the supplied SOAP envelope returning
+                       the results in an XMLTYPE.
+
+                       Syntax
+
+APEX_WEB_SERVICE.MAKE_REQUEST (
+
+p_url                                                  IN VARCHAR2,
+
+p_action                                               IN VARCHAR2 DEFAULT NULL,
+
+p_version                                              IN VARCHAR2 DEFAULT '1.1',
+
+p_envelope                                             IN CLOB,
+
+p_username                                             IN VARCHAR2 DEFAULT NULL,
+
+p_password                                             IN VARCHAR2 DEFAULT NULL,
+
+p_scheme                                               IN VARCHAR2 DEFAULT 'Basic',
+
+p_proxy_override                                       IN VARCHAR2 DEFAULT NULL,
+
+p_transfer_timeout IN NUMBER DEFAULT 180,
+
+p_wallet_path                                          IN VARCHAR2 DEFAULT NULL,
+
+p_wallet_pwd                                           IN VARCHAR2 DEFAULT NULL,
+
+p_https_host                                           IN VARCHAR2 DEFAULT NULL )
+
+RETURN sys.xmltype;
+
+Parameters
+
+Parameter                                              Description
+p_url
+p_action                                               The URL endpoint of the Web service.
+p_version                                              The SOAP Action corresponding to the operation to be invoked.
+p_envelope                                             The SOAP version (1.1 or 1.2). The default is 1.1.
+p_username                                             The SOAP envelope to post to the service.
+p_password                                             The username if basic authentication is required for this service.
+p_scheme                                               The password if basic authentication is required for this service.
+                                                       The authentication scheme. Basic (default), AWS, Digest, or
+p_proxy_override                                       OAUTH_CLIENT_CRED if supported by your database release.
+                                                       The proxy to use for the request. The proxy supplied overrides the proxy
+p_transfer_timeout                                     defined in the application attributes.
+                                                       The amount of time in seconds to wait for a response.
+
+API Reference                                                                        July 24, 2026
+G26651-03                                                                            Page 13 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                Chapter 64
+                                                                            MAKE_REQUEST Function Signature 1
+
+Parameter                                              Description
+p_wallet_path
+                                                       The file system path to a wallet if the URL endpoint is HTTPS. For
+p_wallet_pwd                                           example, file:/usr/home/oracle/WALLETS
+p_https_host                                           The wallet path provided overrides the wallet defined in the instance
+                                                       settings.
+
+                                                       The password to access the wallet.
+                                                       The host name to be matched against the common name (CN) of the
+                                                       remote server's certificate for an HTTPS request.
+
+Returns
+The SOAP service response in an XMLTYPE.
+
+Example 1
+
+The following example invokes a SOAP-style Web service that returns movie listings. The
+result is stored in an XMLTYPE.
+
+DECLARE
+
+l_envelope CLOB;
+
+l_xml              XMLTYPE;
+
+BEGIN
+
+l_envelope := ' <?xml version="1.0" encoding="UTF-8"?>
+
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
+
+xmlns:tns="http://www.ignyte.com/whatsshowing"
+
+xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+<soap:Body>
+
+         <tns:GetTheatersAndMovies>
+
+         <tns:zipCode>43221</tns:zipCode>
+
+         <tns:radius>5</tns:radius>
+
+         </tns:GetTheatersAndMovies>
+
+</soap:Body>
+
+</soap:Envelope>';
+
+l_xml := apex_web_service.make_request(
+      p_url => ' http://www.ignyte.com/webservices/
+
+ignyte.whatsshowing.webservice/moviefunctions.asmx',
+      p_action => ' http://www.ignyte.com/whatsshowing/GetTheatersAndMovies',
+      p_envelope => l_envelope
+
+);
+END;
+
+Example 2
+This example invokes a SOAP service returning an XMLTYPE.
+
+DECLARE
+
+l_xml sys.xmltype;
+
+BEGIN
+
+l_xml := apex_web_service.make_request(
+
+         p_url                                         => 'http://{host}:{port}/path/to/soap/service/',
+
+         p_action                                      => 'doSoapRequest',
+
+API Reference                                                               July 24, 2026
+G26651-03                                                                   Page 14 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                      Chapter 64
+                                                                                  MAKE_REQUEST Function Signature 2
+
+      p_envelope                                       => '{SOAP envelope in XML format}' );
+
+END;
+
+64.14 MAKE_REQUEST Function Signature 2
+
+                       This function invokes a Web service with the supplied SOAP envelope and returns the
+                       response as an XMLTYPE.
+
+                       Syntax
+
+APEX_WEB_SERVICE.MAKE_REQUEST (
+
+p_url                                                  IN VARCHAR2,
+
+p_action                                               IN VARCHAR2 DEFAULT NULL,
+
+p_version                                              IN VARCHAR2 DEFAULT '1.1',
+
+p_envelope                                             IN CLOB,
+
+--
+
+p_credential_static_id IN VARCHAR2,
+
+p_token_url                                            IN VARCHAR2 DEFAULT NULL,
+
+--
+
+p_proxy_override                                       IN VARCHAR2 DEFAULT NULL,
+
+p_transfer_timeout IN NUMBER DEFAULT 180,
+
+p_wallet_path                                          IN VARCHAR2 DEFAULT NULL,
+
+p_wallet_pwd                                           IN VARCHAR2 DEFAULT NULL,
+
+p_https_host                                           IN VARCHAR2 DEFAULT NULL,
+
+p_oauth_scope                                          IN VARCHAR2 DEFAULT NULL )
+
+RETURN sys.xmltype;
+
+Parameters
+
+Parameter                                              Description
+p_url
+p_action                                               The URL endpoint of the Web service.
+p_version
+p_envelope                                             The SOAP Action corresponding to the operation invoked.
+p_credential_static_id
+                                                       The SOAP version (1.1 or 1.2). The default is 1.1.
+p_token_url
+                                                       The SOAP envelope to post to the service.
+p_proxy_override
+                                                       The name of the Web Credentials to be used. Web
+p_transfer_timeout                                     Credentials are configured in Workspace Utilities.
+p_wallet_path                                          The URL to retrieve the token from for token-based
+                                                       authentication flows (such as OAuth2).
+p_wallet_pwd                                           The proxy to use for the request. The proxy supplied
+p_https_host                                           overrides the proxy defined in the application attributes.
+                                                       The amount of time in seconds to wait for a response.
+p_oath_scope
+                                                       The filesystem path to a wallet if request is HTTPS. For
+                                                       example, file:/usr/home/oracle/WALLETS
+
+                                                       The password to access the wallet.
+
+                                                       The host name to be matched against the common name
+                                                       (CN) of the remote server's certificate for an HTTPS
+                                                       request.
+                                                       The OAuth scope to be used for this request. APEX uses or
+                                                       requests an access token with the specified scope.
+                                                       Separate multiple scopes with blanks.
+
+API Reference                                                                                 July 24, 2026
+G26651-03                                                                                     Page 15 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                         Chapter 64
+                                                                                   MAKE_REQUEST Procedure Signature 1
+
+Returns
+The SOAP service response as an XMLTYPE.
+Example
+The following example invokes a SOAP service returning an XMLTYPE.
+
+DECLARE
+
+l_xml sys.xmltype;
+
+BEGIN
+
+l_xml := apex_web_service.make_request(
+
+         p_url                                         => 'http://{host}:{port}/path/to/soap/
+
+service/',
+
+         p_action                                      => 'doSoapRequest',
+
+         p_envelope                                    => '{SOAP envelope in XML format}',
+
+         p_credential_static_id => 'My_Credentials',
+
+         p_token_url                                   => 'http://{host}:{port}/ords/scott/oauth/
+
+token' );
+
+END;
+
+64.15 MAKE_REQUEST Procedure Signature 1
+
+                       This procedure invokes a SOAP-style Web service with the supplied SOAP envelope and
+                       stores the results in a collection.
+
+                       Syntax
+
+APEX_WEB_SERVICE.MAKE_REQUEST (
+
+      p_url                                            IN VARCHAR2,
+
+      p_action                                         IN VARCHAR2 DEFAULT NULL,
+
+      p_version                                        IN VARCHAR2 DEFAULT '1.1',
+
+      p_collection_name IN VARCHAR2 DEFAULT NULL,
+
+      p_envelope                                       IN CLOB,
+
+      p_username                                       IN VARCHAR2 DEFAULT NULL,
+
+      p_password                                       IN VARCHAR2 DEFAULT NULL,
+
+      p_scheme                                         IN VARCHAR2 DEFAULT 'Basic',
+
+      p_proxy_override IN VARCHAR2 DEFAULT NULL,
+
+      p_transfer_timeout IN NUMBER DEFAULT 180,
+
+      p_wallet_path                                    IN VARCHAR2 DEFAULT NULL,
+
+      p_wallet_pwd                                     IN VARCHAR2 DEFAULT NULL,
+
+      p_https_host                                     IN VARCHAR2 DEFAULT NULL )
+
+Parameters
+
+Parameter                                              Description
+p_url
+p_action                                               The URL endpoint of the Web service.
+p_version                                              The SOAP Action corresponding to the operation to be invoked.
+p_collection_name                                      The SOAP version (1.1 or 1.2). The default is 1.1.
+p_envelope                                             The name of the collection to store the response.
+p_username                                             The SOAP envelope to post to the service.
+                                                       The username if basic authentication is required for this service.
+
+API Reference                                                                                  July 24, 2026
+G26651-03                                                                                      Page 16 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                            Chapter 64
+                                                                      MAKE_REQUEST Procedure Signature 1
+
+Parameter                                              Description
+p_password
+p_scheme                                               The password if basic authentication is required for this service
+p_proxy_override                                       The authentication scheme. Basic (default), AWS, or Digest if
+p_transfer_timeout                                     supported by your database release.
+p_wallet_path                                          The proxy to use for the request. The proxy supplied overrides the
+                                                       proxy defined in the application attributes.
+p_wallet_pwd                                           The amount of time in seconds to wait for a response.
+p_https_host                                           The file system path to a wallet if the URL endpoint is HTTPS. For
+                                                       example, file:/usr/home/oracle/WALLETS
+                                                       The wallet path provided overrides the wallet defined in the instance
+                                                       settings.
+
+                                                       The password to access the wallet.
+                                                       The host name to be matched against the common name (CN) of the
+                                                       remote server's certificate for an HTTPS request.
+
+Example 1
+
+The following example retrieves a list of movies from a SOAP-style Web service. The response
+is stored in an Oracle APEX collection named MOVIE_LISTINGS.
+
+DECLARE
+            l_envelope CLOB;
+
+BEGIN
+       l_envelope := '<?xml version="1.0" encoding="UTF-8"?>
+
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
+xmlns:tns="http://www.ignyte.com/whatsshowing"
+xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <soap:Body>
+         <tns:GetTheatersAndMovies>
+              <tns:zipCode>43221</tns:zipCode>
+              <tns:radius>5</tns:radius>
+         </tns:GetTheatersAndMovies>
+
+    </soap:Body>
+</soap:Envelope>';
+
+apex_web_service.make_request(
+
+    p_url                                              => ' http://www.ignyte.com/webservices/
+
+ignyte.whatsshowing.webservice/moviefunctions.asmx',
+
+    p_action                                           => ' http://www.ignyte.com/whatsshowing/
+
+GetTheatersAndMovies',
+
+    p_collection_name => 'MOVIE_LISTINGS',
+
+    p_envelope                                         => l_envelope
+
+);
+
+END;
+
+Example 2
+This example invokes a SOAP service and stores the response in a collection.
+
+BEGIN
+
+      apex_web_service.make_request(
+
+           p_url                                       => 'http://{host}:{port}/path/to/soap/service/',
+
+API Reference                                                                                    July 24, 2026
+G26651-03                                                                                        Page 17 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                  Chapter 64
+                                                                            MAKE_REQUEST Procedure Signature 2
+
+          p_collection_name => 'MY_RESPONSE_COLLECTION',
+
+          p_action                                     => 'doSoapRequest',
+
+          p_envelope                                   => '{SOAP envelope in XML format}' );
+
+END;
+
+64.16 MAKE_REQUEST Procedure Signature 2
+
+                       This procedure invokes a Web service with the supplied SOAP envelope and stores the
+                       response in a collection.
+
+                       Syntax
+
+APEX_WEB_SERVICE.MAKE_REQUEST (
+
+      p_url                                            IN VARCHAR2,
+
+      p_action                                         IN VARCHAR2 DEFAULT NULL,
+
+      p_version                                        IN VARCHAR2 DEFAULT '1.1',
+
+      p_collection_name                                IN VARCHAR2 DEFAULT NULL,
+
+      p_envelope                                       IN CLOB,
+
+      --
+
+      p_credential_static_id IN VARCHAR2,
+
+      p_token_url                                      IN VARCHAR2 DEFAULT NULL,
+
+      --
+
+      p_proxy_override                                 IN VARCHAR2 DEFAULT NULL,
+
+      p_transfer_timeout IN NUMBER DEFAULT 180,
+
+      p_wallet_path                                    IN VARCHAR2 DEFAULT NULL,
+
+      p_wallet_pwd                                     IN VARCHAR2 DEFAULT NULL,
+
+      p_https_host                                     IN VARCHAR2 DEFAULT NULL,
+
+      p_oauth_scope                                    IN VARCHAR2 DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_url
+p_action                                               The URL endpoint of the Web service.
+p_version
+p_collection_name                                      The SOAP Action corresponding to the operation invoked.
+p_envelope
+p_credential_static_id                                 The SOAP version (1.1 or 1.2). The default is 1.1.
+
+p_token_url                                            The name of the collection to store the response.
+
+p_proxy_override                                       The SOAP envelope to post to the service.
+p_transfer_timeout
+p_wallet_path                                          The name of the Web Credentials to be used. Web
+                                                       Credentials are configured in Workspace Utilities.
+p_wallet_pwd                                           For token-based authentication flows, the URL where to get
+p_https_host                                           the token from.
+                                                       The proxy to use for the request.
+p_oath_scope
+                                                       The amount of time in seconds to wait for a response.
+
+                                                       The filesystem path to a wallet if request is HTTPS. For
+                                                       example, file:/usr/home/oracle/WALLETS
+                                                       The password to access the wallet.
+
+                                                       The host name to be matched against the common name
+                                                       (CN) of the remote server's certificate for an HTTPS
+                                                       request.
+                                                       The OAuth scope to be used for this request. APEX uses or
+                                                       requests an access token with the specified scope.
+                                                       Separate multiple scopes with blanks.
+
+API Reference                                                                                 July 24, 2026
+G26651-03                                                                                     Page 18 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                 Chapter 64
+                                                                                   MAKE_REST_REQUEST Function
+
+Example
+The following example invokes a SOAP service and stores the response in a collection.
+
+BEGIN
+
+apex_web_service.make_request(
+
+       p_url                                           => 'http://{host}:{port}/path/to/soap/
+
+service/',
+
+       p_collection_name                               => 'MY_RESPONSE_COLLECTION',
+
+       p_action                                        => 'doSoapRequest',
+
+       p_envelope                                      => '{SOAP envelope in XML format}',
+
+       p_credential_static_id => 'My_Credentials',
+
+       p_token_url                                     => 'http://{host}:{port}/ords/scott/oauth/
+
+token' );
+
+END;
+
+64.17 MAKE_REST_REQUEST Function
+
+                       Use this function to invoke a RESTful style Web service supplying either name value pairs, a
+                       character based payload or a binary payload and returning the response in a CLOB.
+
+                       Syntax
+
+APEX_WEB_SERVICE.MAKE_REST_REQUEST (
+
+p_url                                                  IN VARCHAR2,
+
+p_http_method                                          IN VARCHAR2,
+
+p_username                                             IN VARCHAR2 DEFAULT NULL,
+
+p_password                                             IN VARCHAR2 DEFAULT NULL,
+
+p_scheme                                               IN VARCHAR2 DEFAULT 'Basic',
+
+p_proxy_override                                       IN VARCHAR2 DEFAULT NULL,
+
+p_transfer_timeout                                     IN NUMBER DEFAULT 180,
+
+p_body                                                 IN CLOB DEFAULT EMPTY_CLOB(),
+
+p_body_blob                                            IN BLOB DEFAULT EMPTY_BLOB(),
+
+p_parm_name                                            IN apex_application_global.vc_arr2
+
+                                                       DEFAULT empty_vc_arr,
+
+p_parm_value                                           IN apex_application_global.vc_arr2
+
+                                                       DEFAULT empty_vc_arr,
+
+p_wallet_path                                          IN VARCHAR2 DEFAULT NULL,
+
+p_wallet_pwd                                           IN VARCHAR2 DEFAULT NULL,
+
+p_https_host                                           IN VARCHAR2 DEFAULT NULL,
+
+p_credential_static_id IN VARCHAR2 DEFAULT NULL,
+
+p_token_url                                            IN VARCHAR2 DEFAULT NULL,
+
+p_oauth_scope                                          IN VARCHAR2 DEFAULT NULL )
+
+RETURN CLOB;
+
+Parameters
+
+Parameter                                              Description
+p_url
+p_http_method                                          The URL endpoint of the Web service.
+                                                       The HTTP method to use (PUT, POST, GET, HEAD, or
+                                                       DELETE).
+
+API Reference                                                                                  July 24, 2026
+G26651-03                                                                                      Page 19 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                         Chapter 64
+                                                       MAKE_REST_REQUEST_B Function
+
+Parameter                                              Description
+p_username
+p_password                                             The username if basic authentication is required for this
+p_scheme                                               service.
+                                                       The password if basic authentication is required for this service
+p_proxy_override
+p_transfer_timeout                                     The authentication scheme, Basic (default) or AWS or Digest
+p_body                                                 or OAUTH_CLIENT_CRED if supported by your database
+p_body_blob                                            release.
+p_parm_name                                            The proxy to use for the request. The proxy supplied overrides
+p_parm_value                                           the proxy defined in the application attributes.
+p_wallet_path                                          The amount of time in seconds to wait for a response.
+
+p_wallet_pwd                                           The HTTP payload to be sent as CLOB.
+p_https_host
+p_credential_static_id                                 The HTTP payload to be sent as binary BLOB. For example,
+p_token_url                                            posting a file.
+p_oauth_scope                                          The name of the parameters to be used in name/value pairs.
+
+                                                       The value of the parameters to be used in name/value pairs.
+
+                                                       The file system path to a wallet if the URL endpoint is https.
+                                                       For example, file:/usr/home/oracle/WALLETS. The wallet path
+                                                       provided overrides the wallet defined in the instance settings.
+                                                       The password to access the wallet.
+
+                                                       The host name to be matched against the common name (CN)
+                                                       of the remote server's certificate for an HTTPS request.
+                                                       The name of the Web Credentials to be used. Web Credentials
+                                                       are configured in Workspace Utilities.
+                                                       For token-based authentication flows (like OAuth2): The URL
+                                                       where to get the token from.
+                                                       The OAuth scope to be used for this request. APEX uses or
+                                                       requests an access token with the specified scope. Separate
+                                                       multiple scopes with blanks.
+
+Example
+
+The following example calls a RESTful-style web service using the make_rest_request
+function passing the parameters to the service as name/value pairs. The response from the
+service is stored in a locally declared CLOB.
+
+DECLARE       CLOB;
+      l_clob
+
+BEGIN
+
+      l_clob := apex_web_service.make_rest_request(
+            p_url => 'http://us.music.yahewapis.com/video/v1/list/published/
+
+popular',
+            p_http_method => 'GET',
+            p_parm_name => apex_string.string_to_table('appid:format'),
+            p_parm_value => apex_string.string_to_table('xyz:xml'));
+
+END;
+
+64.18 MAKE_REST_REQUEST_B Function
+
+                       This function invokes a RESTful style Web service supplying either name value pairs, a
+                       character based payload, or a binary payload, and returns the response in a BLOB.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 20 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                 Chapter 64
+                                                                               MAKE_REST_REQUEST_B Function
+
+Syntax
+
+APEX_WEB_SERVICE.MAKE_REST_REQUEST_B (
+
+p_url                                                  IN VARCHAR2,
+
+p_http_method                                          IN VARCHAR2,
+
+p_username                                             IN VARCHAR2 DEFAULT NULL,
+
+p_password                                             IN VARCHAR2 DEFAULT NULL,
+
+p_scheme                                               IN VARCHAR2 DEFAULT 'Basic',
+
+p_proxy_override                                       IN VARCHAR2 DEFAULT NULL,
+
+p_transfer_timeout                                     IN NUMBER DEFAULT 180,
+
+p_body                                                 IN CLOB DEFAULT EMPTY_CLOB(),
+
+p_body_blob                                            IN BLOB DEFAULT EMPTY_BLOB(),
+
+p_parm_name                                            IN apex_application_global.vc_arr2
+
+                                                       DEFAULT empty_vc_arr,
+
+p_parm_value                                           IN apex_application_global.vc_arr2
+
+                                                       DEFAULT empty_vc_arr,
+
+p_wallet_path                                          IN VARCHAR2 DEFAULT NULL,
+
+p_wallet_pwd                                           IN VARCHAR2 DEFAULT NULL,
+
+p_https_host                                           IN VARCHAR2 DEFAULT NULL,
+
+p_credential_static_id IN VARCHAR2 DEFAULT NULL,
+
+p_token_url                                            IN VARCHAR2 DEFAULT NULL,
+
+p_oauth_scope                                          IN VARCHAR2 DEFAULT NULL )
+
+RETURN BLOB;
+
+Parameters
+
+Parameter                                              Description
+p_url
+p_http_method                                          The URL endpoint of the Web service.
+p_username
+p_password                                             The HTTP method to use, PUT, POST, GET, HEAD, or DELETE.
+p_scheme
+                                                       The username if basic authentication is required for this service.
+p_proxy_override
+                                                       The password if basic authentication is required for this service
+p_transfer_timeout
+p_body                                                 The authentication scheme, Basic (default) or AWS or Digest or
+p_body_blob                                            OAUTH_CLIENT_CRED if supported by your database release.
+                                                       The proxy to use for the request. The proxy supplied overrides the
+p_parm_name                                            proxy defined in the application attributes.
+p_parm_value                                           The amount of time in seconds to wait for a response.
+p_wallet_path
+                                                       The HTTP payload to be sent as CLOB.
+p_wallet_pwd
+p_https_host                                           The HTTP payload to be sent as binary BLOB. For example, posting a
+                                                       file.
+p_credential_static_id                                 The name of the parameters to be used in name/value pairs.
+
+p_token_url                                            The value of the parameters to be used in name/value pairs.
+
+                                                       The file system path to a wallet if the URL endpoint is https. For
+                                                       example, file:/usr/home/oracle/WALLETS. The wallet path provided
+                                                       overrides the wallet defined in the instance settings.
+                                                       The password to access the wallet.
+
+                                                       The host name to be matched against the common name (CN) of the
+                                                       remote server's certificate for an HTTPS request.
+                                                       The name of the Web Credentials to be used. Web Credentials are
+                                                       configured in Workspace Utilities.
+                                                       For token-based authentication flows (like OAuth2): The URL where to
+                                                       get the token from.
+
+API Reference                                                                              July 24, 2026
+G26651-03                                                                                  Page 21 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                     Chapter 64
+                                                                     OAUTH_AUTHENTICATE Procedure Signature 1
+
+Parameter                                              Description
+p_oauth_scope
+                                                       The OAuth scope to be used for this request. APEX uses or requests
+                                                       an access token with the specified scope. Separate multiple scopes
+                                                       with blanks.
+
+Example
+
+The following example calls a RESTful style Web service using the make_rest_request
+function passing the parameters to the service as name/value pairs. The response from the
+service is stored in a locally declared BLOB.
+
+DECLARE        BLOB;
+      l_blob
+
+BEGIN
+
+      l_blob := apex_web_service.make_rest_request_b(
+            p_url => 'http://us.music.yahooapis.com/ video/v1/list/published/
+
+popular',
+            p_http_method => 'GET',
+            p_parm_name => apex_string.string_to_table('appid:format'),
+            p_parm_value => apex_string.string_to_table('xyz:xml'));
+
+END;
+
+64.19 OAUTH_AUTHENTICATE Procedure Signature 1
+
+                       This procedure performs OAuth authentication and requests an OAuth access token. The
+                       token and its expiry date are stored in a package global.
+
+      Note
+      Currently only the Client Credentials flow is supported.
+
+Syntax
+
+APEX_WEB_SERVICE.OAUTH_AUTHENTICATE (
+
+p_token_url                                            IN VARCHAR2,
+
+p_client_id                                            IN VARCHAR2,
+
+p_client_secret IN VARCHAR2,
+
+p_flow_type                                            IN VARCHAR2 DEFAULT oauth_client_cred,
+
+p_proxy_override IN VARCHAR2 DEFAULT NULL,
+
+p_transfer_timeout IN NUMBER DEFAULT 180,
+
+p_wallet_path                                          IN VARCHAR2 DEFAULT NULL,
+
+p_wallet_pwd                                           IN VARCHAR2 DEFAULT NULL,
+
+p_https_host                                           IN VARCHAR2 DEFAULT NULL,
+
+p_scope                                                IN VARCHAR2 DEFAULT NULL );
+
+API Reference                                                                                  July 24, 2026
+G26651-03                                                                                      Page 22 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                        Chapter 64
+                                                       OAUTH_AUTHENTICATE Procedure Signature 2 (Deprecated)
+
+Parameters
+
+ Parameter                                             Description
+p_token_url
+p_client_id                                            The URL endpoint of the OAuth token service.
+p_client_secret                                        OAuth Client ID to use for authentication.
+p_flow_type                                            OAuth Client Secret to use for authentication.
+p_proxy_override                                       OAuth flow type. Only OAUTH_CLIENT_CRED is supported at this time.
+p_transfer_timeout                                     The proxy to use for the request.
+p_wallet_path                                          The amount of time in seconds to wait for a response.
+                                                       The filesystem path to a wallet if request is HTTPS. For example,
+p_wallet_pwd                                           file:/usr/home/oracle/WALLETS
+p_https_host                                           The password to access the wallet.
+                                                       The host name to be matched against the common name (CN) of the
+p_scope                                                remote server's certificate for an HTTPS request.
+                                                       The OAuth scope to identify groups of attributes that will be requested
+Example                                                from the OAuth provider. For example, profile,email
+
+BEGIN
+      apex_web_service.oauth_authenticate(
+            p_token_url => 'https://api.example.com/ords/scott/oauth/token',
+            p_client_id => '[client-id]',
+            p_client_secret => '[client-secret]');
+
+END;
+
+64.20 OAUTH_AUTHENTICATE Procedure Signature 2
+(Deprecated)
+
+Note
+
+OAUTH_AUTHENTICATE Procedure Signature 2 has been deprecated because
+p_wallet_path and p_wallet_pwd do not have a default value. Oracle recommends
+using OAUTH_AUTHENTICATE_CREDENTIAL instead.
+
+This procedure performs OAUTH authentication and requests an OAuth access token. The
+obtained access token and its expiry date are stored in a package global.
+
+Syntax
+
+APEX_WEB_SERVICE.OAUTH_AUTHENTICATE(
+
+p_token_url                                            IN VARCHAR2,
+
+p_credential_static_id IN VARCHAR2,
+
+p_proxy_override                                       IN VARCHAR2 DEFAULT NULL,
+
+p_transfer_timeout                                     IN NUMBER DEFAULT 180,
+
+p_wallet_path                                          IN VARCHAR2
+
+p_wallet_pwd                                           IN VARCHAR2
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 23 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                         Chapter 64
+                                                                     OAUTH_AUTHENTICATE_CREDENTIAL Procedure
+
+      p_https_host                                     IN VARCHAR2 DEFAULT NULL,
+      p_scope                                          IN VARCHAR2 DEFAULT NULL );
+
+Parameters
+
+ Parameter                                             Description
+p_token_url
+p_credential_static_id                                 The url endpoint of the OAuth token service.
+p_proxy_override
+p_transfer_timeout                                     The name of the Web Credentials to be used. Web Credentials are
+p_wallet_path                                          configured in Workspace Utilities.
+                                                       The proxy to use for the request.
+p_wallet_pwd
+p_https_host                                           The amount of time in seconds to wait for a response.
+p_scope
+                                                       The filesystem path to a wallet if request is https. For example:
+Example                                                file:/usr/home/oracle/WALLETS
+
+                                                       The password to access the wallet.
+
+                                                       The host name to be matched against the common name (CN) of the
+                                                       remote server's certificate for an HTTPS request.
+                                                       The OAuth scope to be used for this request. APEX uses or requests
+                                                       an access token with the specified scope. Separate multiple scopes
+                                                       with blanks.
+
+BEGIN
+
+apex_web_service.oauth_authenticate(
+
+         p_token_url                                   => 'https://api.example.com/ords/scott/oauth/
+
+token',
+
+         p_credential_static_id => 'My_credentials',
+
+         p_wallet_path                                 => null,
+
+         p_wallet_pwd                                  => null );
+
+END;
+
+64.21 OAUTH_AUTHENTICATE_CREDENTIAL Procedure
+
+                       This procedure performs OAuth authentication using a credential store. The obtained access
+                       token and its expiry date are stored in a package global.
+
+                       Syntax
+
+APEX_WEB_SERVICE.OAUTH_AUTHENTICATE_CREDENTIAL (
+
+      p_token_url                                      IN VARCHAR2,
+
+      p_credential_static_id IN VARCHAR2,
+
+      p_proxy_override                                 IN VARCHAR2 DEFAULT NULL,
+
+      p_transfer_timeout                               IN NUMBER DEFAULT 180,
+
+      p_wallet_path                                    IN VARCHAR2 DEFAULT NULL,
+
+      p_wallet_pwd                                     IN VARCHAR2 DEFAULT NULL,
+
+      p_https_host                                     IN VARCHAR2 DEFAULT NULL,
+
+      p_scope                                          IN VARCHAR2 DEFAULT NULL );
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 24 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                          Chapter 64
+                                                       OAUTH_GET_LAST_TOKEN Function
+
+Parameters
+
+ Parameter                                             Description
+p_token_url
+p_credential_static_id                                 The url endpoint of the OAuth token service.
+p_proxy_override
+p_transfer_timeout                                     The name of the Web Credentials to be used. Web Credentials are
+p_wallet_path                                          configured in Workspace Utilities.
+                                                       The proxy to use for the request.
+p_wallet_pwd
+p_https_host                                           The amount of time in seconds to wait for a response.
+p_scope
+                                                       The filesystem path to a wallet if request is HTTPS. For example,
+Example                                                file:/usr/home/oracle/WALLETS
+
+                                                       The password to access the wallet.
+
+                                                       The host name to be matched against the common name (CN) of the
+                                                       remote server's certificate for an HTTPS request.
+                                                       The OAuth scope to be used for this request. APEX uses or requests
+                                                       an access token with the specified scope. Separate multiple scopes
+                                                       with blanks.
+
+BEGIN
+      apex_web_service.oauth_authenticate_credential(
+            p_token_url => 'https://api.example.com/ords/scott/oauth/token',
+            p_credential_static_id => '[web-credential]');
+
+END;
+
+64.22 OAUTH_GET_LAST_TOKEN Function
+
+                       This function returns the OAuth access token received in the last OAUTH_AUTHENTICATE call.
+                       Returns NULL when the token is already expired or OAUTH_AUTHENTICATE has not been called.
+
+                       Returns
+                       The OAuth access token from the last OAUTH_AUTHENTICATE call; NULL when the token is
+                       expired.
+
+                       Syntax
+
+FUNCTION OAUTH_GET_LAST_TOKEN RETURN VARCHAR2;
+
+Example
+
+select apex_web_service.oauth_get_last_token from dual;
+
+64.23 OAUTH_SET_TOKEN Procedure
+
+                       This procedure sets the OAuth access token to be used in subsequent MAKE_REST_REQUEST
+                       calls. This procedure can be used to set a token which was obtained by different means than
+                       with OAUTH_AUTHENTICATE (such as custom code).
+
+API Reference                                            July 24, 2026
+G26651-03                                                Page 25 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                            Chapter 64
+                                                                                   PARSE_RESPONSE Function
+
+Syntax
+
+APEX_WEB_SERVICE.OAUTH_SET_TOKEN (
+      p_token IN VARCHAR2,
+      p_expires IN DATE DEFAULT NULL );
+
+Parameters
+
+ Parameter                                                           Description
+p_token
+p_expires                                                            The OAuth access token to be used by
+                                                                     MAKE_REST_REQUEST calls.
+Example                                                              (Optional) The token expiry date. If NULL, no
+                                                                     expiration date is set.
+
+BEGIN
+      apex_web_service.oauth_set_token(
+            p_token => '{oauth access token}'
+      );
+
+END;
+
+64.24 PARSE_RESPONSE Function
+
+                       This function parses the response from a Web service that is stored in a collection and returns
+                       the result as a VARCHAR2 type.
+
+                       Syntax
+
+APEX_WEB_SERVICE.PARSE_RESPONSE (
+
+p_collection_name IN VARCHAR2,
+
+p_xpath                                                IN VARCHAR2,
+
+p_ns                                                   IN VARCHAR2 DEFAULT NULL )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_collection_name                                      The name of the collection where the Web service response is stored.
+p_xpath                                                The XPath expression to the desired node.
+p_ns                                                   The namespace to the desired node.
+
+Example
+
+The following example parses a response stored in a collection called STELLENT_CHECKIN and
+stores the value in a locally declared VARCHAR2 variable.
+
+declare
+      l_response_msg VARCHAR2(4000);
+
+BEGIN
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 26 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                     Chapter 64
+                                                                                   PARSE_RESPONSE_CLOB Function
+
+      l_response_msg := apex_web_service.parse_response(
+            p_collection_name=>'STELLENT_CHECKIN',
+            p_xpath =>
+
+'//idc:CheckInUniversalResponse/idc:CheckInUniversalResult/idc:StatusInfo/
+idc:statusMessage/text()',
+
+            p_ns=>'xmlns:idc="http://www.stellent.com/CheckIn/"');
+END;
+
+64.25 PARSE_RESPONSE_CLOB Function
+
+                       This function parses the response from a Web service that is stored in a collection and returns
+                       the result as a CLOB type.
+
+                       Syntax
+
+APEX_WEB_SERVICE.PARSE_RESPONSE_CLOB (
+
+p_collection_name IN VARCHAR2,
+
+p_xpath                                                IN VARCHAR2,
+
+p_ns                                                   IN VARCHAR2 DEFAULT NULL )
+
+RETURN CLOB;
+
+Parameters
+
+Parameter                                              Description
+p_collection_name                                      The name of the collection where the Web service response is stored.
+p_xpath                                                The XPath expression to the desired node.
+p_ns                                                   The namespace to the desired node.
+
+Example
+
+The following example parses a response stored in a collection called STELLENT_CHECKIN and
+stores the value in a locally declared CLOB variable.
+
+DECLARE
+      l_response_msg CLOB;
+
+BEGIN
+      l_response_msg := apex_web_service.parse_response_clob(
+            p_collection_name=>'STELLENT_CHECKIN',
+            p_xpath=>
+
+'//idc:CheckInUniversalResponse/idc:CheckInUniversalResult/idc:StatusInfo/
+idc:statusMessage/text()',
+
+            p_ns=>'xmlns:idc="http://www.stellent.com/CheckIn/"');
+END;
+
+64.26 PARSE_XML Function
+
+                       This function parses the response from a Web service returned as an XMLTYPE and returns
+                       the value requested as a VARCHAR2.
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 27 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                 Chapter 64
+                                                                                                  PARSE_XML Function
+
+Syntax
+
+APEX_WEB_SERVICE.PARSE_XML (
+
+p_xml                                                  IN XMLTYPE,
+
+p_xpath                                                IN VARCHAR2,
+
+p_ns                                                   IN VARCHAR2 DEFAULT NULL )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_xml                                                  The XML document as an XMLTYPE to parse.
+p_xpath                                                The XPath expression to the desired node.
+p_ns                                                   The namespace to the desired node.
+
+Example
+
+The following example uses the make_request function to call a Web service and store the
+results in a local XMLTYPE variable. The parse_xml function is then used to pull out a specific
+node of the XML document stored in the XMLTYPE and stores it in a locally declared
+VARCHAR2 variable.
+
+DECLARE
+      l_envelope CLOB;
+      l_xml XMLTYPE;
+      l_movie VARCHAR2(4000);
+
+BEGIN
+      l_envelope := ' <?xml version="1.0" encoding="UTF-8"?>
+
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
+xmlns:tns="http://www.ignyte.com/whatsshowing"
+xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <soap:Body>
+         <tns:GetTheatersAndMovies>
+              <tns:zipCode>43221</tns:zipCode>
+              <tns:radius>5</tns:radius>
+         </tns:GetTheatersAndMovies>
+
+    </soap:Body>
+</soap:Envelope>';
+
+    l_xml := apex_web_service.make_request(
+       p_url => ' http://www.ignyte.com/webservices/
+
+ignyte.whatsshowing.webservice/moviefunctions.asmx',
+       p_action => ' http://www.ignyte.com/whatsshowing/GetTheatersAndMovies',
+       p_envelope => l_envelope );
+
+    l_movie := apex_web_service.parse_xml(
+       p_xml => l_xml,
+       p_xpath => ' //GetTheatersAndMoviesResponse/GetTheatersAndMoviesResult/
+
+Theater/Movies/Movie/Name[1]',
+       p_ns => ' xmlns="http://www.ignyte.com/whatsshowing"' );
+
+END;
+
+API Reference                                                                                     July 24, 2026
+G26651-03                                                                                         Page 28 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                           Chapter 64
+                                                                                   PARSE_XML_CLOB Function
+
+64.27 PARSE_XML_CLOB Function
+
+                       This function parses the response from a Web service returned as an XMLTYPE and returns
+                       the value requested as a CLOB.
+
+                       Syntax
+
+APEX_WEB_SERVICE.PARSE_XML_CLOB (
+
+p_xml                                                  IN XMLTYPE,
+
+p_xpath                                                IN VARCHAR2,
+
+p_ns                                                   IN VARCHAR2 DEFAULT NULL )
+
+RETURN CLOB;
+
+Parameters
+
+Parameter                                              Description
+p_xml                                                  The XML document as an XMLTYPE to parse.
+p_xpath                                                The XPath expression to the desired node.
+p_ns                                                   The namespace to the desired node.
+
+Example
+
+The following example uses the make_request function to call a Web service and stores the
+results in a local XMLTYPE variable. The parse_xml_clob function then fetches a specific node
+of the XML document that is stored in the XMLTYPE and stores it in a locally-declared CLOB
+variable.
+
+DECLARE
+      l_envelope CLOB;
+      l_xml XMLTYPE;
+      l_movie CLOB;
+
+BEGIN
+      l_envelope := ' <?xml version="1.0" encoding="UTF-8"?>
+
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
+xmlns:tns="http://www.ignyte.com/whatsshowing"
+xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <soap:Body>
+         <tns:GetTheatersAndMovies>
+              <tns:zipCode>43221</tns:zipCode>
+              <tns:radius>5</tns:radius>
+         </tns:GetTheatersAndMovies>
+
+    </soap:Body>
+</soap:Envelope>';
+
+    l_xml := apex_web_service.make_request(
+       p_url => ' http://www.ignyte.com/webservices/
+
+ignyte.whatsshowing.webservice/moviefunctions.asmx',
+       p_action => ' http://www.ignyte.com/whatsshowing/GetTheatersAndMovies',
+       p_envelope => l_envelope );
+
+    l_movie := apex_web_service.parse_xml_clob(
+       p_xml => l_xml,
+
+API Reference                                                                                     July 24, 2026
+G26651-03                                                                                         Page 29 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                           Chapter 64
+                                                                                                       REMOVE_REQUEST_HEADER Procedure
+
+                               p_xpath => ' //GetTheatersAndMoviesResponse/GetTheatersAndMoviesResult/
+                       Theater/Movies/Movie/Name[1]',
+
+                               p_ns => ' xmlns="http://www.ignyte.com/whatsshowing"' );
+
+                       END;
+
+64.28 REMOVE_REQUEST_HEADER Procedure
+
+                       This procedure removes an HTTP request header (g_request_headers). If the header
+                       parameter name does not exist, no error is raised.
+
+Caution
+This procedure may reorder the header entries in g_request_headers.
+
+Syntax
+
+APEX_WEB_SERVICE.REMOVE_REQUEST_HEADER (
+      p_name IN VARCHAR2 )
+
+Parameters
+
+Parameter                                              Description
+p_name                                                 The name of the header to remove.
+
+Example
+The following example removes the "Metadata-Context" header.
+
+BEGIN
+      apex_web_service.remove_request_header(
+            p_name => 'Metadata-Context');
+
+END;
+
+64.29 SET_REQUEST_ECID_CONTEXT Procedure
+
+                       This procedure adds an Execution Context ID (ECID) HTTP request header to
+                       g_request_headers. This overrides the application level security setting "Pass ECID."
+
+                       Syntax
+
+APEX_WEB_SERVICE.SET_REQUEST_ECID_CONTEXT (
+      p_ecid IN VARCHAR2 DEFAULT AUTO_ECID )
+
+API Reference                                                                             July 24, 2026
+G26651-03                                                                                 Page 30 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                   Chapter 64
+                                                       SET_REQUEST_ECID_CONTEXT Procedure
+
+Parameters
+
+Parameter                                              Description
+p_ecid
+                                                       The identifier for the execution context. Options include:
+                                                       � AUTO_ECID - (Default) An automatically determined
+
+                                                             ECID header is added.
+                                                       � NULL - No ECID header is added.
+                                                       � If neither, substrb(p_ecid, 1, 64) is used as the
+
+                                                             ECID header.
+
+Example 1
+
+On application level, the sending of an ECID header is switched off. By calling
+set_request_ecid_context without any parameter, the following call to make_rest_request
+has an "ECID-Context" request header with an automatically determined ECID.
+
+BEGIN
+      apex_web_service.set_request_ecid_context;
+
+END;
+
+Example 2
+
+On application level, the sending of an ECID header is switched off. By providing an ECID
+value, the following call to make_rest_request has an "ECID-Context" request header.
+
+BEGIN
+      apex_web_service.set_request_ecid_context(
+            p_ecid => 'my-123456' );
+
+END;
+
+Example 3
+
+On application level, the sending of an ECID header is switched on. By providing an ECID
+value of NULL, the following call to make_rest_request has no "ECID-Context" request header.
+
+BEGIN
+      apex_web_service.set_request_ecid_context(
+            p_ecid => null );
+
+END;
+
+Example 4
+
+On application level, the sending of an ECID header is switched on. By providing an ECID
+value, the following call to make_rest_request uses this value instead of an automatically
+determined ECID.
+
+BEGIN
+      apex_web_service.set_request_ecid_context(
+            p_ecid => 'my-123456' );
+
+END;
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 31 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                      Chapter 64
+                                                                                  SET_REQUEST_HEADERS Procedure
+
+64.30 SET_REQUEST_HEADERS Procedure
+
+                       This procedure sets HTTP request headers (g_request_headers) for subsequent
+                       MAKE_REQUEST or MAKE_REST_REQUEST calls.
+
+                       Syntax
+
+APEX_WEB_SERVICE.SET_REQUEST_HEADERS (
+
+p_name_01                                              IN VARCHAR2,
+
+p_value_01                                             IN VARCHAR2,
+
+p_name_02                                              IN VARCHAR2 DEFAULT NULL,
+
+p_value_02                                             IN VARCHAR2 DEFAULT NULL,
+
+p_name_03                                              IN VARCHAR2 DEFAULT NULL,
+
+p_value_03                                             IN VARCHAR2 DEFAULT NULL,
+
+p_name_04                                              IN VARCHAR2 DEFAULT NULL,
+
+p_value_04                                             IN VARCHAR2 DEFAULT NULL,
+
+p_name_05                                              IN VARCHAR2 DEFAULT NULL,
+
+p_value_05                                             IN VARCHAR2 DEFAULT NULL,
+
+p_reset                                                IN BOOLEAN DEFAULT TRUE,
+
+p_skip_if_exists IN BOOLEAN DEFAULT FALSE );
+
+Parameters
+
+Parameter                                              Description
+
+p_name_01                                              Name of the 1st parameter to set.
+p_value_01                                             Value of the 1st parameter to set.
+p_name_02                                              Name of the 2nd parameter to set.
+p_value_02                                             Value of the 2nd parameter to set.
+p_name_03                                              Name of the 3rd parameter to set.
+p_value_03                                             Value of the 3rd parameter to set.
+p_name_04                                              Name of the 4th parameter to set.
+p_value_04                                             Value of the 4th parameter to set.
+p_name_05                                              Name of the 5th parameter to set.
+p_value_05                                             Value of the 5th parameter to set.
+p_reset                                                Whether to clear the request header array before.
+p_skip_if_exists                                       If TRUE, any existing headers with the same name remain unchanged.
+                                                       For example, if you pass in "Content-Type" as p_name_NN and that header
+                                                       is already present in the apex_web_services.g_request_headers
+                                                       array, then the value that you pass in does not override the existing header
+                                                       value for that name.
+
+Example 1
+
+The following example appends "Content-Type" and "User-Agent" HTTP request headers to
+the already existing headers, but only if they do not exist yet.
+
+begin
+
+apex_web_service.set_request_headers(
+
+       p_name_01                                       => 'Content-Type',
+
+       p_value_01                                      => 'application/json',
+
+API Reference                                                                                       July 24, 2026
+G26651-03                                                                                           Page 32 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                   Chapter 64
+                                                                               SET_REQUEST_HEADERS Procedure
+
+       p_name_02                                       => 'User-Agent',
+
+       p_value_02                                      => 'APEX',
+
+       p_reset                                         => false,
+
+       p_skip_if_exists => true );
+
+end;
+
+Example 2
+
+The following example clears existing request headers and sets "Content-Type" and "User-
+Agent."
+
+begin
+
+      apex_web_service.set_request_headers(
+
+       p_name_01                                       => 'Content-Type',
+
+       p_value_01                                      => 'application/json',
+
+       p_name_02                                       => 'User-Agent',
+
+       p_value_02                                      => 'APEX' );
+
+end;
+
+API Reference                                                                  July 24, 2026
+G26651-03                                                                      Page 33 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+65

@@ -1,0 +1,79 @@
+# APEX_MARKDOWN (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 49391-49468)
+
+APEX_MARKDOWN
+
+                       This package offers a way to convert Markdown to HTML directly in the database.
+                       This parser is compliant with the CommonMark Spec version 0.29.
+                       � Constants
+                       � TO_HTML Function
+
+45.1 Constants
+
+                       The following constants are used by this package.
+
+c_embedded_html_escape constant t_embedded_html_mode := 'ESCAPE';
+-- escapes HTML
+c_embedded_html_preserve constant t_embedded_html_mode := 'PRESERVE';
+-- leaves HTML content as-is
+
+45.2 TO_HTML Function
+
+                       This function converts a Markdown string into HTML.
+                       Syntax
+
+APEX_MARKDOWN.TO_HTML (
+
+p_markdown                                             IN CLOB,
+
+p_embedded_html_mode IN t_embedded_html_mode DEFAULT
+
+c_embedded_html_escape,
+
+p_softbreak                                            IN VARCHAR2          DEFAULT '<br />',
+
+p_extra_link_attributes IN apex_t_varchar2                                  DEFAULT
+
+apex_t_varchar2() )
+
+RETURN CLOB;
+
+Parameters
+
+Parameter                                              Description
+p_markdown
+p_embedded_html_mode                                   The Markdown text content to be converted to HTML.
+
+p_softbreak                                            Specify what should happen with embedded HTML. By
+                                                       default it is escaped.
+                                                       Set this option to C_EMBEDDED_HTML_PRESERVE for it to be
+                                                       preserved. Note that this option has security implications
+                                                       and should only ever be used on trusted input.
+
+                                                       Specify a raw string to be used for a softbreak, such as
+                                                       apex_application.LF. If none is specified, uses <br />.
+
+API Reference                                                                                           July 24, 2026
+G26651-03                                                                                                 Page 1 of 2
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                  Chapter 45
+                                                       TO_HTML Function
+
+ Parameter                                             Description
+p_extra_link_attributes
+                                                       A plist of additional HTML attributes for anchor elements.
+Example                                                For example, to open all links in new tabs, set this
+                                                       parameter to apex_t_varchar2('target', '_blank')
+
+DECLARE
+   l_markdown varchar2(100) := '## APEX_MARKDOWN' || chr(10) || '- Includes
+
+the `to_html` **function**';
+BEGIN
+
+   dbms_output.put_line(apex_markdown.to_html(l_markdown));
+END;
+
+API Reference                                          July 24, 2026
+G26651-03                                                Page 2 of 2
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+46

@@ -1,0 +1,823 @@
+# APEX_IG (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 38808-39629)
+
+APEX_IG
+
+                       The APEX_IG package provides utilities you can use when programming in the Oracle APEX
+                       environment related to interactive grids. You can use the APEX_IG package to add filters, reset
+                       or clear report settings, delete saved reports and change report owners.
+
+                       � ADD_FILTER Procedure Signature 1
+                       � ADD_FILTER Procedure Signature 2 (Deprecated)
+                       � ADD_FILTER Procedure Signature 3
+                       � CHANGE_REPORT_OWNER Procedure
+                       � CLEAR_REPORT Procedure Signature 1
+                       � CLEAR_REPORT Procedure Signature 2
+                       � CLEAR_REPORT Procedure Signature 3
+                       � DELETE_REPORT Procedure
+                       � GET_LAST_VIEWED_REPORT_ID Function
+                       � RESET_REPORT Procedure Signature 1
+                       � RESET_REPORT Procedure Signature 2
+                       � RESET_REPORT Procedure Signature 3
+
+36.1 ADD_FILTER Procedure Signature 1
+
+                       This procedure creates a filter on an interactive grid using a report ID.
+
+         Note
+
+         The use of this procedure in a page rendering process causes report download issues
+         (CSV, HTML, Email, and so on). When a user downloads the report, the interactive
+         grid reloads the page with download format in the REQUEST value. Any interactive grid
+         settings changes (such as add filter or reset report) are done in an Ajax request. Thus,
+         the download data may not match the report data user is seeing. For this reason,
+         Oracle recommends only using this procedure in a page submit process.
+
+Syntax
+
+APEX_IG.ADD_FILTER (
+
+p_page_id                                              IN NUMBER,
+
+p_region_id                                            IN NUMBER,
+
+p_filter_value                                         IN VARCHAR2,
+
+p_column_name                                          IN VARCHAR2 DEFAULT NULL,
+
+p_operator_abbr IN VARCHAR2 DEFAULT NULL,
+
+p_is_case_sensitive IN BOOLEAN DEFAULT FALSE,
+
+p_report_id                                            IN NUMBER DEFAULT NULL )
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 1 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                Chapter 36
+                                                                                ADD_FILTER Procedure Signature 1
+
+Parameters
+
+Parameter                                              Description
+p_page_id
+p_region_id                                            Page of the current Oracle APEX application that contains an
+p_filter_value                                         interactive grid.
+p_column_name                                          The interactive grid region (ID).
+p_operator_abbr                                        The filter value. This value is not used for operator N and NN.
+                                                       Name of the report SQL column, or column alias, to be filtered.
+p_is_case_sensitive                                    Filter type. Valid values are as follows:
+                                                       EQ = Equals
+p_report_id                                            NEQ = Not Equals
+                                                       LT = Less than
+                                                       LTE = Less than or equal to
+                                                       GT = Greater Than
+                                                       GTE = Greater than or equal to
+                                                       N = Null
+                                                       NN = Not Null
+                                                       C = Contains
+                                                       NC = Not Contains
+                                                       IN = SQL In Operator
+                                                       NIN = SQL Not In Operator
+
+                                                       Case sensitivity of the row search filter. This value is not used for a
+                                                       column filter, where p_report_column is set. Valid values are as
+                                                       follows:
+                                                       � TRUE
+                                                       � FALSE (This is the default value.)
+                                                       The saved report ID within the current application page. If
+                                                       p_report_id is NULL, it adds the filter to the last viewed report
+                                                       settings.
+
+Example 1
+
+The following example shows how to use the ADD_FILTER procedure to filter the interactive grid
+with report ID of 901029800374639010 in page 1, region 3335704029884222 of the current
+application with DEPTNO equals 30
+
+BEGIN                                                  => 1,
+      APEX_IG.ADD_FILTER(                              => 3335704029884222,
+            p_page_id                                  => '30',
+            p_region_id                                => 'DEPTNO',
+            p_filter_value                             => 'EQ',
+            p_column_name                              => 901029800374639010);
+            p_operator_abbr
+            p_report_id
+
+END;
+
+API Reference                                                                   July 24, 2026
+G26651-03                                                                       Page 2 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                      Chapter 36
+                                                                     ADD_FILTER Procedure Signature 2 (Deprecated)
+
+Example 2
+
+The following example shows how to use the ADD_FILTER procedure to filter the interactive grid
+with report ID of 901029800374639010 in page 1, region 3335704029884222 of the current
+application with rows containing the case-sensitive word Salary.
+
+BEGIN
+
+APEX_IG.ADD_FILTER(
+
+        p_page_id                                      => 1,
+
+        p_region_id                                    => 3335704029884222,
+
+        p_filter_value                                 => 'Salary',
+
+        p_is_case_sensitive => true,
+
+        p_report_id                                    => 901029800374639010);
+
+END;
+
+36.2 ADD_FILTER Procedure Signature 2 (Deprecated)
+
+                       This procedure creates a filter on an interactive grid using a report name.
+
+       Note
+
+       The use of this procedure in a page rendering process causes report download issues
+       (CSV, HTML, Email, and so on). When a user downloads the report, the interactive
+       grid reloads the page with download format in the REQUEST value. Any interactive grid
+       settings changes (such as add filter or reset report) are done in an Ajax request. Thus,
+       the download data may not match the report data user is seeing. For this reason,
+       Oracle recommends only using this procedure in a page submit process.
+
+       Note
+
+       This API is deprecated and will be removed in a future release.
+       Use ADD_FILTER Procedure Signature 3 instead.
+
+Syntax
+
+APEX_IG.ADD_FILTER (
+
+p_page_id                                              IN NUMBER,
+
+p_region_id                                            IN NUMBER,
+
+p_filter_value                                         IN VARCHAR2,
+
+p_column_name                                          IN VARCHAR2 DEFAULT NULL,
+
+p_operator_abbr IN VARCHAR2 DEFAULT NULL,
+
+p_is_case_sensitive IN BOOLEAN DEFAULT FALSE,
+
+p_report_name                                          IN VARCHAR2 DEFAULT NULL )
+
+API Reference                                                                                       July 24, 2026
+G26651-03                                                                                           Page 3 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                        Chapter 36
+                                                       ADD_FILTER Procedure Signature 2 (Deprecated)
+
+Parameters
+
+Parameter                                              Description
+p_page_id
+p_region_id                                            Page of the current Oracle APEX application that contains an
+p_filter_value                                         interactive grid.
+p_column_name                                          The interactive grid region (ID).
+p_operator_abbr                                        This is the filter value. This value is not used for N and NN.
+                                                       Name of the report SQL column, or column alias, to be filtered.
+p_is_case_sensitive                                    Filter type. Valid values are as follows:
+                                                       EQ = Equals
+p_report_name                                          NEQ = Not Equals
+                                                       LT = Less than
+                                                       LTE = Less than or equal to
+                                                       GT = Greater Than
+                                                       GTE = Greater than or equal to
+                                                       N = Null
+                                                       NN = Not Null
+                                                       C = Contains
+                                                       NC = Not Contains
+                                                       IN = SQL In Operator
+                                                       NIN = SQL Not In Operator
+
+                                                       Case sensitivity of the row search filter. This value is not used for a
+                                                       column filter, where p_report_column is set. Valid values are as
+                                                       follows:
+                                                       � TRUE
+                                                       � FALSE (This is the default value.)
+
+                                                       The saved report name within the current application page. If
+                                                       p_report_name is NULL, it adds the filter to the last viewed report
+                                                       settings.
+
+Example 1
+
+The following example shows how to use the ADD_FILTER procedure to filter the interactive grid
+with report name of Statistics in page 1, region 3335704029884222 of the current application
+with DEPTNO equals 30.
+
+BEGIN                                                  => 1,
+      APEX_IG.ADD_FILTER(                              => 3335704029884222,
+            p_page_id                                  => '30',
+            p_region_id                                => 'DEPTNO',
+            p_filter_value                             => 'EQ',
+            p_column_name                              => 'Statistics');
+            p_operator_abbr
+            p_report_name
+
+END;
+
+API Reference                                                                July 24, 2026
+G26651-03                                                                    Page 4 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                             Chapter 36
+                                                                             ADD_FILTER Procedure Signature 3
+
+Example 2
+
+The following example shows how to use the ADD_FILTER procedure to filter the interactive grid
+with report name of Statistics in page 1, region 3335704029884222 of the current application
+with rows containing the case-sensitive word Salary.
+
+BEGIN
+
+APEX_IG.ADD_FILTER(
+
+        p_page_id                                      => 1,
+
+        p_region_id                                    => 3335704029884222,
+
+        p_filter_value                                 => 'Salary',
+
+        p_is_case_sensitive => true,
+
+        p_report_name                                  => 'Statistics');
+
+END;
+
+36.3 ADD_FILTER Procedure Signature 3
+
+                       This procedure creates a filter on an interactive grid using a report Static ID.
+
+       Note
+
+       The use of this procedure in a page rendering process causes report download issues
+       (CSV, HTML, Email, and so on). When a user downloads the report, the interactive
+       grid reloads the page with download format in the REQUEST value. Any interactive grid
+       settings changes (such as add filter or reset report) are done in an Ajax request. Thus,
+       the download data may not match the report data user is seeing. For this reason,
+       Oracle recommends only using this procedure in a page submit process.
+
+Syntax
+
+APEX_IG.ADD_FILTER (
+
+      p_page_id                                        IN     NUMBER,
+                                                              VARCHAR2,
+      p_region_static_id                               IN     VARCHAR2,
+                                                              VARCHAR2
+      p_filter_value                                   IN     VARCHAR2
+                                                              BOOLEAN
+      p_column_name                                    IN     VARCHAR2    DEFAULT NULL,
+                                                              VARCHAR2    DEFAULT NULL,
+      p_operator_abbr                                  IN                 DEFAULT FALSE,
+                                                                          DEFAULT NULL,
+      p_is_case_sensitive                              IN                 DEFAULT NULL );
+
+      p_report_static_id                               IN
+
+      p_multi_value_separator IN
+
+Parameters                                             Description
+
+ Parameter                                             Page of the current Oracle APEX application that contains an
+p_page_id                                              interactive grid.
+                                                       The interactive grid region Static ID.
+p_region_static_id                                     This is the filter value. This value is not used for N and NN.
+p_filter_value                                         Name of the report SQL column, or column alias, to be filtered. When
+p_column_name                                          not set, a row filter is defined.
+
+API Reference                                                                                            July 24, 2026
+G26651-03                                                                                                Page 5 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                           Chapter 36
+                                                                           ADD_FILTER Procedure Signature 3
+
+Parameter                                              Description
+p_operator_abbr
+                                                       The filter type to use for the column filter. Valid values are:
+p_is_case_sensitive                                    � EQ = Equals
+p_report_static_id                                     � NEQ = Not Equals
+p_multi_value_separator                                � GT = Greater Than
+                                                       � GTE = Greater than or equal to
+                                                       � LT = Less than
+                                                       � LTE = Less than or equal to
+                                                       � N = Null
+                                                       � NN = Not Null
+                                                       � C = Contains
+                                                       � NC = Not Contains
+                                                       � IN = SQL In Operator
+                                                       � NIN = SQL Not In Operator
+
+                                                       Case sensitivity of the row search filter. This value is not used for a
+                                                       column filter, where p_report_column is set. Valid values are as
+                                                       follows:
+                                                       � TRUE
+                                                       � FALSE (This is the default value.)
+
+                                                       The saved static ID within the current application page. If
+                                                       p_report_static_id is NULL, it adds the filter to the last viewed
+                                                       report settings.
+
+                                                       Separator for multi-value filters (IN/NIN operators).
+
+Example 1
+
+The following example shows how to use the ADD_FILTER procedure to filter the interactive grid
+with report Static ID statistics in page 1, region Static ID analysis of the current application
+with DEPTNO equals 30.
+
+BEGIN                                                  => 1,
+      APEX_IG.ADD_FILTER(                              => 'analysis',
+            p_page_id                                  => '30',
+            p_region_static_id                         => 'DEPTNO',
+            p_filter_value                             => 'EQ',
+            p_column_name                              => 'statistics' );
+            p_operator_abbr
+            p_report_static_id
+
+END;
+
+Example 2
+
+The following example shows how to use the ADD_FILTER procedure to filter the interactive grid
+with report Static ID of statistics in page 1, region Static ID analysis of the current
+application with rows containing the case-sensitive word Salary.
+
+BEGIN
+
+APEX_IG.ADD_FILTER(
+
+       p_page_id                                       => 1,
+
+       p_region_static_id => 'analysis',
+
+       p_filter_value                                  => 'Salary',
+
+       p_is_case_sensitive => true,
+
+API Reference                                                              July 24, 2026
+G26651-03                                                                  Page 6 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                   Chapter 36
+                                                                             CHANGE_REPORT_OWNER Procedure
+
+       p_report_static_id => 'statistics' );
+
+END;
+
+36.4 CHANGE_REPORT_OWNER Procedure
+
+                       This procedure changes the owner of a saved interactive grid report using a report ID. This
+                       procedure cannot change the owner of default interactive grid report.
+
+                       Syntax
+
+APEX_IG.CHANGE_REPORT_OWNER (
+
+p_application_id IN NUMBER DEFAULT apex_application.g_flow_id,
+
+p_report_id                                            IN NUMBER,
+
+p_old_owner                                            IN VARCHAR2,
+
+p_new_owner                                            IN VARCHAR2 )
+
+Parameters
+
+Parameters                                             Description
+p_application_id
+                                                       The application ID containing the interactive grid. If
+p_report_id                                            p_application_id is NULL, it defaults to the application ID in
+p_old_owner                                            apex_application.g_flow_id.
+p_new_owner
+                                                       The saved report ID within the current application page.
+
+                                                       The previous owner name to change from (case-sensitive). The owner
+                                                       needs to be a valid login user accessing the report.
+                                                       The new owner name to change to (case-sensitive). The owner must
+                                                       be a valid login user accessing the report.
+
+Example
+
+This example shows how to use CHANGE_REPORT_OWNER procedure to change the old owner
+name of JOHN to the new owner name of JOHN.DOE for a saved report. The saved report has
+a report ID of 1235704029884282 and resides in the application with ID 100.
+
+BEGIN
+
+      APEX_IG.CHANGE_REPORT_OWNER (
+
+       P_application_id => 100,
+
+       p_report_id                                     => 1235704029884282,
+
+       p_old_owner                                     => 'JOHN',
+
+       p_new_owner                                     => 'JOHN.DOE');
+
+END;
+
+36.5 CLEAR_REPORT Procedure Signature 1
+
+                       This procedure clears report filter settings to the developer defined default settings using the
+                       report ID.
+
+API Reference                                                                July 24, 2026
+G26651-03                                                                    Page 7 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                    Chapter 36
+                                                              CLEAR_REPORT Procedure Signature 2
+
+       Note
+
+       The use of this procedure in a page rendering process causes report download issues
+       (CSV, HTML, Email, and so on). When a user downloads the report, the interactive
+       grid reloads the page with download format in the REQUEST value. Any interactive
+       grid settings changes (such as add filter or reset report) are done in an Ajax request.
+       Thus, the download data may not match the report data user is seeing. For this
+       reason, Oracle recommends only using this procedure in a page submit process.
+
+Syntax
+
+APEX_IG.CLEAR_REPORT (
+      p_page_id IN NUMBER,
+      p_region_id IN NUMBER,
+      p_report_id IN NUMBER DEFAULT NULL )
+
+Parameters
+
+Parameter                                              Description
+p_page_id
+                                                       Page of the current Oracle APEX application that contains an
+p_region_id                                            interactive grid.
+p_report_id                                            The interactive grid region ID.
+                                                       The saved report ID within the current application page. If
+                                                       p_report_id is NULL, it clears the last viewed report settings.
+
+Example
+
+The following example shows how to use the CLEAR_REPORT procedure signature 1 to reset
+interactive grid filter settings with report ID of 901029800374639010 in page 1, region
+3335704029884222 of the current application.
+
+BEGIN
+
+APEX_IG.CLEAR_REPORT(
+
+       p_page_id                                       => 1,
+
+       p_region_id => 3335704029884222,
+
+       p_report_id => 901029800374639010);
+
+END;
+
+36.6 CLEAR_REPORT Procedure Signature 2
+
+                       This procedure clears filter report settings to the developer defined default settings using the
+                       report name.
+
+API Reference                                                 July 24, 2026
+G26651-03                                                     Page 8 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                    Chapter 36
+                                                              CLEAR_REPORT Procedure Signature 3
+
+       Note
+
+       The use of this procedure in a page rendering process causes report download issues
+       (CSV, HTML, Email, and so on). When a user downloads the report, the interactive
+       grid reloads the page with download format in the REQUEST value. Any interactive
+       grid settings changes (such as add filter or reset report) are done in an Ajax request.
+       Thus, the download data may not match the report data user is seeing. For this
+       reason, Oracle recommends only using this procedure in a page submit process.
+
+Syntax
+
+APEX_IG.CLEAR_REPORT (
+      p_page_id IN NUMBER,
+      p_region_id IN NUMBER,
+      p_report_name IN VARCHAR2 DEFAULT NULL )
+
+Parameters
+
+Parameter                                              Description
+p_page_id
+                                                       Page of the current Oracle APEX application that contains an
+p_region_id                                            interactive grid.
+p_report_name                                          The interactive grid region (ID).
+                                                       The saved report name within the current application page. If
+                                                       p_report_name is NULL, it clears the last viewed report settings.
+
+Example
+
+The following example shows how to use the CLEAR_REPORT procedure signature 2 to reset
+interactive grid filter settings with report name of Statistics in page 1, region
+3335704029884222 of the current application.
+
+BEGIN
+
+APEX_IG.CLEAR_REPORT(
+
+       p_page_id                                       => 1,
+
+       p_region_id => 3335704029884222,
+
+       p_report_name => 'Statistics');
+
+END;
+
+36.7 CLEAR_REPORT Procedure Signature 3
+
+                       This procedure clears filter report settings to the developer defined default settings using the
+                       report static ID.
+
+API Reference                                                 July 24, 2026
+G26651-03                                                     Page 9 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                             Chapter 36
+                                                                                     DELETE_REPORT Procedure
+
+Note
+
+The use of this procedure in a page rendering process causes report download issues
+(CSV, HTML, Email, and so on). When a user downloads the report, the interactive
+grid reloads the page with download format in the REQUEST value. Any interactive
+grid settings changes (such as add filter or reset report) are done in an Ajax request.
+Thus, the download data may not match the report data user is seeing. For this
+reason, Oracle recommends only using this procedure in a page submit process.
+
+Syntax
+
+APEX_IG.CLEAR_REPORT (
+
+p_page_id                                              IN NUMBER,
+
+p_region_static_id IN VARCHAR2,
+
+p_report_static_id IN VARCHAR2                                      DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_page_id
+                                                       The page of the current Oracle APEX application that contains the
+p_region_static_id                                     interactive grid.
+p_report_static_id                                     The interactive grid region static ID.
+
+                                                       The saved report static ID within the current application page. If
+                                                       p_report_static_id is NULL, it clears the last viewed report
+                                                       settings.
+
+Example
+
+The following example shows how to use the CLEAR_REPORT procedure to reset interactive grid
+filter settings with report static ID of statistics in page 1 and region static ID analysis of the
+current application.
+
+BEGIN                                                  => 1,
+      APEX_IG.CLEAR_REPORT(                            => 'analysis',
+            p_page_id                                  => 'statistics');
+            p_region_static_id
+            p_report_static_id
+
+END;
+
+36.8 DELETE_REPORT Procedure
+
+                       This procedure deletes a saved interactive grid report. It deletes a specific saved report in the
+                       current logged in workspace and application.
+
+                       Syntax
+
+APEX_IG.DELETE_REPORT (
+
+p_application_id IN NUMBER DEFAULT apex_application.g_flow_id,
+
+p_report_id                                            IN NUMBER )
+
+API Reference                                                                        July 24, 2026
+G26651-03                                                                            Page 10 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                          Chapter 36
+                                                                                GET_LAST_VIEWED_REPORT_ID Function
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+                                                       The application ID containing the interactive grid. If
+p_report_id                                            p_application_id is NULL, it defaults to the application ID in
+                                                       apex_application.g_flow_id.
+                                                       Report ID to delete within the current Oracle APEX application.
+
+Example
+
+The following example shows how to use the DELETE_REPORT procedure to delete the saved
+interactive grid report with ID of 901029800374639010 in application ID 100.
+
+BEGIN
+
+      APEX_IG.DELETE_REPORT (
+
+         P_application_id => 100,
+
+         p_report_id                                   => 901029800374639010);
+
+END;
+
+36.9 GET_LAST_VIEWED_REPORT_ID Function
+
+                       This function returns the last viewed base report ID of the specified page and region.
+                       Syntax
+
+APEX_IG.GET_LAST_VIEWED_REPORT_ID (
+      p_page_id IN NUMBER,
+      p_region_id IN VARCHAR2 )
+      RETURN NUMBER;
+
+Parameters
+
+Parameter                                              Description
+p_page_id
+                                                       Page of the current Oracle APEX application that contains an
+p_region_id                                            interactive grid.
+                                                       The interactive grid region static ID or region ID.
+
+Example
+
+The following example shows how to use the GET_LAST_VIEWED_REPORT_ID function to retrieve
+the last viewed report ID in page 1, region Static ID analysis of the current application.
+
+DECLARE
+
+l_report_id number;
+
+BEGIN
+
+l_report_id := APEX_IG.GET_LAST_VIEWED_REPORT_ID (
+
+         p_page_id                                     => 1,
+
+         p_region_id => 'analysis' );
+
+sys.htp.p('Last Viewed Report ID = ' || l_report_id);
+
+END;
+
+API Reference                                                                   July 24, 2026
+G26651-03                                                                       Page 11 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                    Chapter 36
+                                                              RESET_REPORT Procedure Signature 1
+
+36.10 RESET_REPORT Procedure Signature 1
+
+                       This procedure resets report settings to the developer defined default settings using the report
+                       ID.
+
+                       Syntax
+
+                       APEX_IG.RESET_REPORT (
+                             p_page_id IN NUMBER,
+                             p_region_id IN NUMBER,
+                             p_report_id IN NUMBER DEFAULT NULL );
+
+                       Parameters
+
+Parameter                                              Description
+p_page_id
+                                                       Page of the current Oracle APEX application that contains an
+p_region_id                                            interactive grid.
+p_report_name                                          The interactive grid region ID.
+                                                       The saved report name within the current application page. If
+                                                       p_report_id is NULL, it resets the last viewed report settings.
+
+Example
+
+The following example shows how to use the RESET_REPORT procedure signature 1 to reset
+interactive grid settings with report ID of 901029800374639010 in page 1, region
+3335704029884222 of the current application.
+
+BEGIN
+
+APEX_IG.RESET_REPORT(
+
+       p_page_id                                       => 1,
+
+       p_region_id => 3335704029884222,
+
+       p_report_id => 901029800374639010);
+
+END;
+
+36.11 RESET_REPORT Procedure Signature 2
+
+                       This procedure resets report settings to the developer defined default settings using the report
+                       name.
+
+                       Syntax
+
+APEX_IG.RESET_REPORT (
+      p_page_id IN NUMBER,
+      p_region_id IN NUMBER,
+      p_report_name IN VARCHAR2 DEFAULT NULL )
+
+API Reference                                                 July 24, 2026
+G26651-03                                                     Page 12 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                         Chapter 36
+                                                                   RESET_REPORT Procedure Signature 3
+
+Parameters
+
+Parameter                                              Description
+p_page_id
+                                                       Page of the current Oracle APEX application that contains an
+p_region_id                                            interactive grid.
+p_report_name                                          The interactive grid region ID.
+                                                       The saved report name within the current application page. If
+                                                       p_report_name is NULL, it resets the last viewed report settings.
+
+Example
+
+The following example shows how to use the RESET_REPORT procedure signature 2 to reset
+interactive grid settings with report name of Statistics in page 1, region 3335704029884222 of
+the current application.
+
+BEGIN
+
+APEX_IG.RESET_REPORT(
+
+       p_page_id                                       => 1,
+
+       p_region_id => 3335704029884222,
+
+       p_report_name => 'Statistics' );
+
+END;
+
+36.12 RESET_REPORT Procedure Signature 3
+
+                       This procedure resets report settings to the developer defined default settings using the report
+                       Static ID.
+
+                       Syntax
+
+APEX_IG.RESET_REPORT (
+
+      p_page_id                                        IN NUMBER,
+
+      p_region_static_id IN VARCHAR2,
+
+      p_report_static_id IN VARCHAR2                               DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_page_id
+                                                       Page of the current Oracle APEX application that contains an
+p_region_static_id                                     interactive grid.
+p_report_static_id                                     The interactive grid region Static ID.
+
+                                                       The saved interactive grid report Static ID within the current application
+                                                       page. If p_report_static_id is NULL, it resets the last viewed
+                                                       report's settings.
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 13 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                   Chapter 36
+                                                             RESET_REPORT Procedure Signature 3
+
+Example
+
+The following example shows how to use the RESET_REPORT procedure to reset interactive grid
+settings with report Static ID of statistics in page 1 and region Static ID analysis of the
+current application.
+
+BEGIN
+
+APEX_IG.RESET_REPORT(
+
+       p_page_id                                       =>1,
+
+       p_region_static_id =>'analysis',
+
+       p_report_static_id =>'statistics');
+
+END;
+
+API Reference                                                July 24, 2026
+G26651-03                                                    Page 14 of 14
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+37

@@ -1,0 +1,1133 @@
+# APEX_T_JAVASCRIPT_OBJECT (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 62254-63385)
+
+APEX_T_JAVASCRIPT_OBJECT
+
+                       The APEX_T_JAVASCRIPT_OBJECT object type is a utility for constructing JavaScript objects to be
+                       passed onto the browser. Note that this object type does not construct JSON, but JavaScript
+                       objects, with support for unescaped properties like functions.
+
+                       To construct JSON objects, use native database functionalities like sys.json_object_t
+                       instead.
+
+                       � Constructor
+                       � APPEND Procedure Signature 1
+                       � APPEND Procedure Signature 2
+                       � APPEND Procedure Signature 3
+                       � APPEND Procedure Signature 4
+                       � APPEND Procedure Signature 5
+                       � APPEND Procedure Signature 6
+                       � APPEND Procedure Signature 7
+                       � APPEND_FUNCTION Procedure
+                       � APPEND_RAW Procedure
+                       � CLOSE_ARRAY Procedure
+                       � CLOSE_OBJECT Procedure
+                       � IS_NULL Function
+                       � OPEN_ARRAY Procedure
+                       � OPEN_OBJECT Procedure
+                       � PUT Procedure Signature 1
+                       � PUT Procedure Signature 2
+                       � PUT Procedure Signature 3
+                       � PUT Procedure Signature 4
+                       � PUT Procedure Signature 5
+                       � PUT Procedure Signature 6
+                       � PUT Procedure Signature 7
+                       � PUT_FUNCTION Procedure
+                       � PUT_RAW Procedure Signature 1
+                       � RESET Procedure
+                       � TO_CLOB Function
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 1 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                Chapter 60
+                                                                                                               Constructor
+
+60.1 Constructor
+
+                       Instantiates a new APEX_T_JAVASCRIPT_OBJECT. This constructor does not take any
+                       parameters.
+
+                       Syntax
+
+CONSTRUCTOR apex_t_javascript_object
+      RETURN SELF AS RESULT;
+
+Example
+Create an object.
+
+declare
+      l_obj apex_t_javascript_object := apex_t_javascript_object();
+
+begin
+      l_obj.open_object;
+      l_obj.put( 'foo', 'bar' );
+      l_obj.close_object;
+
+      sys.dbms_output.put_line( l_obj.to_clob );
+end;
+
+Output:
+      {"foo":"bar"}
+
+60.2 APPEND Procedure Signature 1
+
+                       Append a value of type VARCHAR2 to an array.
+                       Syntax
+
+MEMBER PROCEDURE append (
+
+p_value            IN VARCHAR2,
+
+p_omit_null IN BOOLEAN                                 DEFAULT TRUE );
+
+Parameters
+
+Parameter                                                            Description
+p_value                                                              The value.
+p_omit_null                                                          Whether to omit the value if it is null.
+
+Example
+Create an array with an attribute of type VARCHAR2.
+
+declare
+      l_obj apex_t_javascript_object := apex_t_javascript_object();
+
+begin
+      l_obj.open_array;
+
+API Reference                                                                                                  July 24, 2026
+G26651-03                                                                                                      Page 2 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                               Chapter 60
+                                                                    APPEND Procedure Signature 2
+
+      l_obj.append( 'foo' );
+      l_obj.close_array;
+
+      sys.dbms_output.put_line( l_obj.to_clob );
+end;
+
+Output:
+      ["foo"]
+
+60.3 APPEND Procedure Signature 2
+
+                       Append a value of type NUMBER to an array.
+                       Syntax
+
+MEMBER PROCEDURE append (
+
+p_value      IN NUMBER,
+
+p_omit_null IN BOOLEAN DEFAULT TRUE );
+
+Parameters
+
+Parameter                                                           Description
+p_value                                                             The value.
+p_omit_null                                                         Whether to omit the value if it is null.
+
+Example
+Create an array with an attribute of type NUMBER.
+
+declare
+      l_obj apex_t_javascript_object := apex_t_javascript_object();
+
+begin
+      l_obj.open_array;
+      l_obj.append( 42 );
+      l_obj.close_array;
+
+      sys.dbms_output.put_line( l_obj.to_clob );
+end;
+
+Output:
+      [42]
+
+60.4 APPEND Procedure Signature 3
+
+                       Append a value of type BOOLEAN to an array.
+                       Syntax
+
+MEMBER PROCEDURE append (
+
+p_value      IN BOOLEAN,
+
+p_omit_null IN BOOLEAN DEFAULT TRUE );
+
+API Reference                                                                                                 July 24, 2026
+G26651-03                                                                                                     Page 3 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                            Chapter 60
+                                                                 APPEND Procedure Signature 4
+
+Parameters
+
+Parameter                                                        Description
+p_value                                                          The value.
+p_omit_null                                                      Whether to omit the value if it is null.
+
+Example
+Create an array with an attribute of type BOOLEAN.
+
+declare
+      l_obj apex_t_javascript_object := apex_t_javascript_object();
+
+begin
+      l_obj.open_array;
+      l_obj.append( true );
+      l_obj.close_array;
+
+      sys.dbms_output.put_line( l_obj.to_clob );
+end;
+
+Output:
+      [true]
+
+60.5 APPEND Procedure Signature 4
+
+                       Append a value of type CLOB to an array.
+                       Syntax
+
+MEMBER PROCEDURE append (
+
+p_value      IN CLOB,
+
+p_omit_null IN BOOLEAN DEFAULT TRUE );
+
+Parameters
+
+Parameter                                                        Description
+p_value                                                          The value.
+p_omit_null                                                      Whether to omit the value if it is null.
+
+Example
+Create an array with an attribute of type CLOB.
+
+declare
+      l_obj apex_t_javascript_object := apex_t_javascript_object();
+
+begin
+      l_obj.open_array;
+      l_obj.append( to_clob( 'foo' ) );
+      l_obj.close_array;
+
+      sys.dbms_output.put_line( l_obj.to_clob );
+
+API Reference                                                                                              July 24, 2026
+G26651-03                                                                                                  Page 4 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                           Chapter 60
+                                                                                APPEND Procedure Signature 5
+
+                       end;
+
+                       Output:
+                              ["foo"]
+
+60.6 APPEND Procedure Signature 5
+
+                       Append an object to an array. The object being appended must already be properly formed.
+                       Syntax
+
+                       MEMBER PROCEDURE append (
+                             p_value IN apex_t_javascript_object );
+
+                       Parameters
+
+Parameter                                                          Description
+p_value                                                            The object.
+
+Example
+Create an array that appends an object to the array.
+
+declare
+      l_obj apex_t_javascript_object := apex_t_javascript_object();
+      l_arr apex_t_javascript_object := apex_t_javascript_object();
+
+begin
+      l_obj.open_object;
+      l_obj.put( 'foo', 'bar' );
+      l_obj.close_object;
+
+      l_arr.open_array;
+      l_arr.append( l_obj_2 );
+      l_arr.close_array;
+
+      sys.dbms_output.put_line( l_arr.to_clob );
+end;
+
+Output:
+      [{"foo":"bar"}]
+
+60.7 APPEND Procedure Signature 6
+
+                       Appends an array of VARCHAR2 to an array.
+                       Syntax
+
+MEMBER PROCEDURE append (
+
+p_value                                                IN apex_t_varchar2,
+
+p_spread                                               IN BOOLEAN           DEFAULT FALSE,
+                                                                            DEFAULT TRUE );
+p_omit_empty IN BOOLEAN
+
+API Reference                                                                                July 24, 2026
+G26651-03                                                                                    Page 5 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                     Chapter 60
+                                                                          APPEND Procedure Signature 7
+
+Parameters
+
+Parameter                                                                 Description
+p_value
+p_spread                                                                  The array.
+                                                                          Whether to append the values to the currently
+p_omit_empty                                                              opened array as opposed to creating a new one.
+                                                                          Whether to omit the array if it is empty.
+
+Example
+Create an array that appends an array of type VARCHAR2.
+
+declare                                                            := apex_t_javascript_object();
+      l_obj apex_t_javascript_object                               := apex_t_varchar2( 'foo', 'bar', 'baz' );
+      l_arr apex_t_varchar2
+
+begin
+      l_obj.open_array;
+      l_obj.append( l_arr );
+      l_obj.append (
+            p_value => l_arr,
+            p_spread => true );
+      l_obj.close_array;
+
+      sys.dbms_output.put_line( l_obj.to_clob );
+end;
+
+Output:
+      [["foo","bar","baz"],"foo","bar","baz"]
+
+60.8 APPEND Procedure Signature 7
+
+                       Appends an array of NUMBER to an array.
+                       Syntax
+
+MEMBER PROCEDURE append (
+
+p_value                                                IN apex_t_number,
+
+p_spread                                               IN BOOLEAN         DEFAULT FALSE,
+                                                                          DEFAULT TRUE );
+p_omit_empty IN BOOLEAN
+
+Parameters
+
+Parameter                                                                 Description
+p_value
+p_spread                                                                  The array.
+                                                                          Whether to append the values to the currently
+p_omit_empty                                                              opened array as opposed to creating a new one.
+                                                                          Whether to omit the array if it is empty.
+
+API Reference                                                                              July 24, 2026
+G26651-03                                                                                  Page 6 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                    Chapter 60
+                                                                        APPEND_FUNCTION Procedure
+
+Example
+Create an array that appends an array of type NUMBER.
+
+declare                                                := apex_t_javascript_object();
+      l_obj apex_t_javascript_object                   := apex_t_number( 1, 2, 3 );
+      l_arr apex_t_number
+
+begin
+      l_obj.open_array;
+      l_obj.append( l_arr );
+      l_obj.append (
+            p_value => l_arr,
+            p_spread => true );
+      l_obj.close_array;
+
+      sys.dbms_output.put_line( l_obj.to_clob );
+end;
+
+Output:
+      [[1,2,3],1,2,3]
+
+60.9 APPEND_FUNCTION Procedure
+
+                       Appends a function to an array. The function is added unescaped. Ensure the contents of the
+                       function are trusted. Do not add untrusted data such as data coming from an end user.
+
+                       The function being added can either be a complete function, in which case it is added as is, it
+                       can be a function body, in which case it is wrapped with function(){}, or be an expression,
+                       which case it is wrapped and the expression returned.
+
+                       Syntax
+
+MEMBER PROCEDURE append_function (
+
+p_code       IN VARCHAR2,
+
+p_type       IN PLS_INTEGER,
+
+p_omit_null IN BOOLEAN                                 DEFAULT TRUE );
+
+Parameters
+
+Parameter                                              Description
+p_code
+p_type                                                 The value.
+
+p_omit_null                                            The type of code being added, use one of the
+                                                       constants:
+                                                       � apex_javascript.c_type_function
+                                                       � apex_javascript.c_type_function_body
+                                                       � apex_javascript.c_type_expression
+                                                       Whether to omit the value if it is null.
+
+API Reference                                                                          July 24, 2026
+G26651-03                                                                              Page 7 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                        Chapter 60
+                                                                    APPEND_RAW Procedure
+
+                       Example
+                       Create an array that appends a function to the array.
+
+                       declare
+                              l_obj apex_t_javascript_object := apex_t_javascript_object();
+
+                       begin
+                              l_obj.open_array;
+                              l_obj.append_function (
+                                    p_code => 'function(){return 1;}',
+                                    p_type => apex_javascript.c_type_function );
+                              l_obj.append_function (
+                                    p_code => 'return 2;',
+                                    p_type => apex_javascript.c_type_function_body );
+                              l_obj.append_function (
+                                    p_code => '3',
+                                    p_type => apex_javascript.c_type_expression );
+                              l_obj.close_array;
+
+                              sys.dbms_output.put_line( l_obj.to_clob );
+                       end;
+
+                       Output:
+                              [function(){return 1;},function(){return 2;},function(){return 3;}]
+
+60.10 APPEND_RAW Procedure
+
+                       Appends an unescaped value to an array.
+                       The value is added without escaping, so ensure the content of the value is trusted. Do not use
+                       this method to add untrusted data, such as input from an end user.
+
+                       Syntax
+
+                       MEMBER PROCEDURE append_raw (
+                              p_value IN VARCHAR2 );
+
+                       Parameters
+
+Parameter                                              Description
+p_value                                                The value.
+
+Example
+Create an array that appends unescaped value.
+
+declare
+      l_obj apex_t_javascript_object := apex_t_javascript_object();
+
+begin
+      l_obj.open_array;
+      l_obj.append_raw( 'undefined' );
+      l_obj.append_raw( 'NaN' );
+      l_obj.append_raw( 'apex.jQuery' );
+
+API Reference                                                        July 24, 2026
+G26651-03                                                            Page 8 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                           Chapter 60
+                                                                                                                        CLOSE_ARRAY Procedure
+
+                              l_obj.close_array;
+
+                              sys.dbms_output.put_line( l_obj.to_clob );
+                       end;
+
+                       Output:
+                              [undefined,NaN,apex.jQuery]
+
+60.11 CLOSE_ARRAY Procedure
+
+                       Closes an array. An opened array must always be closed by calling close_array.
+
+                       Syntax
+
+                       MEMBER PROCEDURE close_array;
+
+                       Example
+                       Create an array with an attributes of type VARCHAR2.
+
+                       declare
+                             l_obj apex_t_javascript_object := apex_t_javascript_object();
+
+                       begin
+                             l_obj.open_array;
+                             l_obj.append( 'foo' );
+                             l_obj.append( 'bar' );
+                             l_obj.close_array;
+
+                             sys.dbms_output.put_line( l_obj.to_clob );
+                       end;
+
+                       Output:
+                             ["foo","bar"]
+
+60.12 CLOSE_OBJECT Procedure
+
+                       Closes an object. An opened object must always be closed by calling close_object.
+
+                       Syntax
+
+                       MEMBER PROCEDURE close_object;
+
+                       Example
+                       Create an object with an attribute of type VARCHAR2.
+
+                       declare
+                              l_obj apex_t_javascript_object := apex_t_javascript_object();
+
+                       begin
+                              l_obj.open_object;
+                              l_obj.put( 'foo', 'bar' );
+                              l_obj.close_object;
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 9 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                           Chapter 60
+                                                                                                                                  IS_NULL Function
+
+                              sys.dbms_output.put_line( l_obj.to_clob );
+                       end;
+
+                       Output:
+                              {"foo":"bar"}
+
+60.13 IS_NULL Function
+
+                       Checks if the object type is null.
+
+                       Syntax
+
+                       MEMBER FUNCTION is_null
+                              RETURN BOOLEAN;
+
+                       Returns
+                       True the object type has not been written to since initialization.
+
+                       declare
+                              l_obj apex_t_javascript_object := apex_t_javascript_object();
+
+                       begin
+                              sys.dbms_output.put_line( case when l_obj.is_null then 'true' else
+
+                       'false' end );
+                              l_obj.open_object;
+                              l_obj.close_object;
+                              sys.dbms_output.put_line( case when l_obj.is_null then 'true' else
+
+                       'false' end );
+                       end;
+
+                       Output:
+                              true
+                              false
+
+                       Example
+                       Verify if the object is null.
+
+60.14 OPEN_ARRAY Procedure
+
+                       Opens an array. Call this procedure without providing p_key to open the root array or when
+                       within another array, or provide p_key to open an array when within an object.
+                       when creating a new APEX_T_JAVASCRIPT_OBJECT, always begin by calling open_object or
+                       open_array without specifying p_key. This step is necessary to initialize the root object or
+                       array.
+
+                       Syntax
+
+                       MEMBER PROCEDURE open_array (
+                              p_key IN VARCHAR2 DEFAULT NULL );
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 10 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                              Chapter 60
+                                                                         OPEN_OBJECT Procedure
+
+Parameters
+
+ Parameter                                             Description
+p_key                                                  An optional key.
+
+Example
+Create an array with various properties.
+
+declare
+      l_arr apex_t_javascript_object := apex_t_javascript_object();
+
+begin
+      l_arr.open_array;
+      l_arr.append( 3432 );
+      l_arr.open_object;
+      l_arr.open_array( 'list' );
+      l_arr.append( 'foo' );
+      l_arr.append( 'baz' );
+      l_arr.close_array; -- list
+      l_arr.close_object;
+      l_arr.close_array; -- root
+      sys.dbms_output.put_line( l_arr.to_clob );
+
+end;
+
+Output:
+      [3432,{"list":["foo","baz"]}]
+
+60.15 OPEN_OBJECT Procedure
+
+                       Opens an object. Call this procedure without providing p_key to open the root object or when
+                       within an array, or provide p_key to open an object when within another object.
+
+                       when creating a new APEX_T_JAVASCRIPT_OBJECT, always begin by calling open_object or
+                       open_array without specifying p_key. This step is necessary to initialize the root object or
+                       array. first.
+
+                       Syntax
+
+MEMBER PROCEDURE open_object (
+      p_key IN VARCHAR2 DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_key                                                  An optional key.
+
+API Reference                                                            July 24, 2026
+G26651-03                                                                Page 11 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                  Chapter 60
+                                                                             PUT Procedure Signature 1
+
+Example
+Create an object with various properties.
+
+declare
+      l_obj apex_t_javascript_object := apex_t_javascript_object();
+
+begin
+      l_obj.open_object;
+      l_obj.put( 'foo', 'bar' );
+      l_obj.open_object( 'baz' );
+      l_obj.put( 'num', 42 );
+      l_obj.close_object; -- baz
+      l_obj.close_object; -- root
+
+      sys.dbms_output.put_line( l_obj.to_clob );
+end;
+
+Output:
+      {"foo":"bar","baz":{"num":42}}
+
+60.16 PUT Procedure Signature 1
+
+                       Adds a key value pair of type VARCHAR2 to an object.
+                       Syntax
+
+MEMBER PROCEDURE put (
+
+p_key        IN VARCHAR2,
+
+p_value      IN VARCHAR2,
+
+p_omit_null IN BOOLEAN                                 DEFAULT TRUE );
+
+Parameters
+
+Parameter                                              Description
+p_key
+p_value                                                The key.
+p_omit_null                                            The value.
+                                                       Whether to omit the key value pair if the value is
+                                                       null.
+
+Example
+Create an object with an attribute of type VARCHAR2.
+
+declare
+      l_obj apex_t_javascript_object := apex_t_javascript_object();
+
+begin
+      l_obj.open_object;
+      l_obj.put( 'foo', 'bar' );
+      l_obj.close_object;
+
+      sys.dbms_output.put_line( l_obj.to_clob );
+end;
+
+API Reference                                                                July 24, 2026
+G26651-03                                                                    Page 12 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                 Chapter 60
+                                                                            PUT Procedure Signature 2
+
+Output:
+      {"foo":"bar"}
+
+60.17 PUT Procedure Signature 2
+
+                       Adds a key value pair of type NUMBER to an object.
+                       Syntax
+
+MEMBER PROCEDURE put (
+
+p_key        IN VARCHAR2,
+
+p_value      IN NUMBER,
+
+p_omit_null IN BOOLEAN                                 DEFAULT TRUE );
+
+Parameters
+
+Parameter                                              Description
+p_key
+p_value                                                The key.
+p_omit_null                                            The value.
+                                                       Whether to omit the key value pair if the value is
+                                                       null.
+
+Example
+Create an object with an attribute of type NUMBER.
+
+declare
+      l_obj apex_t_javascript_object := apex_t_javascript_object();
+
+begin
+      l_obj.open_object;
+      l_obj.put( 'foo', 42 );
+      l_obj.close_object;
+
+      sys.dbms_output.put_line( l_obj.to_clob );
+end;
+
+Output:
+      {"foo":42}
+
+60.18 PUT Procedure Signature 3
+
+                       Adds a key value pair of type BOOLEAN to an object.
+                       Syntax
+
+MEMBER PROCEDURE put (
+
+p_key                IN VARCHAR2,
+
+p_value              IN BOOLEAN,
+
+p_omit_null IN BOOLEAN                                 DEFAULT TRUE );
+
+API Reference                                                               July 24, 2026
+G26651-03                                                                   Page 13 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                              Chapter 60
+                                                                         PUT Procedure Signature 4
+
+Parameters
+
+Parameter                                              Description
+p_key
+p_value                                                The key.
+p_omit_null                                            The value.
+                                                       Whether to omit the key value pair if the value is
+                                                       null.
+
+Example
+Create an object with an attribute of type BOOLEAN.
+
+declare
+      l_obj apex_t_javascript_object := apex_t_javascript_object();
+
+begin
+      l_obj.open_object;
+      l_obj.put( 'foo', true );
+      l_obj.close_object;
+
+      sys.dbms_output.put_line( l_obj.to_clob );
+end;
+
+Output:
+      {"foo":true}
+
+60.19 PUT Procedure Signature 4
+
+                       Adds a key value pair of type CLOB to an object.
+                       Syntax
+
+MEMBER PROCEDURE put (
+
+p_key        IN VARCHAR2,
+
+p_value      IN CLOB,
+
+p_omit_null IN BOOLEAN                                 DEFAULT TRUE );
+
+Parameters
+
+Parameter                                              Description
+p_key
+p_value                                                The key.
+p_omit_null                                            The value.
+                                                       Whether to omit the key value pair if the value is
+                                                       null.
+
+Example
+Create an object with an attribute of type CLOB.
+
+declare
+      l_obj apex_t_javascript_object := apex_t_javascript_object();
+
+API Reference                                                            July 24, 2026
+G26651-03                                                                Page 14 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                         Chapter 60
+                                                                    PUT Procedure Signature 5
+
+                       begin
+                             l_obj.open_object;
+                             l_obj.put( 'foo', to_clob( 'bar' ) );
+                             l_obj.close_object;
+
+                             sys.dbms_output.put_line( l_obj.to_clob );
+                       end;
+
+                       Output:
+                             {"foo":"bar"}
+
+60.20 PUT Procedure Signature 5
+
+                       Adds another object as a key value pair to the object. The object being added must already be
+                       properly formed.
+
+                       Syntax
+
+                       MEMBER PROCEDURE put (
+                             p_key IN VARCHAR2,
+                             p_value IN apex_t_javascript_object );
+
+                       Parameters
+
+ Parameter                                             Description
+p_key                                                  The key.
+p_value                                                The value.
+
+Example
+Create an object with an object attribute.
+
+declare
+      l_obj_2 apex_t_javascript_object := apex_t_javascript_object();
+      l_obj apex_t_javascript_object := apex_t_javascript_object();
+
+begin
+      l_obj_2.open_object;
+      l_obj_2.put( 'foo', 'bar' );
+      l_obj_2.close_object;
+
+      l_obj.open_object;
+      l_obj.put( 'obj', l_obj_2 );
+      l_obj.close_object;
+
+      sys.dbms_output.put_line( l_obj.to_clob );
+end;
+
+Output:
+      {"obj":{"foo":"bar"}}
+
+API Reference                                                          July 24, 2026
+G26651-03                                                              Page 15 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                  Chapter 60
+                                                                             PUT Procedure Signature 6
+
+60.21 PUT Procedure Signature 6
+
+                       Adds an array of VARCHAR2 to an object.
+                       Syntax
+
+MEMBER PROCEDURE put (
+
+p_key                                                  IN  VARCHAR2,
+                                                           apex_t_varchar2,
+p_value                                                IN  BOOLEAN
+
+p_omit_empty IN                                                              DEFAULT TRUE );
+
+Parameters
+
+Parameter                                                                  Description
+p_key                                                                      The key.
+p_value                                                                    The array.
+p_omit_empty                                                               Whether to omit the array if it is empty.
+
+Example
+Create an object with an array attribute of type VARCHAR2.
+
+declare                                                         := apex_t_javascript_object();
+      l_obj apex_t_javascript_object                            := apex_t_varchar2( 'foo', 'bar', 'baz' );
+      l_arr apex_t_varchar2
+
+begin
+      l_obj.open_object;
+      l_obj.put( 'arr', l_arr );
+      l_obj.close_object;
+
+      sys.dbms_output.put_line( l_obj.to_clob );
+end;
+
+Output:
+      {"arr":["foo","bar","baz"]}
+
+60.22 PUT Procedure Signature 7
+
+                       Adds an array of NUMBER to an object.
+                       Syntax
+
+MEMBER PROCEDURE put (
+
+p_key                                                  IN  VARCHAR2,
+                                                           apex_t_number,
+p_value                                                IN  BOOLEAN
+
+p_omit_empty IN                                                              DEFAULT TRUE );
+
+API Reference                                                                                                         July 24, 2026
+G26651-03                                                                                                             Page 16 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                   Chapter 60
+                                                                             PUT_FUNCTION Procedure
+
+Parameters
+
+Parameter                                              Description
+p_key                                                  The key.
+p_value                                                The array.
+p_omit_empty                                           Whether to omit the array if it is empty.
+
+Example
+Create an object with an array attribute of type NUMBER.
+
+declare                                                := apex_t_javascript_object();
+      l_obj apex_t_javascript_object                   := apex_t_number( 1, 2, 3 );
+      l_arr apex_t_number
+
+begin
+      l_obj.open_object;
+      l_obj.put( 'arr', l_arr );
+      l_obj.close_object;
+
+      sys.dbms_output.put_line( l_obj.to_clob );
+end;
+
+Output:
+      {"arr":[1,2,3"]}
+
+60.23 PUT_FUNCTION Procedure
+
+                       Adds a function to an object.
+
+                       The function is added without escaping, so ensure the content of the function is trusted. Do not
+                       use this method to add untrusted data, such as input from an end-user.
+
+                       The function being added can either be a complete function, in which case it will be added as
+                       is, it can be a function body, in which case it will be wrapped with function(){}, or be an
+                       expression, which case it will be wrapped, and the expression returned.
+
+                       Syntax
+
+MEMBER PROCEDURE put_function (
+
+p_key         IN VARCHAR2,
+
+p_code        IN VARCHAR2,
+
+p_type        IN PLS_INTEGER,
+
+p_omit_null IN BOOLEAN                                 DEFAULT TRUE );
+
+Parameters
+
+Parameter                                              Description
+p_key                                                  The key.
+p_code                                                 The JavaScript code.
+
+API Reference                                                                                     July 24, 2026
+G26651-03                                                                                         Page 17 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                    Chapter 60
+                                                       PUT_RAW Procedure Signature 1
+
+ Parameter                                             Description
+p_type
+                                                       The type of code being added, use one of the
+p_omit_null                                            constants:
+Example                                                � apex_javascript.c_type_function
+Create an object with various properties.              � apex_javascript.c_type_function_body
+                                                       � apex_javascript.c_type_expression
+
+                                                       Whether to omit the key value pair if the value is
+                                                       null.
+
+declare
+      l_obj apex_t_javascript_object := apex_t_javascript_object();
+
+begin
+      l_obj.open_object;
+      l_obj.put_function (
+            p_key => 'func1',
+            p_code => 'function(){return 42;}',
+            p_type => apex_javascript.c_type_function );
+      l_obj.put_function (
+            p_key => 'func2',
+            p_code => 'return 42;',
+            p_type => apex_javascript.c_type_function_body );
+      l_obj.put_function (
+            p_key => 'func3',
+            p_code => '42',
+            p_type => apex_javascript.c_type_expression );
+      l_obj.close_object;
+      sys.dbms_output.put_line( l_obj.to_clob );
+
+end;
+
+Output:
+      {"func1":function(){return 42;},"func2":function(){return
+
+42;},"func3":function(){return 42;}}
+
+60.24 PUT_RAW Procedure Signature 1
+
+                       Adds an unescaped value to an object.
+                       The value is added without escaping, so ensure the content of the value is trusted. Do not use
+                       this method to add untrusted data, such as input from an end-user.
+
+                       Syntax
+
+MEMBER PROCEDURE put_raw (
+      p_key IN VARCHAR2,
+      p_value IN VARCHAR2 );
+
+API Reference                                                        July 24, 2026
+G26651-03                                                            Page 18 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                               Chapter 60
+                                                                     RESET Procedure
+
+Parameters
+
+ Parameter                                             Description
+p_key                                                  The key.
+p_value                                                The value.
+
+Example
+Create an object with unescaped values.
+
+declare
+      l_obj apex_t_javascript_object := apex_t_javascript_object();
+
+begin
+      l_obj.open_object;
+      l_obj.put_raw( 'foo', 'undefined' );
+      l_obj.put_raw( 'bar', 'NaN' );
+      l_obj.put_raw( 'baz', 'apex.jQuery' );
+      l_obj.close_object;
+
+      sys.dbms_output.put_line( l_obj.to_clob );
+end;
+
+Output:
+      {"foo":undefined,"bar":NaN,"baz":apex.jQuery}
+
+60.25 RESET Procedure
+
+                       Resets the object type.
+                       Syntax
+
+MEMBER PROCEDURE reset;
+
+Example
+Reset the object type.
+
+declare
+      l_obj apex_t_javascript_object := apex_t_javascript_object();
+
+begin
+      l_obj.open_object;
+      l_obj.put( 'foo', 'bar' );
+      l_obj.close_object;
+
+      l_obj.reset;
+
+      l_obj.open_object;
+      l_obj.put( 'bar', 'baz' );
+      l_obj.close_object;
+
+      sys.dbms_output.put_line( l_obj.to_clob );
+end;
+
+API Reference                                                        July 24, 2026
+G26651-03                                                            Page 19 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                           Chapter 60
+                                                                                                                                 TO_CLOB Function
+
+                       Output:
+                             {"bar":"baz"}
+
+60.26 TO_CLOB Function
+
+                       Stringifies the object.
+
+                       Syntax
+
+                       MEMBER FUNCTION to_clob
+                             RETURN CLOB;
+
+                       Returns
+                       The object as a CLOB. Throws an error if the object is not well formed or has unclosed
+                       structures. If no methods have been called on the object, null as a string is returned.
+
+                       Example
+                       Get the stringified representation of the object type.
+
+                       declare
+                             l_obj apex_t_javascript_object := apex_t_javascript_object();
+
+                       begin
+                             l_obj.open_object;
+                             l_obj.close_object;
+                             sys.dbms_output.put_line( l_obj.to_clob );
+
+                       end;
+
+                       Output:
+                             {}
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 20 of 20
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+61

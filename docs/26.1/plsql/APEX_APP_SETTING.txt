@@ -1,0 +1,102 @@
+# APEX_APP_SETTING (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 4308-4408)
+
+APEX_APP_SETTING
+
+                       The APEX_APP_SETTING package provides utilities you can use when programming in the
+                       Oracle APEX environment related to application setting shared components. You can use the
+                       APEX_APP_SETTING package to get and set the value of application settings.
+                       � GET_VALUE Function
+                       � SET_VALUE Procedure
+
+5.1 GET_VALUE Function
+
+                       This function retrieves the application setting value in the current application.
+
+                       Syntax
+
+APEX_APP_SETTING.GET_VALUE (
+
+p_name                                                 IN VARCHAR2
+
+p_raise_error IN BOOLEAN DEFAULT FALSE )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameters        Description
+p_name
+                  The case insensitive name of the application setting. An error raises if:
+p_raise_error     � the application setting name does not exist
+                  � the build option associated with the application setting is disabled
+
+                  If TRUE, the procedure raises an error if an application setting with a passed
+                  name does not exist.
+
+Example
+
+The following example uses the GET_VALUE function to retrieve the value of application setting
+ACCESS_CONTROL_ENABLED.
+
+DECLARE
+      l_value varchar2(4000);
+
+BEGIN
+      l_value := APEX_APP_SETTING.GET_VALUE( p_name =>
+
+'ACCESS_CONTROL_ENABLED');
+END;
+
+5.2 SET_VALUE Procedure
+
+                       This procedure changes the application setting value in the current application. If the setting is
+                       subscribed from another app, this API will not update the setting value. If the setting is
+                       subscribed and p_raise_error is set to TRUE, this API raises an error.
+
+API Reference                                                       July 24, 2026
+G26651-03                                                             Page 1 of 2
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                       Chapter 5
+                                                                     SET_VALUE Procedure
+
+Syntax
+
+APEX_APP_SETTING.SET_VALUE (
+
+p_name                                                 IN VARCHAR2,
+
+p_value                                                IN VARCHAR2,
+
+p_raise_error IN BOOLEAN DEFAULT FALSE )
+
+Parameters
+
+Parameters     Description
+p_name
+               The case-insensitive name of the application setting. An error raises if:
+p_value        � the application setting name does not exist
+               � the build option associated with the application setting is disabled
+p_raise_error  The value of the application setting. An error raises if:
+               � the value is set to required, but a null value passes
+               � the valid values are defined, but the value is not in one of the valid values
+               If set to TRUE and an error occurs, then this procedure raises an error message.
+               If set to FALSE, all error messages are suppressed.
+               In either case, this API never updates application setting values when an error
+               occurs.
+
+Example
+
+The following example uses the SET_VALUE procedure to set the value of the application setting
+"ACCESS_CONTROL_ENABLED."
+
+BEGIN
+      APEX_APP_SETTING.SET_VALUE (
+            p_name => 'ACCESS_CONTROL_ENABLED',
+            p_value => 'Y' );
+
+END;
+
+API Reference                                                        July 24, 2026
+G26651-03                                                              Page 2 of 2
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+6

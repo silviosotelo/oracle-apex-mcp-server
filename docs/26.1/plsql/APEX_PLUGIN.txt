@@ -1,0 +1,2624 @@
+# APEX_PLUGIN (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 49759-52381)
+
+APEX_PLUGIN
+
+                       The APEX_PLUGIN package provides the interface declarations and some utility functions to
+                       work with plug-ins.
+
+                       � About Configuring Flexible Remote Servers in APEX
+                             Flexible remote servers use a configuration procedure to change the URL endpoint of the
+                             server.
+
+                       � Constants
+                       � Data Types
+                       � GET_AJAX_IDENTIFIER Function
+                       � GET_KEEP_BACKGROUND_EXECS Function
+                       � GET_INPUT_NAME_FOR_ITEM Function
+                       � GET_INPUT_NAME_FOR_PAGE_ITEM Function (Deprecated)
+
+47.1 About Configuring Flexible Remote Servers in APEX
+
+                       Flexible remote servers use a configuration procedure to change the URL endpoint of the
+                       server.
+
+                       The procedure is defined by the end user either as a package procedure in the database or as
+                       the attribute PL/SQL Code of the Remote Server.
+
+                       The name of this procedure is specified by the end user while editing the remote server. This
+                       procedure needs to have a specific signature using t_remote_server_info and
+                       t_remote_server_config.
+
+                       A resulting procedure resembles the following code example:
+
+                       procedure my_server_config(
+                             p_info in apex_plugin.t_remote_server_info,
+                             p_config out apex_plugin.t_remote_server_config )
+
+                       is
+                       begin
+
+                             if p_info.application_id = 100
+                             then
+
+                                 p_config.base_url := 'https://#cust#.example.com';
+                                 p_config.substitutions := apex_t_varchar2();
+                                 apex_string.plist_put( p_config.substitutions, 'cust',
+                       v('P3_CUSTOMER') );
+                             else
+                                 p_config.base_url := 'https://test.example.com';
+                             end if;
+                       end;
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 1 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                Chapter 47
+                                                                                                Constants
+
+47.2 Constants
+
+AI Tool Constants
+The following data format constants are used with AI Tools in APEX_PLUGIN:
+
+subtype t_ai_tool_execution_point is varchar2(21);
+
+c_ai_tool_augment_sys_prompt                           constant t_ai_tool_execution_point :=
+'AUGMENT_SYSTEM_PROMPT';                               constant t_ai_tool_execution_point :=
+c_ai_tool_on_demand
+'ON_DEMAND';
+
+Data Format Constants
+The following data format constants are used with REST Data Sources in APEX_PLUGIN:
+
+subtype t_data_format                                        is pls_integer range 1..3;
+
+c_format_xml                                           constant t_data_format := 1;
+c_format_json                                          constant t_data_format := 2;
+c_format_csv                                           constant t_data_format := 3;
+
+Database Operation Constants
+
+The following database operation constants are used with REST Data Sources in
+APEX_PLUGIN:
+
+subtype t_db_operation                                 is pls_integer range 1..6;
+
+c_db_operation_fetch_rows                              constant t_db_operation           := 1;
+c_db_operation_insert                                  constant t_db_operation           := 2;
+c_db_operation_update                                  constant t_db_operation           := 3;
+c_db_operation_delete                                  constant t_db_operation           := 4;
+c_db_operation_fetch_row                               constant t_db_operation           := 5;
+c_db_operation_execute                                 constant t_db_operation           := 6;
+
+Web Source Parameter Constants
+
+The following Web Source Parameter type constants are used with REST Data Sources in
+APEX_PLUGIN:
+
+subtype t_web_source_param_type is pls_integer range 1..5;
+
+c_web_src_param_header                                 constant t_web_source_param_type := 1;
+
+c_web_src_param_query                                  constant t_web_source_param_type := 2;
+
+c_web_src_param_url_pattern constant t_web_source_param_type := 3;
+
+c_web_src_param_body                                   constant t_web_source_param_type := 4;
+
+c_web_src_param_cookie                                 constant t_web_source_param_type := 5;
+
+API Reference                                                                                   July 24, 2026
+G26651-03                                                                                       Page 2 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                        Chapter 47
+                                                                                                       Data Types
+
+The following Web Source Parameter direction constants are used with REST Data Sources in
+APEX_PLUGIN:
+
+subtype t_web_source_param_dir is pls_integer range 1..3;
+
+c_direction_in                                         constant t_web_source_param_dir := 1;
+c_direction_out                                        constant t_web_source_param_dir := 2;
+c_direction_in_out                                     constant t_web_source_param_dir := 3;
+
+REST Data Source DML Row Status Constants
+The following DML row status constants are used with REST Data Sources in APEX_PLUGIN:
+
+subtype t_web_source_row_check_result is pls_integer range 1..5;
+
+c_row_ok                                               constant t_web_source_row_check_result := 1;
+c_row_version_changed                                  constant t_web_source_row_check_result := 2;
+c_row_data_not_changed                                 constant t_web_source_row_check_result := 3;
+c_row_refetch_error                                    constant t_web_source_row_check_result := 4;
+c_row_dml_not_allowed                                  constant t_web_source_row_check_result := 5;
+
+47.3 Data Types
+
+                       This section describes the data types used by the APEX_PLUGIN package.
+                       � Generic Data Types
+                       � AI Tools Data Types
+                       � Authentication Data Types
+                       � Authorization Data Types
+                       � Dynamic Action Data Types
+                       � Item Data Types
+                       � Process Data Types
+                       � Region Data Types
+                       � REST Source Data Types
+
+47.3.1 Generic Data Types
+
+                       This section describes the generic data types used by the APEX_PLUGIN package.
+                       � t_escape_mode
+                       � t_plugin
+                       � t_plugin_attributes
+
+47.3.1.1 t_escape_mode
+
+                       Modes for escaping substitution variables.
+
+                       subtype t_escape_mode is pls_integer range 1..6;
+
+API Reference                                                                                          July 24, 2026
+G26651-03                                                                                              Page 3 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                      Chapter 47
+                                                                                     Data Types
+
+c_escape_mode_raw                                      constant t_escape_mode := 1;
+c_escape_mode_html                                     constant t_escape_mode := 2;
+c_escape_mode_html_attribute                           constant t_escape_mode := 3;
+c_escape_mode_javascript                               constant t_escape_mode := 4;
+c_escape_mode_striphtml                                constant t_escape_mode := 5;
+c_escape_mode_json                                     constant t_escape_mode := 6;
+
+47.3.1.2 t_plugin
+
+                       The t_plugin type is passed into all plug-in functions and contains information about the
+                       current plug-in.
+
+type t_plugin is record (
+
+    static_id varchar2(45),
+
+    file_prefix varchar2(4000),
+
+    attributes t_plugin_attributes,
+
+    attribute_01 varchar2(32767)                                /* Deprecated */,
+                                                                /* Deprecated */,
+    attribute_02 varchar2(32767)                                /* Deprecated */,
+                                                                /* Deprecated */,
+    attribute_03 varchar2(32767)                                /* Deprecated */,
+                                                                /* Deprecated */,
+    attribute_04 varchar2(32767)                                /* Deprecated */,
+                                                                /* Deprecated */,
+    attribute_05 varchar2(32767)                                /* Deprecated */,
+                                                                /* Deprecated */,
+    attribute_06 varchar2(32767)                                /* Deprecated */,
+                                                                /* Deprecated */,
+    attribute_07 varchar2(32767)                                /* Deprecated */,
+                                                                /* Deprecated */,
+    attribute_08 varchar2(32767)                                /* Deprecated */,
+                                                                /* Deprecated */
+    attribute_09 varchar2(32767)
+
+    attribute_10 varchar2(32767)
+
+    attribute_11 varchar2(32767)
+
+    attribute_12 varchar2(32767)
+
+    attribute_13 varchar2(32767)
+
+    attribute_14 varchar2(32767)
+
+    attribute_15 varchar2(32767)
+
+    name                      varchar2(45)
+
+);
+
+47.3.1.3 t_plugin_attributes
+
+type t_plugin_attributes is object (
+
+    function get_varchar2 (
+
+    p_static_id IN VARCHAR2
+
+    --
+
+    p_default_value                                    IN VARCHAR2 DEFAULT NULL,
+
+    p_do_substitutions                                 IN BOOLEAN DEFAULT FALSE,
+
+    p_do_serveronly_substitutions IN BOOLEAN DEFAULT FALSE,
+
+    p_substitutions_escape_mode IN apex_session_state.t_escape_mode
+
+                                                       DEFAULT
+
+apex_session_state.c_escape_mode_html )
+
+    RETURN VARCHAR2
+
+    -�
+
+    function get_number (
+
+    p_static_id IN VARCHAR2,
+
+    --
+
+    p_default_value IN NUMBER DEFAULT NULL )
+
+    RETURN NUMBER
+
+API Reference                                                                        July 24, 2026
+G26651-03                                                                            Page 4 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                         Chapter 47
+                                                                                                        Data Types
+
+    �-Y returns TRUE / N returns FALSE
+
+    function get_boolean (
+
+    p_static_id IN VARCHAR2,
+
+    --
+
+    p_default_value IN BOOLEAN DEFAULT NULL )
+
+    RETURN BOOLEAN
+
+    procedure put                                      (
+
+    p_key                                              IN VARCHAR2,
+
+    p_value                                            IN VARCHAR2 )
+
+);
+
+    Note
+
+    The parameters p_do_substitutions and p_do_serveronly_substitutions cannot
+    be used in the same function call.
+
+47.3.2 AI Tools Data Types
+
+                       This section describes the AI tools data types used by the APEX_PLUGIN package.
+                       � t_ai_tool
+                       � t_ai_tool_exec_param
+                       � t_ai_tool_exec_result
+                       � t_ai_tool_render_param
+                       � t_ai_tool_render_result
+
+47.3.2.1 t_ai_tool
+
+type t_ai_tool is record (
+
+    -- for AUGMENT_SYSTEM_PROMPT and ON_DEMAND
+
+    name                                                  varchar2(255),
+
+    attributes                                            apex_t_plugin_attributes,
+
+    execution_point                                       t_ai_tool_execution_point,
+
+    -- for ON_DEMAND only
+
+    description                                           varchar2(32767),
+
+    notification_message varchar2(4000),
+
+    notification_type                                     apex_ai.t_notification_type );
+
+47.3.2.2 t_ai_tool_exec_param
+
+type t_ai_tool_exec_param is record (
+
+    args         clob,
+
+    args_json sys.json_object_t );
+
+47.3.2.3 t_ai_tool_exec_result
+
+type t_ai_tool_exec_result is record (
+      -- for AUGMENT_SYSTEM_PROMPT and ON_DEMAND
+
+API Reference                                                                                           July 24, 2026
+G26651-03                                                                                               Page 5 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                      Chapter 47
+                                                                                                     Data Types
+
+result                                                 clob,
+-- for ON_DEMAND only
+notification_message                                   varchar2(4000),
+notification_type                                      apex_ai.t_notification_type,
+early_exit                                             boolean,
+is_safe                                                boolean default false );
+
+47.3.2.4 t_ai_tool_render_param
+
+                       type t_ai_tool_render_param is record (
+                              dummy boolean ); /* not used yet */
+
+47.3.2.5 t_ai_tool_render_result
+
+                       type t_ai_tool_render_result is record (
+                              function_name varchar2(32767),
+                              function_param apex_t_javascript_object );
+
+47.3.3 Authentication Data Types
+
+                       This section describes the authentication data types used by the APEX_PLUGIN package.
+                       � t_authentication
+                       � t_authentication_ajax_result
+                       � t_authentication_auth_result
+                       � t_authentication_inval_result
+                       � t_authentication_logout_result
+                       � t_authentication_sentry_result
+
+47.3.3.1 t_authentication
+
+type t_authentication is record (
+
+id                                                     number,
+
+name                                                   varchar2(255),
+
+invalid_session_url varchar2(4000),
+
+logout_url                                             varchar2(4000),
+
+plsql_code                                             clob,
+
+attributes                                             apex.t_plugin_attributes,
+
+attribute_01                                           varchar2(32767)  /* Deprecated */,
+
+attribute_02                                           varchar2(32767)            /* Deprecated */,
+
+attribute_03                                           varchar2(32767)            /* Deprecated */,
+
+attribute_04                                           varchar2(32767)            /* Deprecated */,
+
+attribute_05                                           varchar2(32767)            /* Deprecated */,
+
+attribute_06                                           varchar2(32767)            /* Deprecated */,
+
+attribute_07                                           varchar2(32767)            /* Deprecated */,
+
+attribute_08                                           varchar2(32767)            /* Deprecated */,
+
+attribute_09                                           varchar2(32767)            /* Deprecated */,
+
+attribute_10                                           varchar2(32767)            /* Deprecated */,
+
+attribute_11                                           varchar2(32767)            /* Deprecated */,
+
+attribute_12                                           varchar2(32767)            /* Deprecated */,
+
+API Reference                                                                                        July 24, 2026
+G26651-03                                                                                            Page 6 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                              Chapter 47
+                                                                                             Data Types
+
+attribute_13                                           varchar2(32767)    /* Deprecated */,
+attribute_14                                           varchar2(32767)    /* Deprecated */,
+attribute_15                                           varchar2(32767)    /* Deprecated */,
+session_id                                             number,
+original_session_id                                    number,
+username                                               varchar2(255) );
+
+47.3.3.2 t_authentication_ajax_result
+
+type t_authentication_ajax_result is record (
+
+dummy                                                  boolean );
+
+47.3.3.3 t_authentication_auth_result
+
+type t_authentication_auth_result is record (
+
+is_authenticated boolean,
+
+redirect_url                                           varchar2(4000),
+
+log_code                                               number,
+
+log_text                                               varchar2(4000),
+
+display_text                                           varchar2(4000) );
+
+47.3.3.4 t_authentication_inval_result
+
+type t_authentication_inval_result is record (
+
+redirect_url                                           varchar2(4000) );
+
+47.3.3.5 t_authentication_logout_result
+
+type t_authentication_logout_result is record (
+
+redirect_url                                           varchar2(4000) );
+
+47.3.3.6 t_authentication_sentry_result
+
+type t_authentication_sentry_result is record (
+
+is_valid                                               boolean );
+
+47.3.4 Authorization Data Types
+
+                       This section describes the authorization data types used by the APEX_PLUGIN package.
+                       � t_authorization
+                       � t_authorization_exec_result
+
+API Reference                                                                                July 24, 2026
+G26651-03                                                                                    Page 7 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                              Chapter 47
+                                                                                             Data Types
+
+47.3.4.1 t_authorization
+
+                       The following type is passed to all authorization plug-in functions and contains information
+                       about the current authorization.
+
+type t_authorization is record (
+
+    id                                                 number,
+
+    name                                               varchar2(255),
+
+    username                                           varchar2(255),
+
+    caching                                            varchar2(20),
+
+    component                                          apex.t_component,
+
+    attributes                                         apex.t_plugin_attributes,
+
+    attribute_01                                       varchar2(32767)    /* Deprecated */,
+
+    attribute_02                                       varchar2(32767)    /* Deprecated */,
+
+    attribute_03                                       varchar2(32767)    /* Deprecated */,
+
+    attribute_04                                       varchar2(32767)    /* Deprecated */,
+
+    attribute_05                                       varchar2(32767)    /* Deprecated */,
+
+    attribute_06                                       varchar2(32767)    /* Deprecated */,
+
+    attribute_07                                       varchar2(32767)    /* Deprecated */,
+
+    attribute_08                                       varchar2(32767)    /* Deprecated */,
+
+    attribute_09                                       varchar2(32767)    /* Deprecated */,
+
+    attribute_10                                       varchar2(32767)    /* Deprecated */,
+
+    attribute_11                                       varchar2(32767)    /* Deprecated */,
+
+    attribute_12                                       varchar2(32767)    /* Deprecated */,
+
+    attribute_13                                       varchar2(32767)    /* Deprecated */,
+
+    attribute_14                                       varchar2(32767)    /* Deprecated */,
+
+    attribute_15                                       varchar2(32767)    /* Deprecated */,
+
+);
+
+47.3.4.2 t_authorization_exec_result
+
+                       The t_authorization_exec_result data type has been added to the APEX_PLUGIN package.
+
+type t_authorization_exec_result is record (
+
+    is_authorized                                      boolean
+
+    );
+
+47.3.5 Dynamic Action Data Types
+
+                       This section describes the dynamic action data types used by the APEX_PLUGIN package.
+                       � t_dynamic_action
+                       � t_dynamic_action_ajax_param
+                       � t_dynamic_action_ajax_result
+                       � t_dynamic_action_render_param
+                       � t_dynamic_action_render_result
+
+API Reference                                                                                July 24, 2026
+G26651-03                                                                                    Page 8 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                 Chapter 47
+                                                                                                Data Types
+
+47.3.5.1 t_dynamic_action
+
+                       The t_dynamic_action type is passed into all dynamic action plug-in functions and contains
+                       information about the current dynamic action.
+
+type t_dynamic_action is record (
+
+id                                                     number,
+
+name                                                   varchar2(255),
+
+static_id                                              varchar2(50),
+
+action                                                 varchar2(50),
+
+attributes                                             t_plugin_attributes,
+
+attribute_01                                           varchar2(32767)       /* Deprecated */,
+                                                                             /* Deprecated */,
+attribute_02                                           varchar2(32767)       /* Deprecated */,
+                                                                             /* Deprecated */,
+attribute_03                                           varchar2(32767)       /* Deprecated */,
+                                                                             /* Deprecated */,
+attribute_04                                           varchar2(32767)       /* Deprecated */,
+                                                                             /* Deprecated */,
+attribute_05                                           varchar2(32767)       /* Deprecated */,
+                                                                             /* Deprecated */,
+attribute_06                                           varchar2(32767)       /* Deprecated */,
+                                                                             /* Deprecated */,
+attribute_07                                           varchar2(32767)       /* Deprecated */,
+                                                                             /* Deprecated */,
+attribute_08                                           varchar2(32767)       /* Deprecated */,
+
+attribute_09                                           varchar2(32767)
+
+attribute_10                                           varchar2(32767)
+
+attribute_11                                           varchar2(32767)
+
+attribute_12                                           varchar2(32767)
+
+attribute_13                                           varchar2(32767)
+
+attribute_14                                           varchar2(32767)
+
+attribute_15                                           varchar2(32767)
+
+init_javascript_code varchar2(32767),
+
+triggering_region_id number,
+
+affected_elements_type varchar2(30),
+
+affected_region_id number,
+
+affected_button_id number,
+
+affected_elements                                      varchar2(4000) );
+
+47.3.5.2 t_dynamic_action_ajax_param
+
+                       The t_dynamic_action_ajax_param type is used as the parameter type for the Ajax function of
+                       a dynamic action type plug-in.
+
+type t_dynamic_action_ajax_param is record (
+      dummy boolean /* not used yet */
+      );
+
+47.3.5.3 t_dynamic_action_ajax_result
+
+                       The t_dynamic_action_ajax_result type is used as the result type for the Ajax function of a
+                       dynamic action type plug-in.
+
+type t_dynamic_action_ajax_result is record (
+      dummy boolean /* not used yet */
+      );
+
+API Reference                                                                                   July 24, 2026
+G26651-03                                                                                       Page 9 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                     Chapter 47
+                                                                                                    Data Types
+
+47.3.5.4 t_dynamic_action_render_param
+
+                       The t_dynamic_action_render_param type is used as the parameter type for the rendering
+                       function of a dynamic action plug-in.
+
+type t_dynamic_action_render_param is record (
+      dummy boolean /* not used yet */
+      );
+
+47.3.5.5 t_dynamic_action_render_result
+
+                       The t_dynamic_action_render_result type is used as the result type for the rendering
+                       function of a dynamic action plug-in.
+
+type t_dynamic_action_render_result is record (
+
+    ajax_identifier varchar2(255),
+
+    function_name                                      varchar2(255),
+
+    function_param                                     t_javascript_object default t_javascript_object(),
+
+    attribute_01                                       varchar2(32767)  /* Deprecated */,
+
+    attribute_02                                       varchar2(32767)  /* Deprecated */,
+
+    attribute_03                                       varchar2(32767)  /* Deprecated */,
+
+    attribute_04                                       varchar2(32767)  /* Deprecated */,
+
+    attribute_05                                       varchar2(32767)  /* Deprecated */,
+
+    attribute_06                                       varchar2(32767)  /* Deprecated */,
+
+    attribute_07                                       varchar2(32767)  /* Deprecated */,
+
+    attribute_08                                       varchar2(32767)  /* Deprecated */,
+
+    attribute_09                                       varchar2(32767)  /* Deprecated */,
+
+    attribute_10                                       varchar2(32767)  /* Deprecated */,
+
+    attribute_11                                       varchar2(32767)  /* Deprecated */,
+
+    attribute_12                                       varchar2(32767)  /* Deprecated */,
+
+    attribute_13                                       varchar2(32767)  /* Deprecated */,
+
+    attribute_14                                       varchar2(32767)  /* Deprecated */,
+
+    attribute_15                                       varchar2(32767)  /* Deprecated */,
+
+    javascript_function varchar2(32767)                                 /* Deprecated */,
+
+);
+
+47.3.6 Item Data Types
+
+                       This section describes the item data types used by the APEX_PLUGIN package.
+
+                       � c_inline_in_notification
+                       � c_inline_with_field
+                       � c_inline_with_field_and_notif
+                       � c_on_error_page
+                       � t_item
+                       � t_item_ajax_result
+                       � t_item_meta_data_result
+                       � t_item_render_param
+                       � t_item_render_result
+
+API Reference                                                                                       July 24, 2026
+G26651-03                                                                                           Page 10 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                           Chapter 47
+                                                                                                                                          Data Types
+
+                       � t_item_validation_result
+
+47.3.6.1 c_inline_in_notification
+
+                       Use the following constant for display_location in the page item validation function result
+                       type t_page_item_validation_result.
+
+c_inline_in_notification                               constant varchar2(40) :=
+'INLINE_IN_NOTIFICATION';
+
+47.3.6.2 c_inline_with_field
+
+                       Use the constant c_inline_with_field for display_location in the page item validation
+                       function result type t_page_item_validation_result.
+
+c_inline_with_field                                    constant varchar2(40) := 'INLINE_WITH_FIELD';
+
+47.3.6.3 c_inline_with_field_and_notif
+
+                       Use the constant c_inline_with_field_and_notif for display_location in the page item
+                       validation function result type t_page_item_validation_result.
+
+                       c_inline_with_field_and_notif constant varchar2(40) :=
+                       'INLINE_WITH_FIELD_AND_NOTIFICATION';
+
+47.3.6.4 c_on_error_page
+
+                       Use the constant c_on_error_page for display_location in the page item validation function
+                       result type t_page_item_validation_result.
+
+c_on_error_page                                        constant varchar2(40) := 'ON_ERROR_PAGE';
+
+47.3.6.5 t_item
+
+                       The t_item type is passed into all item type plug-in functions and contains information about
+                       the current page item.
+
+type t_item is record (                                NUMBER,
+      id                                               VARCHAR2(4000),
+      name                                             VARCHAR2(4000),
+      session_state_name                               NUMBER,
+      component_type_id                                NUMBER,
+      region_id                                        NUMBER,
+      form_region_id                                   VARCHAR2(32767),
+      data_type                                        apex_exec_api.t_data_type,
+      source_data_type                                 apex_session_state_api.t_data_type,
+      session_state_data_type                          apex_exec_api.t_multi_value_type,
+      multi_value_type
+
+API Reference                                                                    July 24, 2026
+G26651-03                                                                        Page 11 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                       Chapter 47
+                                                                                      Data Types
+
+                              multi_value_separator       VARCHAR2(10),
+                              label                       VARCHAR2(4000),
+                              plain_label                 VARCHAR2(4000),
+                              label_id                    VARCHAR2(4000),
+                              placeholder                 VARCHAR2(4000),
+                              format_mask                 VARCHAR2(4000),
+                              is_required                 BOOLEAN,
+                              lov_type                    VARCHAR2(4000),
+                              lov_definition              VARCHAR2(4000),
+                              lov_language                apex_code_exec.t_language,
+                              shared_lov_id               NUMBER,
+                              lov_display_extra           BOOLEAN,
+                              lov_display_null            BOOLEAN,
+                              lov_null_text               VARCHAR2(4000),
+                              lov_null_value              VARCHAR2(4000),
+                              lov_cascade_parent_items    VARCHAR2(4000),
+                              lov_return_column           VARCHAR2(128),
+                              lov_display_column          VARCHAR2(128),
+                              lov_icon_column             VARCHAR2(128),
+                              lov_group_column            VARCHAR2(128),
+                              lov_group_sort_direction    VARCHAR2(16),
+                              lov_default_sort_column     VARCHAR2(128),
+                              lov_default_sort_direction  VARCHAR2(16),
+                              lov_oracle_text_column      VARCHAR2(128),
+                              lov_columns                 t_lov_columns,
+                              lov_is_legacy               BOOLEAN,
+                              ajax_items_to_submit        VARCHAR2(4000),
+                              ajax_optimize_refresh       BOOLEAN,
+                              element_width               NUMBER,
+                              element_max_length          NUMBER,
+                              element_height              NUMBER,
+                              element_css_classes         VARCHAR2(4000),
+                              element_attributes          VARCHAR2(4000),
+                              element_option_attributes   VARCHAR2(4000),
+                              icon_css_classes            VARCHAR2(4000),
+                              escape_output               BOOLEAN,
+                              ignore_change               BOOLEAN DEFAULT TRUE,
+                              --
+                              attributes                  apex_t_plugin_attributes,
+                              --
+                              attribute_01                VARCHAR2(32767)  /* Deprecated */,
+                              attribute_02                VARCHAR2(32767)  /* Deprecated */,
+                              attribute_03                VARCHAR2(32767)  /* Deprecated */,
+                              attribute_04                VARCHAR2(32767)  /* Deprecated */,
+                              attribute_05                VARCHAR2(32767)  /* Deprecated */,
+                              attribute_06                VARCHAR2(32767)  /* Deprecated */,
+                              attribute_07                VARCHAR2(32767)  /* Deprecated */,
+                              attribute_08                VARCHAR2(32767)  /* Deprecated */,
+                              attribute_09                VARCHAR2(32767)  /* Deprecated */,
+                              attribute_10                VARCHAR2(32767)  /* Deprecated */,
+                              attribute_11                VARCHAR2(32767)  /* Deprecated */,
+                              attribute_12                VARCHAR2(32767)  /* Deprecated */,
+                              attribute_13                VARCHAR2(32767)  /* Deprecated */,
+                              attribute_14                VARCHAR2(32767)  /* Deprecated */,
+                              attribute_15                VARCHAR2(32767)  /* Deprecated */,
+                              attribute_16                VARCHAR2(32767)  /* Deprecated */,
+
+API Reference                                                                         July 24, 2026
+G26651-03                                                                             Page 12 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                Chapter 47
+                                                                               Data Types
+
+attribute_17                                           VARCHAR2(32767)         /* Deprecated */,
+attribute_18                                           VARCHAR2(32767)         /* Deprecated */,
+attribute_19                                           VARCHAR2(32767)         /* Deprecated */,
+attribute_20                                           VARCHAR2(32767)         /* Deprecated */,
+attribute_21                                           VARCHAR2(32767)         /* Deprecated */,
+attribute_22                                           VARCHAR2(32767)         /* Deprecated */,
+attribute_23                                           VARCHAR2(32767)         /* Deprecated */,
+attribute_24                                           VARCHAR2(32767)         /* Deprecated */,
+attribute_25                                           VARCHAR2(32767)         /* Deprecated */,
+init_javascript_code                                   VARCHAR2(32767),
+inline_help_text                                       VARCHAR2(4000),
+inline_help_id                                         VARCHAR2(270),
+);
+
+47.3.6.6 t_item_ajax_result
+
+                       The t_item_ajax_result type is used as the result type for the Ajax function of an item type
+                       plug-in.
+
+type t_item_ajax_result is record (
+      dummy boolean /* not used yet */
+      );
+
+47.3.6.7 t_item_meta_data_result
+
+                       The t_item_meta_data_result type is used as the result type for the meta data function of an
+                       item type plug-in.
+
+                       Syntax
+
+TYPE T_ITEM_META_DATA_RESULT IS RECORD (
+
+is_multi_value                                         BOOLEAN DEFAULT FALSE,  /* (Deprecated) Declare
+                                                                               in an LOV-based item plug-
+if multiple values can be selected                                             /* Provides the lov
+                                                                               interactive grid */
+in */                                                                          /* Declare if item plug-
+      display_lov_definition VARCHAR2(32767),                                  value or just a return
+                                                                               /* Declare if output
+definition (SQL-statement) to the                                              Interactive Grid. Used
+                                                                               like an image item plug-
+      return_display_value BOOLEAN DEFAULT TRUE,                               /* Add CSS classes on
+in has a display and return
+
+value */
+
+escape_output                                          BOOLEAN DEFAULT TRUE,
+
+should be escaped or not e.g. in
+
+for HTML Markup based items
+
+in */
+      container_css_classes VARCHAR2(32767)
+
+container level for an item plug-in */
+);
+
+API Reference                                                                  July 24, 2026
+G26651-03                                                                      Page 13 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                        Chapter 47
+                                                                                                       Data Types
+
+47.3.6.8 t_item_render_param
+
+                       The t_item_render_param type is passed into render procedure of the item type plug-in and
+                       contains information about the current page item value.
+
+type t_item_render_param is record (
+
+value_set_by_controller BOOLEAN DEFAULT FALSE,
+
+value                                                  VARCHAR2(32767),
+
+clob_value                                             CLOB,
+
+is_readonly                                            BOOLEAN DEFAULT FALSE,
+
+is_printer_friendly BOOLEAN DEFAULT FALSE
+
+);
+
+47.3.6.9 t_item_render_result
+
+                       The t_item_render_result type is used as the result type for the rendering function of an item
+                       type plug-in.
+
+type t_item_render_result is record (
+
+is_navigable                                           boolean default false,
+
+navigable_dom_id                                       varchar2(255),          /* should only be set if
+
+navigable element is not equal to item name */
+
+item_rendered                                          boolean default true /* should be set to false
+
+if the render procedure didn't render anything,
+
+                                                                               this could be the case
+
+for a read only item in IG */
+
+);
+
+47.3.6.10 t_item_validation_result
+
+                       The t_item_validation_result type is used as the result type for the validation function of an
+                       item type plug-in.
+
+type t_item_validation_result is record (
+
+message                                                varchar2(32767),
+
+display_location varchar2(40), /* if not set the application default
+
+is used */
+
+page_item_name varchar2(255) ); /* if not set the validated page item
+
+name is used */
+
+47.3.7 Process Data Types
+
+                       This section describes the process data types used by the APEX_PLUGIN package.
+                       � t_process
+                       � t_process_exec_result
+
+API Reference                                                                                          July 24, 2026
+G26651-03                                                                                              Page 14 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                       Chapter 47
+                                                                                                      Data Types
+
+47.3.7.1 t_process
+
+                       The t_process type is passed into all process type plug-in functions and contains information
+                       about the current process.
+
+type t_process is record (
+
+    id                                                 number,
+
+    name                                               varchar2(255),
+
+    region_id                                          number,
+
+    row_num                                            number,
+
+    correlation_context varchar2(4000),
+
+    component_type                                     varchar2(30),
+
+    success_message                                    varchar2(32767),
+
+    attributes                                         apex_t_plugin_attributes
+
+    attribute_01                                       varchar2(32767)           /* Deprecated */,
+
+    attribute_02                                       varchar2(32767)           /* Deprecated */,
+
+    attribute_03                                       varchar2(32767)           /* Deprecated */,
+
+    attribute_04                                       varchar2(32767)           /* Deprecated */,
+
+    attribute_05                                       varchar2(32767)           /* Deprecated */,
+
+    attribute_06                                       varchar2(32767)           /* Deprecated */,
+
+    attribute_07                                       varchar2(32767)           /* Deprecated */,
+
+    attribute_08                                       varchar2(32767)           /* Deprecated */,
+
+    attribute_09                                       varchar2(32767)           /* Deprecated */,
+
+    attribute_10                                       varchar2(32767)           /* Deprecated */,
+
+    attribute_11                                       varchar2(32767)           /* Deprecated */,
+
+    attribute_12                                       varchar2(32767)           /* Deprecated */,
+
+    attribute_13                                       varchar2(32767)           /* Deprecated */,
+
+    attribute_14                                       varchar2(32767)           /* Deprecated */,
+
+    attribute_15                                       varchar2(32767)           /* Deprecated */
+
+);
+
+47.3.7.2 t_process_exec_result
+
+                       The t_process_exec_result type is used as the result type for the execution function of a
+                       process type plug-in.
+
+type t_process_exec_result is record (
+      success_message varchar2(32767)
+      execution_skipped boolean default false /* set to TRUE if process
+
+execution has been skipped by plug-in because of additional condition checks
+*/
+
+      );
+
+47.3.8 Region Data Types
+
+                       This section describes the region data types used by the APEX_PLUGIN package.
+                       � t_region
+                       � t_region_ajax_result
+                       � t_region_column
+                       � t_region_columns
+
+API Reference                                                                                         July 24, 2026
+G26651-03                                                                                             Page 15 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                              Chapter 47
+                                                                             Data Types
+
+                       � t_region_render_param
+                       � t_region_render_result
+
+47.3.8.1 t_region
+
+                       The t_region type is passed into all region type plug-in functions and contains information
+                       about the current region.
+
+type t_region is record (                              NUMBER,
+      id                                               VARCHAR2(255), /* Deprecated */
+      static_id                                        VARCHAR2(255), /* The HTML DOM id for the
+      dom_id
+                                                       VARCHAR2(4000),        /* Deprecated */,
+current region. */                                     VARCHAR2(4000),        /* Deprecated */,
+      name                                             VARCHAR2(255),         /* Deprecated */,
+      title                                            VARCHAR2(32767),       /* Deprecated */,
+      type                                             BOOLEAN,               /* Deprecated */,
+      source                                           VARCHAR2(32767),       /* Deprecated */,
+      lazy_loading                                     VARCHAR2 (32767),      /* Deprecated */,
+      ajax_items_to_submit                             PLS_INTEGER,           /* Deprecated */,
+      ajax_items_to_submit_singlerow                   BOOLEAN,               /* Deprecated */,
+      fetched_rows                                     VARCHAR2(32767),       /* Deprecated */,
+      escape_output                                    t_plugin_attributes,   /* Deprecated */,
+      no_data_found_message                            VARCHAR2(32767)        /* Deprecated */,
+      attributes                                       VARCHAR2(32767)        /* Deprecated */,
+      attribute_01                                     VARCHAR2(32767)        /* Deprecated */,
+      attribute_02                                     VARCHAR2(32767)        /* Deprecated */,
+      attribute_03                                     VARCHAR2(32767)        /* Deprecated */,
+      attribute_04                                     VARCHAR2(32767)        /* Deprecated */,
+      attribute_05                                     VARCHAR2(32767)        /* Deprecated */,
+      attribute_06                                     VARCHAR2(32767)        /* Deprecated */,
+      attribute_07                                     VARCHAR2(32767)        /* Deprecated */,
+      attribute_08                                     VARCHAR2(32767)        /* Deprecated */,
+      attribute_09                                     VARCHAR2(32767)        /* Deprecated */,
+      attribute_10                                     VARCHAR2(32767)        /* Deprecated */,
+      attribute_11                                     VARCHAR2(32767)        /* Deprecated */,
+      attribute_12                                     VARCHAR2(32767)        /* Deprecated */,
+      attribute_13                                     VARCHAR2(32767)
+      attribute_14                                     VARCHAR2(32767)       /* Deprecated */,
+      attribute_15                                     VARCHAR2(32767)
+      attribute_16                                     VARCHAR2(32767)
+      attribute_17                                     VARCHAR2(32767)
+      attribute_18                                     VARCHAR2(32767)
+      attribute_19                                     VARCHAR2(32767)
+      attribute_20                                     VARCHAR2(32767)
+      attribute_21                                     VARCHAR2(32767)
+      attribute_22                                     VARCHAR2(32767)
+      attribute_23                                     VARCHAR2(32767)
+      attribute_24                                     NUMBER,
+      attribute_25                                     VARCHAR2(255)
+      filter_region_id                                 VARCHAR2(255),
+      filter_region_static_id                          t_region_columns,
+      filter_region_dom_id                             VARCHAR2(32767)
+      region_columns
+      init_javascript_code
+
+);
+
+API Reference                                                                July 24, 2026
+G26651-03                                                                    Page 16 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                   Chapter 47
+                                                                                                  Data Types
+
+47.3.8.2 t_region_ajax_result
+
+                       The t_region_ajax_result type is used as result type for the Ajax function of a region type
+                       plug-in.
+
+type t_region_ajax_result is record (
+      dummy boolean /* not used yet */
+      );
+
+47.3.8.3 t_region_column
+
+                       The t_region_column type is passed into all region type plug-in functions and contains
+                       information about the current region.
+
+type t_region_column is record (
+
+    id                                                 number,
+
+    name                                               t_region_column_name,
+
+    is_displayed                                       boolean,
+
+    heading                                            apex_region_columns.heading%type,
+
+    heading_alignment apex_region_columns.heading_alignment%type,
+
+    value_alignment                                    apex_region_columns.value_alignment%type,
+
+    value_css_classes apex_region_columns.value_css_classes%type,
+
+    value_attributes apex_region_columns.value_attributes%type,
+
+    format_mask                                        apex_region_columns.format_mask%type,
+
+    escape_output                                      boolean,
+
+    attributes                                         t_plugin_attributes,
+
+    attribute_01                                       varchar2(32767)        /* Deprecated */,
+
+    attribute_02                                       varchar2(32767)        /* Deprecated */,
+
+    attribute_03                                       varchar2(32767)        /* Deprecated */,
+
+    attribute_04                                       varchar2(32767)        /* Deprecated */,
+
+    attribute_05                                       varchar2(32767)        /* Deprecated */,
+
+    attribute_06                                       varchar2(32767)        /* Deprecated */,
+
+    attribute_07                                       varchar2(32767)        /* Deprecated */,
+
+    attribute_08                                       varchar2(32767)        /* Deprecated */,
+
+    attribute_09                                       varchar2(32767)        /* Deprecated */,
+
+    attribute_10                                       varchar2(32767)        /* Deprecated */,
+
+    attribute_11                                       varchar2(32767)        /* Deprecated */,
+
+    attribute_12                                       varchar2(32767)        /* Deprecated */,
+
+    attribute_13                                       varchar2(32767)        /* Deprecated */,
+
+    attribute_14                                       varchar2(32767)        /* Deprecated */,
+
+    attribute_15                                       varchar2(32767)        /* Deprecated */,
+
+    attribute_16                                       varchar2(32767)        /* Deprecated */,
+
+    attribute_17                                       varchar2(32767)        /* Deprecated */,
+
+    attribute_18                                       varchar2(32767)        /* Deprecated */,
+
+    attribute_19                                       varchar2(32767)        /* Deprecated */,
+
+    attribute_20                                       varchar2(32767)        /* Deprecated */,
+
+    attribute_21                                       varchar2(32767)        /* Deprecated */,
+
+    attribute_22                                       varchar2(32767)        /* Deprecated */,
+
+    attribute_23                                       varchar2(32767)        /* Deprecated */,
+
+    attribute_24                                       varchar2(32767)        /* Deprecated */,
+
+    attribute_25                                       varchar2(32767)        /* Deprecated */
+
+);
+
+API Reference                                                                                     July 24, 2026
+G26651-03                                                                                         Page 17 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                           Chapter 47
+                                                                                                                                          Data Types
+
+47.3.8.4 t_region_columns
+
+                       type t_region_columns is table of t_region_column index by
+                                    pls_integer;
+
+47.3.8.5 t_region_render_param
+
+                       type t_region_render_param is record (
+                              is_printer_friendly boolean
+                              );
+
+47.3.8.6 t_region_render_result
+
+                       The t_region_render_result type is used as the result type for the rendering function of a
+                       region type plug-in.
+
+                       type t_region_render_result is record (
+                              navigable_dom_id varchar2(255) /* can be used to put focus to an input
+
+                       field (that is, search field) the region renders as part of the plug-in
+                       output */
+
+                              );
+
+47.3.9 REST Source Data Types
+
+                       This section describes the REST source data types used by the APEX_PLUGIN package.
+                       � t_remote_server_config
+                       � t_remote_server_info
+                       � t_web_source
+                       � t_web_source_capabilities
+                       � t_web_source_column
+                       � t_web_source_dml_params
+                       � t_web_source_dml_result
+                       � t_web_source_execute_result
+                       � t_web_source_discover_params
+                       � t_web_source_discover_result
+                       � t_web_source_fetch_params
+                       � t_web_source_fetch_result
+                       � t_web_source_operation
+                       � t_web_source_parameter
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 18 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                              Chapter 47
+                                                                                             Data Types
+
+47.3.9.1 t_remote_server_config
+
+                       Used in the configuration procedure of flexible servers.
+
+type t_remote_server_config is record(
+
+base_url                                               varchar2(4000),
+
+substitutions wwv_flow_t_varchar2 );
+
+47.3.9.2 t_remote_server_info
+
+                       Used in the configuration procedure of flexible servers.
+
+type t_remote_server_info is record(
+
+application_id                                         number,
+
+remote_server_static_id varchar2(255) );
+
+47.3.9.3 t_web_source
+
+                       Complete Web Source record passed to the Plug-In developer. Contains meta data for all
+                       required web source operations.
+
+type t_web_source is record(
+
+      id                                               number,
+
+      --
+
+      -- meta data array for all required Web Source Operations. For the
+
+"Fetch" procedure
+
+-- this is the Web Source operation assigned to the "Fetch Rows" database
+
+operation.
+
+-- For the "DML" procedure, the array will contain all Web Source
+
+Operations assigned
+
+-- to the Database Operations. For instance, the "Insert Row" operation
+
+can be accessed
+
+-- as follows: l_operation :=
+
+p_web_source.operations( c_db_operation_insert );
+
+operations                                             t_web_source_operations,
+
+--
+
+profile_id                                             number,
+
+profile_columns                                        t_web_source_columns,
+
+--
+
+-- if the Plug-In developer has enabled the "Pass ECID" attribute, this
+
+attribute will
+
+-- contain the ECID to be passed to the REST Service. Otherwise this will
+
+be NULL.
+
+ecid                                                   varchar2(32767),
+
+--
+
+-- Module Plug-In attributes configured within Web Source Module.
+
+--
+
+attributes                                             wwv_flow_t_plugin_attributes,
+
+      --
+
+      -- attributes are only populated for legacy (v1) Web Source Module plug-
+
+ins.
+
+--
+
+attribute_01                                           varchar2(32767), -- Deprecated: 26.1
+
+API Reference                                                                                July 24, 2026
+G26651-03                                                                                    Page 19 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                              Chapter 47
+                                                                                             Data Types
+
+attribute_02                                           varchar2(32767), -- Deprecated: 26.1
+attribute_03                                           varchar2(32767), -- Deprecated: 26.1
+attribute_04                                           varchar2(32767), -- Deprecated: 26.1
+attribute_05                                           varchar2(32767), -- Deprecated: 26.1
+attribute_06                                           varchar2(32767), -- Deprecated: 26.1
+attribute_07                                           varchar2(32767), -- Deprecated: 26.1
+attribute_08                                           varchar2(32767), -- Deprecated: 26.1
+attribute_09                                           varchar2(32767), -- Deprecated: 26.1
+attribute_10                                           varchar2(32767), -- Deprecated: 26.1
+attribute_11                                           varchar2(32767), -- Deprecated: 26.1
+attribute_12                                           varchar2(32767), -- Deprecated: 26.1
+attribute_13                                           varchar2(32767), -- Deprecated: 26.1
+attribute_14                                           varchar2(32767), -- Deprecated: 26.1
+attribute_15                                           varchar2(32767), -- Deprecated: 26.1
+--
+executing_component                                    wwv_flow.t_component);
+
+47.3.9.4 t_web_source_capabilities
+
+                       Get capabilities response structure.
+
+type t_web_source_capabilities is record(
+
+--
+
+-- set to true if the REST Source Plug-In supports pagination
+
+pagination                                             boolean default false,
+
+--
+
+-- some pagination REST APIs provide the total row count as a separate
+
+attribute, returned in each page.
+
+total_row_count                                        boolean default false,
+
+--
+
+-- some REST APIs can return varying page sizes across multiple requests.
+
+These APIs typically
+
+-- allow to specify a page size in the request, but they don't guarantee
+
+to return the specified
+
+-- or always the same amount of rows. If the Plug-In works with a REST
+
+API which can return varying
+
+-- page sizes across subsequent requests, set this attribute to false.
+
+page_size_is_stable boolean default false,
+
+--
+
+-- set to true if the REST Source Plug-In supports server-side filtering
+
+filtering                                              boolean default false,
+
+--
+
+-- set to true if the REST Source Plug-In supports server-side sorting
+
+order_by                                               boolean default false,
+
+--
+
+-- specify whether the REST Source Plug-In supports to specify NULL
+
+handling
+
+-- for server-side ordering, or (if the REST API does not allow) how
+
+NULLs are
+
+-- treated for sorting. Only applicable if "order_by" is returned as
+
+"true".
+
+--
+
+-- The REST API supports specifying how to sort NULLs (first or last) when
+
+-- a request is made:
+
+--
+
+API Reference                                                                                July 24, 2026
+G26651-03                                                                                    Page 20 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                        Chapter 47
+                                                                                                       Data Types
+
+-- * wwv_flow_exec_api.c_orderby_nulls_flexible
+
+--
+
+-- The REST API does not support specifying how to sort NULLs. A standard
+
+behavior
+
+-- always applies. Use one of the following options, to indicate how the
+
+REST
+
+-- API treats NULLs for sorting.
+
+--
+
+-- * wwv_flow_exec_api.c_orderby_nulls_are_lowest:
+
+-- When sorting ascending, NULLs are returned first, for a descending
+
+sort, NULLs are returned last.
+
+--
+
+-- * wwv_flow_exec_api.c_orderby_nulls_are_highest:
+
+-- When sorting ascending, NULLs are returned last, for a descending
+
+sort, NULLs are returned first.
+
+--
+
+-- * wwv_flow_exec_api.c_orderby_nulls_always_last:
+
+-- NULLs are always returned last.
+
+--
+
+-- * wwv_flow_exec_api.c_orderby_nulls_always_first:
+
+-- NULLs are always returned first.
+
+--
+
+order_by_nulls_as                                      wwv_flow_exec_api.t_supports_orderby_nulls_as );
+
+47.3.9.5 t_web_source_column
+
+                       Record type for the Web Source data profile.
+
+type t_web_source_column is record(
+
+name                                                   varchar2(255),
+
+--
+
+-- if the column belongs to a nested array, the index of the parent
+
+(array) column,
+
+-- NULL for normal columns at the root level. The engine will throw an
+
+error, if the
+
+-- value does not point to a column which is a nested array, i.e. the
+
+referenced column
+
+-- must satisfy "DATA_TYPE is NULL and ARRAY_DATA_TYPE_NAME is NOT NULL"
+
+--
+
+parent_column                                          pls_integer,
+
+--
+
+-- for built-in types, one of the constants in APEX_EXEC, NULL for custom
+
+data profile array types.
+
+--
+
+data_type                                              wwv_flow_exec_api.t_data_type,
+
+--
+
+is_primary_key                                         boolean                         default false,
+
+is_filterable                                          boolean                         default true,
+
+is_common                                              boolean                         default true,
+
+validation_regexp varchar2(255),
+
+max_length                                             number,
+
+format_mask                                            varchar2(255),
+
+decimal_char                                           varchar2(1 CHAR),
+
+group_char                                             varchar2(1 CHAR),
+
+has_time_zone                                          boolean                         default false,
+
+API Reference                                                                                         July 24, 2026
+G26651-03                                                                                             Page 21 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                Chapter 47
+                                                                               Data Types
+
+selector_type                                          t_selector_type,
+
+selector                                               varchar2(255),
+
+--
+
+-- Attribute name to use for DML or other processing at the REST Server
+
+Side. Defaults
+
+-- to equal to the selector.
+
+remote_attribute_name varchar2(255),
+
+--
+
+-- if not empty, this represents the data type to use on the REST Server
+
+side for this column.
+
+-- Typical use-case is a "boolean" data type on the REST server side,
+
+which maps to a VARCHAR2
+
+-- in APEX. "remote_data_type" allows the Plug-In developer to keep that
+
+"boolean" information for
+
+-- further processing in the Plug-In. Needs to be returned to APEX from
+
+the Plug-In "discovery"
+
+-- procedure. The APEX engine does not process this information.
+
+remote_data_type                                       varchar2(255),
+
+--
+
+-- If specified, this additional column information is used by REST
+
+Source Plug-In implementations
+
+-- to influence how they interact with the REST endpoint. Needs to be
+
+returned to APEX from the
+
+-- Plug-In "discovery" procedure. The APEX engine does not process this
+
+information.
+
+additional_info                                        varchar2(4000),
+
+--
+
+-- Should the data profile column be hidden from APEX App Builder? During
+
+initial discovery,
+
+-- if more than 150 are visible, only the first 150 will remain visible
+
+in the created REST
+
+-- data source. During rediscovery, the setting is respected as provided.
+
+is_initially_hidden boolean                                                    default false );
+
+type t_web_source_columns is table of t_web_source_column index by
+pls_integer;
+
+47.3.9.6 t_web_source_dml_params
+
+                       Parameters record for the "DML" procedure. Contains column meta data and column values.
+
+type t_web_source_dml_params is record(
+
+--
+
+-- name of the array column this fetch operation is operating on.
+
+Typically the
+
+-- array column which was selected in Page Designer within the Region
+
+Source settings.
+
+array_column_name                                      varchar2(255),
+
+--
+
+continue_on_error                                      boolean default false,
+
+lost_update_detection wwv_flow_exec_api.t_lost_update_detection,
+
+--
+
+allowed_operations_column varchar2(255),
+
+--
+
+-- APEX_EXEC context object, containing row meta data and rows/columns
+
+API Reference                                                                  July 24, 2026
+G26651-03                                                                      Page 22 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                    Chapter 47
+                                                                                                   Data Types
+
+values. Plug-In developers
+      -- can use APEX_EXEC.NEXT_ROW and GET_XXX functions in order to access
+
+individual rows, columns
+      -- and their values. APEX_EXEC.SET_VALUE functions allow to overwrite
+
+column values with RETURNING
+      -- values received from the REST Service.
+      -- This approach
+      -- * requires a few additions to WWV_FLOW_EXEC and WWV_FLOW_EXEC API in
+
+order to deal with
+      -- such a "Plugin-Values-Only" context
+      -- * does not require us to expose the t_columns_values and
+
+t_row_statuses record structures,
+      -- currently defined in wwv_flow_exec.
+      insert_values_context wwv_flow_exec_api.t_context,
+      update_values_context wwv_flow_exec_api.t_context,
+      delete_values_context wwv_flow_exec_api.t_context );
+
+47.3.9.7 t_web_source_dml_result
+
+                       Response structure for the "DML" procedure. Main purpose is to pass RETURNING values
+                       and "Success" or "Error" status for each row back to the EXEC engine.
+
+type t_web_source_dml_result is record(
+
+     --
+
+     -- true if DML processing failed for at least one of the rows
+
+     has_errors                                        boolean                     default false,
+
+     --
+
+     -- status and RETURNING values for each row.
+
+     insert_values_context wwv_flow_exec_api.t_context,
+
+     update_values_context wwv_flow_exec_api.t_context,
+
+     delete_values_context wwv_flow_exec_api.t_context,
+
+     --
+
+     -- pass received Web Source Module parameters back to the EXEC engine;
+
+e.g. to set page items.
+
+     out_parameters                                    t_web_source_parameters );
+
+47.3.9.8 t_web_source_execute_result
+
+                       Response structure for the "Execute" procedure.
+
+type t_web_source_execute_result is record(
+
+     --
+
+     -- pass the REST response back to the EXEC engine, so that parameters of
+
+the
+
+     -- DATA PROFILE type can be processed.
+
+     response                                          clob,
+
+     --
+
+     -- pass received Web Source Module parameters back to the EXEC engine;
+
+e.g. to set page items.
+
+     out_parameters                                    t_web_source_parameters );
+
+API Reference                                                                                      July 24, 2026
+G26651-03                                                                                          Page 23 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                              Chapter 47
+                                                                                             Data Types
+
+47.3.9.9 t_web_source_discover_params
+
+                       Parameters record for the "Discovery" procedure.
+
+type t_web_source_discover_params is record(
+
+--
+
+-- pass uploaded response sample ("Advanced" wizard step) for discovery.
+
+sample_response                                        clob,
+
+--
+
+-- "dummy" attribute is not in use, but keep for backwards compatibility
+
+(usage in plug-in code is
+
+-- unlikely but not impossible).
+
+dummy                                                  pls_integer );
+
+47.3.9.10 t_web_source_discover_result
+
+                       Discovery response structure based on the Data Profile record types.
+
+type t_web_source_discover_result is record(
+
+--
+
+-- discovery results for the service response: Data Format, JSON/XML
+
+selectors, data profile
+
+-- columns.
+
+data_format                                            t_data_format,
+
+row_selector                                           varchar2(32767),
+
+is_single_row                                          boolean,
+
+profile_columns                                        t_web_source_columns,
+
+xml_namespaces                                         varchar2(4000),
+
+--
+
+csv_separator                                          varchar2(1 char ),
+
+csv_enclosed                                           varchar2(1 char ),
+
+has_header_row                                         boolean,
+
+--
+
+-- if the REST service returns pages of a fixed size, discovery can
+
+return the page size here
+
+fixed_page_size                                        number,
+
+--
+
+-- The Plugin Developer can return a sample of the REST Response and have
+
+APEX discovering the
+
+-- data profile columns and data types.
+
+sample_response                                        clob,
+
+--
+
+-- discovered web source operations and plugin attributes, if applicable.
+
+operations                                             t_web_source_operations,
+
+parameters                                             t_web_source_parameters,
+
+--
+
+row_search_param_name varchar2(255),
+
+--
+
+attributes                                             wwv_flow_t_plugin_attributes,
+
+--
+
+attribute_01                                           varchar2(32767), -- Deprecated: 26.1
+
+attribute_02                                           varchar2(32767), -- Deprecated: 26.1
+
+attribute_03                                           varchar2(32767), -- Deprecated: 26.1
+
+attribute_04                                           varchar2(32767), -- Deprecated: 26.1
+
+API Reference                                                                                July 24, 2026
+G26651-03                                                                                    Page 24 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                Chapter 47
+                                                                                               Data Types
+
+attribute_05                                           varchar2(32767), -- Deprecated: 26.1
+
+attribute_06                                           varchar2(32767), -- Deprecated: 26.1
+
+attribute_07                                           varchar2(32767), -- Deprecated: 26.1
+
+attribute_08                                           varchar2(32767), -- Deprecated: 26.1
+
+attribute_09                                           varchar2(32767), -- Deprecated: 26.1
+
+attribute_10                                           varchar2(32767), -- Deprecated: 26.1
+
+attribute_11                                           varchar2(32767), -- Deprecated: 26.1
+
+attribute_12                                           varchar2(32767), -- Deprecated: 26.1
+
+attribute_13                                           varchar2(32767), -- Deprecated: 26.1
+
+attribute_14                                           varchar2(32767), -- Deprecated: 26.1
+
+attribute_15                                           varchar2(32767), -- Deprecated: 26.1
+
+-- return response headers and HTTP status code to the APEX engine
+
+response_headers                                       wwv_flow_webservices_api.header_table,
+
+status_code                                            number,
+
+reason_phrase                                          varchar2(32767) );
+
+47.3.9.11 t_web_source_fetch_params
+
+                       Parameters record for the "Fetch Rows" procedure. Contains information about filters, order
+                       bys, and pagination.
+
+type t_web_source_fetch_params is record(
+
+--
+
+-- name of the array column this fetch operation is operating on.
+
+Typically the
+
+-- array column which was selected in Page Designer within the Region
+
+Source settings.
+
+array_column_name varchar2(255),
+
+--
+
+-- list of columns actually requested by the component. Can be used by
+
+the Plugin-Developer
+
+-- to restrict columns (or attributes) actually requested from the REST
+
+service. If an empty
+
+-- array is passed to the Plug-In, then APEX actually requests all data
+
+profile columns.
+
+requested_columns t_web_source_columns,
+
+--
+
+-- Runtime filters coming from APEX components like IR, IG or Faceted
+
+Search
+
+filters                                                wwv_flow_exec_api.t_filters,
+
+--
+
+-- External Filters configured at design time in Region Source. The Plug-
+
+In developer
+
+-- is responsible for correctly merging this with the "filters" attribute.
+
+external_filters                                       varchar2(32767),
+
+--
+
+-- Runtime order bys coming from APEX components like IR, IG or Faceted
+
+Search
+
+order_bys                                              wwv_flow_exec_api.t_order_bys,
+
+--
+
+-- External Order bys configured at design time in Region Source. The
+
+Plug-In developer
+
+-- is responsible for correctly merging this with the "order_bys"
+
+attribute.
+
+external_order_bys varchar2(32767),
+
+API Reference                                                                                  July 24, 2026
+G26651-03                                                                                      Page 25 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                            Chapter 47
+                                                                           Data Types
+
+--
+
+-- values context containing primary key values. This is used when e.g.
+
+Interactive
+
+-- Grid fetches multiple rows by primary key. The Plug-In developer can
+
+use this
+
+-- to execute optimized HTTP requests in order to implement these row
+
+fetches.
+
+primary_key_values wwv_flow_exec_api.t_context,
+
+--
+
+-- indicates whether this is the initial request within the APEX page
+
+view for this
+
+-- web source module.
+
+initial_request                                        boolean,
+
+--
+
+-- First Row the APEX component is interested in. Translates to the
+
+"offset" parameter in an
+
+-- "offset / limit" pagination scheme.
+
+first_row                                              number,
+
+--
+
+-- Maximum Rows the APEX component is interested in. Translates to the
+
+"limit" parameter in an
+
+-- "offset / limit" pagination scheme.
+
+max_rows                                               number,
+
+--
+
+-- If a fixed page size as been configured in the Web Source Module
+
+attributes, this will be
+
+-- passed in here.
+
+fixed_page_size                                        pls_integer,
+
+--
+
+-- flag whether the component asks for the total row count.
+
+fetch_total_row_count boolean default false,
+
+--
+
+-- Passed in as TRUE, if the APEX component requested all rows, e.g. to
+
+compute an aggregation
+
+-- like PIVOT or GROUP BY views.
+
+fetch_all_rows                                         boolean,
+
+--
+
+-- "context" information to pass from one HTTP request to the next when
+
+fetching multiple pages. If the
+
+-- HTTP request to the REST service returns some context information
+
+which is to be added to the request
+
+-- for the next page, then the plug-in developer must return that
+
+information as "request_context". APEX
+
+-- will pass this information as
+
+"t_web_source_fetch_params.request_context" for the next request.
+
+request_context                                        varchar2(32767) );
+
+47.3.9.12 t_web_source_fetch_result
+
+                       Response structure for the "Fetch Rows" procedure. Main purpose is to pass the response
+                       JSON or XML back to the APEX engine. JSON or XML parsing is done by the APEX Engine,
+                       and not by the plugin developer.
+
+type t_web_source_fetch_result is record(
+      --
+
+API Reference                                                              July 24, 2026
+G26651-03                                                                  Page 26 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                     Chapter 47
+                                                                                                    Data Types
+
+-- response CLOB or JSON documents as array. If an invocation of the
+
+"Fetch" procedure
+
+-- leads to multiple HTTP requests being made, all response CLOBs are
+
+returned using the array
+
+responses                                              wwv_flow_t_clob,
+
+--
+
+-- indicate which row number the first row in the JSON response is. This
+
+is important
+
+-- for pagination styles based on page size and page number. Example:
+
+-- * APEX requests rows 81 to 120
+
+-- * REST Service works with page size 50, so pages #2 and #3 need to be
+
+fetched
+
+-- * the "response_first_row" result attribute needs to be set as "51",
+
+so the APEX engine knows that
+
+-- 30 rows have to be skipped.
+
+-- * be default we assume that the JSON result starts at exactly the
+
+requested first row (t_web_source.first_row)
+
+response_first_row                                     number,
+
+--
+
+-- if we can determine the row count contained in the JSON responses,
+
+pass that back to the engine here. Unlike
+
+-- the "total_row_count" this represents only the amount of rows contains
+
+contained in the JSON / XML documents
+
+-- passed back as the "responses" array.
+
+response_row_count                                     number,
+
+--
+
+-- if we can determine that there are more rows to fetch, pass that info
+
+back to the EXEC engine here.
+
+has_more_rows                                          boolean                       default true,
+
+--
+
+-- some REST services always return the *total number of result rows* as
+
+part of every response (page). This
+
+-- attribute allows the plug-in developer to pass this information back
+
+to the APEX engine. For instance,
+
+-- APEX reports can use this information to allow "X to Y of Z"
+
+pagination schemes. If the REST
+
+-- services does not provide this information, this result attribute
+
+should remain NULL.
+
+total_row_count                                        number,
+
+--
+
+-- "context" information to pass from one HTTP request to the next when
+
+fetching multiple pages. If the
+
+-- HTTP request to the REST service returns some context information
+
+which is to be added to the request
+
+-- for the next page, then the plug-in developer must return that
+
+information as "request_context". APEX
+
+-- will pass this information as
+
+"t_web_source_fetch_params.request_context" for the next request.
+
+request_context                                        varchar2(32767),
+
+--
+
+-- return filters which are *not* passed to the external REST Service.
+
+The EXEC engine will execute
+
+-- those with the local SQL parsing query. Initialize with
+
+t_web_source.filters, i.e. perform local
+
+-- filtering for all filters.
+
+local_filters                                          wwv_flow_exec_api.t_filters,
+
+API Reference                                                                                       July 24, 2026
+G26651-03                                                                                           Page 27 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                  Chapter 47
+                                                                                 Data Types
+
+--
+
+-- pass received Web Source Module parameters back to the EXEC engine;
+
+e.g. to set page items.
+
+out_parameters                                         t_web_source_parameters,
+
+--
+
+-- override the "row selector" to use for response parsing
+
+override_row_selector varchar2(255),
+
+--
+
+status_code                                            number,
+
+reason_phrase                                          varchar2(32767));
+
+47.3.9.13 t_web_source_operation
+
+                       Record type for one Web Source operation. This type is used to pass all Web Source Module
+                       meta data to the Plug-in.
+
+type t_web_source_operation is record(
+
+--
+
+-- module and operation ID, Plug-In developers can
+
+-- use this to look up stuff in APEX dictionary views
+
+application_id                                         number,
+
+module_id                                              number,
+
+operation_id                                           number,
+
+--
+
+-- name of the array column this operation is mapped to. NULL if the
+
+operation is not mapped to an array column.
+
+array_column_name                                      varchar2(255),
+
+--
+
+-- the URL is completely processed; all URL pattern replacements are
+
+done; all query string
+
+-- parameters have been appended
+
+url                                                    varchar2(32767),
+
+query_string                                           varchar2(32767),
+
+--
+
+-- HTTP Method configured within the Web Source Module. It's not
+
+mandatory for the
+
+-- Plug-In developer to use this value; the Plug-In code can decide to
+
+execute
+
+-- another HTTP method.
+
+http_method                                            varchar2(255),
+
+database_operation t_db_operation,
+
+--
+
+-- Request Body based on the Request Body Template configured in Web
+
+Source Module > Operation.
+
+-- Parameter replacements are *not* made initially. Plug-In developers
+
+can call an "init"
+
+-- procedure in order to perform placeholder replacements. Of course,
+
+Plug-In developers can also
+
+-- generate a request body themselves.
+
+request_body                                           clob,
+
+request_body_version t_request_body_version,
+
+request_body_format t_data_format,
+
+--
+
+-- Parameter values are already "resolved", i.e. the Plug-In code
+
+receives the
+
+API Reference                                                                    July 24, 2026
+G26651-03                                                                        Page 28 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                        Chapter 47
+                                                                                       Data Types
+
+      -- actual value based on the "Parameters" configuration for the APEX
+
+component.
+
+      parameters                                       t_web_source_parameters,
+
+      --
+
+      -- authentication information. Can be used to perform authentication
+
+calls.
+
+      auth_token_url                                   varchar2(32767),
+
+      auth_https_host                                  varchar2(500),
+
+      credential_static_id varchar2(32767),
+
+      --
+
+      -- required scope of the OAuth access token to be used for the HTTP
+
+request.
+
+      -- Determined by the "Invocation Scope" settings within the REST Data
+
+Source.
+
+      invocation_scope                                 varchar2(32767),
+
+      --
+
+      -- When retrieved from an OpenAPI document
+
+      name                                             varchar2(32767),
+
+      description                                      varchar2(32767),
+
+      --
+
+      -- technical parameters required in order to execute the HTTP request.
+
+      encoding                                         varchar2(255),
+
+      https_host                                       varchar2(500),
+
+      timeout                                          pls_integer,
+
+      fetch_all_rows_timeout pls_integer );
+
+------------------------------------------------------------------------------
+-
+-- table type containing multiple Web Source Operations. Required to return
+-- discovery results as well as for the DML procedure which needs Web Source
+-- operation meta data for the corresponding database operations:
+-- * Insert Row
+-- * Update Row
+-- * Delete Row
+-- * Fetch Single Row (for Lost Update Detection / ETag)
+------------------------------------------------------------------------------
+-
+type t_web_source_operations is table of t_web_source_operation index by
+pls_integer;
+
+47.3.9.14 t_web_source_parameter
+
+                       Record type for the Web Source parameter. This type is used to pass information about Web
+                       Source Parameters to the Plug-In implementation.
+
+type t_web_source_parameter is record(
+
+name                                                   varchar2(32767), -- reduce this to 255 for the Plug-
+
+In interface
+
+static_id                                              varchar(255),
+
+param_type                                             t_web_source_param_type,
+
+--
+
+-- data type of the parameter. Supported types are:
+
+-- VARCHAR2, NUMBER, DATE, TIMESTAMP, TIMESTAMP WITH TIME ZONE, BOOLEAN,
+
+BLOB
+
+data_type                                              wwv_flow_exec_api.t_data_type,
+
+API Reference                                                                          July 24, 2026
+G26651-03                                                                              Page 29 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                              Chapter 47
+                                                                                GET_AJAX_IDENTIFIER Function
+
+--
+
+-- format mask to apply to the parameter value before sending to the REST
+
+endpoint.
+
+output_format_mask varchar2(255),
+
+--
+
+-- regular expression to validate the parameter value before processing.
+
+validation_regexp varchar2(255),
+
+--
+
+-- whether the parameter is to be sent to the REST API, to be received
+
+from the REST API, or both.
+
+direction                                              t_web_source_param_dir,
+
+--
+
+-- parameter value
+
+value                                                  varchar2(32767),
+
+--
+
+-- CLOB member for larger request bodies; set by the APEX engine based
+
+-- on the REST Data Source parameter configuration. To pass a large
+
+response body
+
+-- from the plug-in back to APEX; Plug-In developers should
+
+"response_body_value".
+
+clob_value                                             clob,
+
+--
+
+-- this is for OUT parameters mapped to the Web Source Response body.
+
+That could
+
+-- be longer than 32k, so we need to be able to carry a CLOB
+
+response_body_value clob,
+
+--
+
+-- Only relevant for URL Query String parameters (c_web_src_param_query).
+
+If TRUE, then one Query String parameter
+
+-- will be generated for each member of the colon-separated string.
+
+is_array                                               boolean,
+
+--
+
+-- Character to separate Query String parameter values when IS_ARRAY is
+
+enabled.
+
+--
+
+array_separator_char varchar2(1 char),
+
+--
+
+-- Only relevant for URL Query String, Cookie and HTTP Header Parameters.
+
+If TRUE, then the parameter will be
+
+-- completely omitted when its value is NULL.
+
+omit_when_null                                         boolean,
+
+is_required                                            boolean );
+
+type t_web_source_parameters is table of t_web_source_parameter index by
+pls_integer;
+
+47.4 GET_AJAX_IDENTIFIER Function
+
+                       This function returns the Ajax identifier used to call the Ajax callback function defined for the
+                       plug-in.
+
+API Reference                                                                   July 24, 2026
+G26651-03                                                                       Page 30 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                    Chapter 47
+                                                       GET_KEEP_BACKGROUND_EXECS Function
+
+       Note
+
+       This function only works in the context of a plug-in rendering function call and only if
+       the plug-in has defined an Ajax function callback in the plug-in definition.
+
+Syntax
+
+APEX_PLUGIN.GET_AJAX_IDENTIFIER
+RETURN VARCHAR2;
+
+Parameters
+None.
+
+Example
+This is an example of a dynamic action plug-in rendering function that supports an Ajax
+callback.
+
+FUNCTION RENDER_SET_VALUE (
+
+    p_dynamic_action in apex_plugin.t_dynamic_action )
+
+      return apex_plugin.t_dynamic_action_render_result
+
+IS
+
+      l_result                                         apex_plugin.t_dynamic_action_render_result;
+
+BEGIN
+
+    l_result.javascript_function := 'com_oracle_apex_set_value';
+
+    l_result.ajax_identifier := apex_plugin.get_ajax_identifier;
+
+    return l_result;
+
+END;
+
+47.5 GET_KEEP_BACKGROUND_EXECS Function
+
+                       This function checks if background executions are preserved or deleted during upgrades.
+                       Defaults to FALSE, so all background executions are aborted and deleted on application
+                       upgrade.
+
+                       Syntax
+
+APEX_APPLICATION_INSTALL.GET_KEEP_BACKGROUND_EXECS
+      RETURN BOOLEAN;
+
+Parameters
+None.
+Example
+The following example shows whether background executions are preserved or deleted.
+
+BEGIN
+      dbms_output.put_line (
+            CASE WHEN apex_application_install.get_keep_background_execs
+                    THEN 'background executions will be kept'
+
+API Reference                                                             July 24, 2026
+G26651-03                                                                 Page 31 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                              Chapter 47
+                                                       GET_INPUT_NAME_FOR_ITEM Function
+
+      ELSE 'background executions will be deleted'
+      END );
+
+END;
+
+                              See Also
+                                 � SET_KEEP_BACKGROUND_EXECS Procedure
+
+47.6 GET_INPUT_NAME_FOR_ITEM Function
+
+                       Returns the name attribute that must be used for an HTML input element if you want that value
+                       stored in session state when the page is submitted.
+
+                       Syntax
+
+                       APEX_PLUGIN.GET_INPUT_NAME_FOR_ITEM
+                              RETURN t_input_name;
+
+                       Example
+                       The following example outputs the necessary HTML code to render a text field where the value
+                       gets stored in session state when the page is submitted.
+
+                       sys.htp.prn (
+                              '<input type="text" id="'||p_item.name||'" '||
+                              'name="'||apex_plugin.get_input_name_for_item(false)||'" '||
+                              'value="'||sys.htf.escape_sc(p_value)||'" '||
+                              'size="'||p_item.element_width||'" '||
+                              'maxlength="'||p_item.element_max_length||'" '||
+                              coalesce(p_item.element_attributes, 'class="text_field"')||' />' );
+
+47.7 GET_INPUT_NAME_FOR_PAGE_ITEM Function
+(Deprecated)
+
+                              Caution
+                                 This API is deprecated and will be removed in a future release.
+                                 Use GET_INPUT_NAME_FOR_ITEM Function instead.
+
+                       Use this function when you want to render an HTML input element in the rendering function of
+                       an item type plug-in. For the HTML input element, for example, <input type="text"
+                       id="P1_TEST" name="xxx">, you have to provide a value for the name attribute so that Oracle
+                       APEX can map the submitted value to the actual page item in session state. This function
+                       returns the mapping name for your page item.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 32 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                        Chapter 47
+                                                       GET_INPUT_NAME_FOR_PAGE_ITEM Function (Deprecated)
+
+Note
+
+This function is only useful when called in the rendering function of an item type plug-
+in.
+
+Syntax
+
+APEX_PLUGIN.GET_INPUT_NAME_FOR_PAGE_ITEM (
+      p_is_multi_value IN BOOLEAN )
+      RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                              Description
+p_is_multi_value
+                                                       If the HTML input element has multiple values,
+                                                       such as a select list with multiple="multiple",
+                                                       then set p_is_multi_value to TRUE.
+
+Example
+
+The following example outputs the necessary HTML code to render a text field where the value
+gets stored in session state when the page is submitted.
+
+sys.htp.prn (
+      '<input type="text" id="'||p_item.name||'" '||
+      'name="'||apex_plugin.get_input_name_for_page_item(false)||'" '||
+      'value="'||sys.htf.escape_sc(p_value)||'" '||
+      'size="'||p_item.element_width||'" '||
+      'maxlength="'||p_item.element_max_length||'" '||
+      coalesce(p_item.element_attributes, 'class="text_field"')||' />' );
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 33 of 33
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+48

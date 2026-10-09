@@ -1,0 +1,472 @@
+# APEX_SPATIAL (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 59598-60068)
+
+APEX_SPATIAL
+
+                       This package enables you to use Oracle Locator and the Spatial Option within Oracle APEX.
+                       In an APEX context, the logon user of the database session is typically APEX_PUBLIC_USER or
+                       ANONYMOUS. Spatial developers can not directly use DML on USER_SDO_GEOM_METADATA within
+                       such a session in SQL Commands within SQL Workshop, for example. The Spatial view's
+                       trigger performs DML as the logon user, but it must run as the application owner or workspace
+                       user.
+                       With the APEX_SPATIAL API, developers can use the procedures and functions below to insert,
+                       update, and delete rows of USER_SDO_GEOM_METADATA as the current APEX user. The package
+                       also provides a few utilities that simplify the use of Spatial in APEX.
+                       If the SDO_GEOMETRY data type is unavailable in the database, then
+                       SPATIAL_IS_AVAILABLE is the only function within this package, and it returns FALSE. All other
+                       functions are only available if SDO_GEOMETRY is available in the database, and
+                       SPATIAL_IS_AVAILABLE returns TRUE.
+                       � Data Types
+                       � CHANGE_GEOM_METADATA Procedure
+                       � CIRCLE_POLYGON Function
+                       � DELETE_GEOM_METADATA Procedure
+                       � INSERT_GEOM_METADATA Procedure
+                       � INSERT_GEOM_METADATA_LONLAT Procedure
+                       � POINT Function
+                       � RECTANGLE Function
+                       � SPATIAL_IS_AVAILABLE Function
+
+57.1 Data Types
+
+                       The APEX_SPATIAL package uses the following data types.
+
+                       t_srid
+
+                       subtype t_srid is number;
+
+                       c_no_reference_system
+
+                       c_no_reference_system constant t_srid := null;
+
+                       c_wgs_84
+
+                       c_wgs_84 constant t_srid := 4326; -- World Geodetic System, EPSG:4326
+
+API Reference                                          July 24, 2026
+G26651-03                                                Page 1 of 8
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                      Chapter 57
+                                                                                CHANGE_GEOM_METADATA Procedure
+
+57.2 CHANGE_GEOM_METADATA Procedure
+
+                       This procedure modifies a spatial metadata record.
+                       Syntax
+
+APEX_SPATIAL.CHANGE_GEOM_METADATA (
+
+p_table_name                                           IN VARCHAR2,
+
+p_column_name                                          IN VARCHAR2,
+
+p_new_table_name IN VARCHAR2 DEFAULT NULL,
+
+p_new_column_name IN VARCHAR2 DEFAULT NULL,
+
+p_diminfo                                              IN mdsys.sdo_dim_array,
+
+p_srid                                                 IN t_srid );
+
+Parameters
+
+Parameter                                              Description
+p_table_name
+p_column_name                                          Name of the feature table.
+p_new_table_name                                       Name of the column of type mdsys.sdo_geometry.
+p_new_column_name                                      New name of a feature table (or null, to keep the current value).
+                                                       New name of the column of type mdsys.sdo_geometry (or null, to
+p_diminfo                                              keep the current value.
+                                                       SDO_DIM_ELEMENT array, ordered by dimension, with one entry for
+p_srid                                                 each dimension.
+                                                       SRID value for the coordinate system for all geometries in the column.
+
+Example
+The code below modifies the dimensions of column CITIES.SHAPE.
+
+begin
+
+for l_meta in ( select *
+
+                                                       from user_sdo_geom_metadata
+
+                                                       where table_name = 'CITIES'
+
+                                                       and column_name = 'SHAPE' )
+
+loop
+
+       apex_spatial.change_geom_metadata (
+
+            p_table_name => l_meta.table_name,
+
+            p_column_name => l_meta.column_name,
+
+            p_diminfo => SDO_DIM_ARRAY (
+
+                                                       SDO_DIM_ELEMENT('X', -180, 180, 0.1),
+
+                                                                     SDO_DIM_ELEMENT('Y', -90, 90, 0.1) ),
+
+       p_srid                                          => l_meta.srid );
+
+end loop;
+
+end;
+
+57.3 CIRCLE_POLYGON Function
+
+                       This function creates a polygon that approximates a circle at (p_lon, p_lat) with radius of
+                       p_radius. See mdsys.sdo_util.circle_polygon for details.
+
+API Reference                                                                                 July 24, 2026
+G26651-03                                                                                       Page 2 of 8
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                          Chapter 57
+                                                                                     DELETE_GEOM_METADATA Procedure
+
+Syntax
+
+APEX_SPATIAL.CIRCLE_POLYGON (
+
+p_lon                                                  IN NUMBER,
+
+p_lat                                                  IN NUMBER,
+
+p_radius                                               IN NUMBER,
+
+p_arc_tolerance IN NUMBER DEFAULT 20,
+
+p_srid                                                 IN t_srid DEFAULT c_wgs_84 )
+
+RETURN mdsys.sdo_geometry;
+
+Parameters
+
+ Parameter                                             Description
+p_lon
+p_lat                                                  Longitude of center point.
+p_radius                                               Latitude of center point.
+p_arc_tolerance                                        Radius of the circle in meters.
+p_srid                                                 Arc tolerance (default 20).
+                                                       Reference system (default c_wgs_84).
+Returns
+
+Return                                                 Description
+mdsys.sdo_geometry                                     The geometry for the polygon that approximates the circle.
+
+Example
+
+This example is a query that returns a polygon that approximates a circle at (0, 0) with radius
+1.
+
+select apex_spatial.circle_polygon(0, 0, 1) from dual
+
+57.4 DELETE_GEOM_METADATA Procedure
+
+                       This procedure deletes a spatial metadata record.
+                       Syntax
+
+APEX_SPATIAL.DELETE_GEOM_METADATA (
+
+p_table_name                                           IN VARCHAR2,
+
+p_column_name                                          IN VARCHAR2,
+
+p_drop_index                                           IN BOOLEAN DEFAULT FALSE );
+
+Parameters
+
+Parameter                                              Description
+p_table_name                                           Name of the feature table.
+p_column_name                                          Name of the column of type mdsys.sdo_geometry.
+p_drop_index                                           If TRUE (default is FALSE), drop the spatial index on the column.
+
+API Reference                                                                                                      July 24, 2026
+G26651-03                                                                                                            Page 3 of 8
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                     Chapter 57
+                                                                                INSERT_GEOM_METADATA Procedure
+
+Example
+
+This example deletes metadata on column CITIES.SHAPE and drops the spatial index on this
+column.
+
+begin
+      apex_spatial.delete_geom_metadata (
+            p_table_name => 'CITIES',
+            p_column_name => 'SHAPE',
+            p_drop_index => true );
+
+end;
+
+57.5 INSERT_GEOM_METADATA Procedure
+
+                       This procedure inserts a spatial metadata record and optionally creates a spatial index.
+                       Syntax
+
+APEX_SPATIAL.INSERT_GEOM_METADATA (
+
+p_table_name                                           IN VARCHAR2,
+
+p_column_name                                          IN VARCHAR2,
+
+p_diminfo                                              in mdsys.sdo_dim_array,
+
+p_srid                                                 in t_srid,
+
+p_create_index_name IN VARCHAR2 DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_table_name
+p_column_name                                          The name of the feature table.
+p_diminfo
+                                                       The name of the column of type mdsys.sdo_geometry.
+p_srid
+                                                       The SDO_DIM_ELEMENT array, ordered by dimension, with one entry
+p_create_index_name                                    for each dimension.
+
+                                                       The SRID value for the coordinate system for all geometries in the
+                                                       column.
+
+                                                       If not null, a spatial index on the column is created with this name. Only
+                                                       simple column names are supported, function based indexes or
+                                                       indexes on object attributes cause an error. For more complex
+                                                       requirements, leave this parameter null (the default) and manually
+                                                       create the index.
+
+Example
+This example creates table CITIES, spatial metadata and an index on column CITIES.SHAPE.
+
+create table cities (
+      city_id number primary key,
+      city_name varchar2(30),
+      shape mdsys.sdo_geometry )
+
+/
+begin
+
+      apex_spatial.insert_geom_metadata (
+            p_table_name => 'CITIES',
+
+API Reference                                                                   July 24, 2026
+G26651-03                                                                         Page 4 of 8
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                              Chapter 57
+                                                                             INSERT_GEOM_METADATA_LONLAT Procedure
+
+       p_column_name => 'SHAPE',
+
+       p_diminfo => SDO_DIM_ARRAY (
+
+            SDO_DIM_ELEMENT('X', -180, 180, 1),
+
+            SDO_DIM_ELEMENT('Y', -90, 90, 1) ),
+
+       p_srid                                          => apex_spatial.c_wgs_84 );
+
+end;
+
+/
+
+   create index cities_idx_shape on cities(shape) indextype is
+
+mdsys.spatial_index
+
+/
+
+57.6 INSERT_GEOM_METADATA_LONLAT Procedure
+
+                       This procedure inserts a spatial metadata record that is suitable for longitude/latitude and
+                       optionally creates a spatial index.
+
+                       Syntax
+
+APEX_SPATIAL.INSERT_GEOM_METADATA_LONLAT (
+
+      p_table_name                                     IN VARCHAR2,
+
+      p_column_name                                    IN VARCHAR2,
+
+      p_tolerance                                      IN NUMBER DEFAULT 1,
+
+      p_create_index_name IN VARCHAR2 DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_table_name
+p_column_name                                          Name of the feature table.
+p_tolerance
+p_create_index_name                                    Name of the column of type mdsys.sdo_geometry.
+
+                                                       Tolerance value in each dimension, in meters (default 1).
+
+                                                       If not null, a spatial index on the column is created with this name. Only
+                                                       simple column names are supported, function based indexes or
+                                                       indexes on object attributes cause an error. For more complex
+                                                       requirements, leave this parameter null (the default) and manually
+                                                       create the index.
+
+Example
+
+The code below creates table CITIES and spatial metadata for the column CITIES.SHAPE. By
+passing CITIES_IDX_SHAPE to p_create_index_name, the API call automatically creates an
+index on the spatial column.
+
+create table cities (
+
+      city_id number primary key,
+
+      city_name varchar2(30),
+
+      shape mdsys.sdo_geometry )
+
+/
+
+begin
+
+      apex_spatial.insert_geom_metadata_lonlat (
+
+       p_table_name                                    => 'CITIES',
+
+       p_column_name                                   => 'SHAPE',
+
+       p_create_index_name => 'CITIES_IDX_SHAPE' );
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                             Page 5 of 8
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                    Chapter 57
+                                                                                             POINT Function
+
+end;
+/
+
+57.7 POINT Function
+
+                       This function creates a point at (p_lon, p_lat).
+                       Syntax
+
+APEX_SPATIAL.POINT (
+
+p_lon       IN NUMBER,
+
+p_lat       IN NUMBER,
+
+p_srid      IN t_srid DEFAULT c_wgs_84 )
+
+RETURN mdsys.sdo_geometry;
+
+Parameters
+
+ Parameter                                             Description
+p_lon                                                  Longitude position.
+p_lat                                                  Latitude position.
+p_srid                                                 Reference system (default c_wgs_84).
+
+Returns
+
+Return                                                 Description
+mdsys.sdo_geometry                                     The geometry for the point.
+
+Example
+This example is a query that returns a point at (10, 50).
+
+select apex_spatial.point(10, 50) from dual;
+
+This example is equivalent to:
+
+select mdsys.sdo_geometry(2001, 4326, sdo_point_type(10, 50, null), null,
+null) from dual;
+
+57.8 RECTANGLE Function
+
+                       This function creates a rectangle from point at (p_lon1, p_lat1) to (p_lon2, p_lat2).
+                       Syntax
+
+APEX_SPATIAL.RECTANGLE (
+
+p_lon1      IN NUMBER,
+
+p_lat1      IN NUMBER,
+
+p_lon2      IN NUMBER,
+
+p_lat2      IN NUMBER,
+
+API Reference                                                                                                 July 24, 2026
+G26651-03                                                                                                       Page 6 of 8
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                          Chapter 57
+                                                                                            SPATIAL_IS_AVAILABLE Function
+
+p_srid      IN t_srid DEFAULT c_wgs_84 )
+
+RETURN mdsys.sdo_geometry;
+
+Parameters
+
+ Parameter                                             Description
+p_lon1
+p_lat1                                                 Longitude position of the lower left point.
+p_lon2                                                 Latitude position of the lower left point.
+p_lat2                                                 Longitude position of the upper right point.
+p_srid                                                 Latitude position of the upper right point.
+                                                       Reference system (default c_wgs_84).
+Returns
+
+Return                                                 Description
+mdsys.sdo_geometry                                     The geometry for the rectangle (p_lon1, p_lon2, p_lon2, p_lat2).
+
+Example
+This example is a query that returns a rectangle from (10, 50) to (11, 51).
+
+select apex_spatial.rectangle(10, 50, 11, 51) from dual
+
+This example is equivalent to:
+
+select mdsys.sdo_geometry(
+      2003, 4326, null,
+      sdo_elem_info_array(1, 1003, 1),
+      sdo_ordinate_array(10, 50, 11, 50, 11, 51, 10, 51, 10, 50))
+
+from dual;
+
+57.9 SPATIAL_IS_AVAILABLE Function
+
+                       This function returns whether spatial is available in the database.
+                       Syntax
+
+APEX_SPATIAL.SPATIAL_IS_AVAILABLE (
+      spatial_is_available )
+
+RETURN BOOLEAN;
+
+Returns
+
+Parameter                                              Description
+*
+                                                       True when spatial (SDO_GEOMETRY) is available in the
+                                                       database. Otherwise, false.
+
+API Reference                                                                                        July 24, 2026
+G26651-03                                                                                              Page 7 of 8
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                 Chapter 57
+                                                                                         SPATIAL_IS_AVAILABLE Function
+
+Example
+The following example prints whether spatial is available.
+
+BEGIN
+      sys.dbms_output.put_line (
+      case when apex_spatial.spatial_is_available then 'TRUE' end );
+
+END;
+
+API Reference                                          July 24, 2026
+G26651-03                                                Page 8 of 8
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+58

@@ -1,0 +1,114 @@
+# APEX_INSTANCE_ADMIN (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 35806-35917)
+
+APEX_INSTANCE_ADMIN
+
+The APEX_INSTANCE_ADMIN package provides utilities for managing an Oracle APEX runtime
+environment.
+
+Use the APEX_INSTANCE_ADMIN package to get and set email settings, Oracle Wallet settings,
+report printing settings, and to manage schema to workspace mappings.
+
+APEX_INSTANCE_ADMIN can be executed by the SYS or SYSTEM database users and any
+database user granted the role APEX_ADMINISTRATOR_ROLE.
+
+� Available Parameter Values
+� ADD_AUTO_PROV_RESTRICTIONS Procedure
+� ADD_SCHEMA Procedure
+� ADD_WEB_ENTRY_POINT Procedure
+� ADD_WORKSPACE Procedure
+� CREATE_CLOUD_CREDENTIAL Procedure
+� CREATE_OR_UPDATE_ADMIN_USER Procedure
+� CREATE_SCHEMA_EXCEPTION Procedure
+� DB_SIGNATURE Function
+� DROP_CLOUD_CREDENTIAL Procedure
+� FREE_WORKSPACE_APP_IDS Procedure
+� GET_PARAMETER Function
+� GET_SCHEMAS Function
+� GET_WORKSPACE_PARAMETER Procedure
+� GRANT_EXTENSION_WORKSPACE Procedure
+� IS_DB_SIGNATURE_VALID Function
+� REMOVE_APPLICATION Procedure
+� REMOVE_AUTO_PROV_RESTRICTIONS Procedure
+� REMOVE_SAVED_REPORT Procedure
+� REMOVE_SAVED_REPORTS Procedure
+� REMOVE_SCHEMA Procedure
+� REMOVE_SCHEMA_EXCEPTION Procedure
+� REMOVE_SCHEMA_EXCEPTIONS Procedure
+� REMOVE_SUBSCRIPTION Procedure
+� REMOVE_WEB_ENTRY_POINT Procedure
+� REMOVE_WORKSPACE Procedure
+� REMOVE_WORKSPACE_EXCEPTIONS Procedure
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 1 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                            Chapter 34
+                                                       Available Parameter Values
+
+                       � RESERVE_WORKSPACE_APP_IDS Procedure
+                       � RESTRICT_SCHEMA Procedure
+                       � REVOKE_EXTENSION_WORKSPACE Procedure
+                       � SET_LOG_SWITCH_INTERVAL Procedure
+                       � SET_PARAMETER Procedure
+                       � SET_WORKSPACE_CONSUMER_GROUP Procedure
+                       � SET_WORKSPACE_PARAMETER Procedure
+                       � TRUNCATE_LOG Procedure
+                       � UNLOCK_USER Procedure
+                       � UNRESTRICT_SCHEMA Procedure
+                       � VALIDATE_EMAIL_CONFIG Procedure
+
+34.1 Available Parameter Values
+
+                       The following tables list all the available parameter values you can set within the
+                       APEX_INSTANCE_ADMIN package, including parameters for email, wallet, and reporting printing.
+
+                       You can query the APEX_INSTANCE_PARAMETERS dictionary view to determine the current values
+                       of these parameters unless the parameter contains a password.
+
+                       Instance-Only Parameters
+
+                       The following parameters can be configured only at the Instance level (using
+                       APEX_INSTANCE_ADMIN.SET_PARAMETER).
+
+Parameter Name                                         Description
+ADMIN_DIGEST_DEFAULT_REPORTING_PERIOD
+ADMIN_DIGEST_MAX_REPORTING_PERIOD                      Default reporting period in days for APEX
+AI_BUILDER_PROXY                                       Administrator Digest.
+AI_MAX_TOOL_ROUNDTRIPS
+ALLOW_DB_MONITOR                                       Maximum reporting period in days for APEX
+                                                       Administrator Digest. Older data is removed from
+ALLOW_EXTERNAL_LINKS                                   the metrics tables.
+
+ALLOW_HASH_FUNCTIONS                                   The proxy server for all outbound HTTP(s) traffic to
+                                                       Generative AI Services from APEX App Builder.
+ALLOW_PERSISTENT_AUTHENTICATION
+ALLOW_PUBLIC_FILE_UPLOAD                               The maximum number of network roundtrips AI
+                                                       calls can make to answer tool calls. No default.
+
+                                                       If set to Y, database monitoring within SQL
+                                                       Workshop is enabled. If set to N, the default, it is
+                                                       disabled.
+
+                                                       If set to Y, the default, external links are displayed
+                                                       in the builder. Set to N for disconnected
+                                                       environments where it is not desirable to show links
+                                                       that developers cannot access.
+
+                                                       Comma-separated list of supported hash
+                                                       algorithms (default is SH256,SH384,SH512). SH1 is
+                                                       also supported by default in Oracle Database 11g.
+
+                                                       If set to Y, the persistent authentication API is
+                                                       enabled for all applications.
+
+                                                       If set to Y, enables file uploads without user
+                                                       authentication. If set to N, the default, they are
+                                                       disabled.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 2 of 46
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                           Parameter Name                                                                       Chapter 34
+                        ALLOW_RAS                                                      Available Parameter Values
+                        ALLOW_REST
+                        ALLOW_SQL_DEVELOPER_WEB        Description

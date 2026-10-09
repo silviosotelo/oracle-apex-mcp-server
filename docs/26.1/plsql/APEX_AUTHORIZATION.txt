@@ -1,0 +1,168 @@
+# APEX_AUTHORIZATION (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 11321-11487)
+
+APEX_AUTHORIZATION
+
+                       The APEX_AUTHORIZATION package contains public utility functions used for controlling and
+                       querying access rights to the application.
+
+                       � ENABLE_DYNAMIC_GROUPS Procedure
+                       � HAS_ACCESS Function
+                       � IS_AUTHORIZED Function
+                       � RESET_CACHE Procedure
+
+11.1 ENABLE_DYNAMIC_GROUPS Procedure
+
+                       This procedure enables groups in the current session. These groups do not have to be created
+                       in the Oracle APEX workspace repository, but can be loaded from an LDAP repository or
+                       retrieved from a trusted HTTP header. Enabling a group that exists in the workspace repository
+                       and has other groups granted to it, also enables the granted groups.
+
+                       If Real Application Security, available with Oracle AI Database Release 12g, is enabled for the
+                       authentication scheme, all dynamic groups are enabled as RAS dynamic or external groups
+                       (depending whether the group exists in dba_xs_dynamic_roles).
+
+                       This procedure must be called during or immediately after authentication, for example, in a
+                       post-authentication procedure.
+
+                       Syntax
+
+                       APEX_AUTHORIZATION.ENABLE_DYNAMIC_GROUPS (
+                             p_group_names IN apex_t_varchar2 )
+
+                       Parameters
+
+Parameter                                              Description
+p_group_names                                          Table of group names.
+
+Example
+
+This example enables the dynamic groups SALES and HR from within a post authentication
+procedure.
+
+BEGIN
+    apex_authorization.enable_dynamic_groups (
+           p_group_names => apex_t_varchar2('SALES', 'HR') );
+
+END;
+
+API Reference                                                                 July 24, 2026
+G26651-03                                                                       Page 1 of 4
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                      Chapter 11
+                                                                                          HAS_ACCESS Function
+
+See Also
+View APEX_WORKSPACE_SESSION_GROUPS and View APEX_WORKSPACE_GROUP_GROUPS
+
+11.2 HAS_ACCESS Function
+
+                       This function determines if the current user passes the authorization Static ID. For
+                       performance reasons, authorization results are cached. Because of this, the function may not
+                       always evaluate the authorization when called, but take the result out of the cache.
+
+                       Syntax
+
+                       APEX_AUTHORIZATION.HAS_ACCESS (
+                              p_static_id IN VARCHAR2 )
+
+                       RETURN BOOLEAN;
+
+                       Parameters
+
+ Parameter                                             Description
+p_static_id                                            The Static ID of an authorization scheme in the application.
+
+Returns
+
+Parameter                                              Description
+TRUE                                                   If the authorization is successful.
+FALSE                                                  If the authorization is not successful.
+
+Example
+This example prints the result of the authorization Static ID "user-admin"
+
+begin
+      sys.htp.p('User Is Admin: '||
+            case apex_authorization.has_access (
+                   p_static_id =>'user-admin')
+            when true then 'YES'
+            when false then 'NO'
+            else 'null'
+            end);
+
+end;
+
+11.3 IS_AUTHORIZED Function
+
+                       This function determines if the current user passes the authorization with name
+                       p_authorization_name. For performance reasons, authorization results are cached. Because
+                       of this, the function may not always evaluate the authorization when called, but take the result
+                       out of the cache.
+
+API Reference                                                                                                        July 24, 2026
+G26651-03                                                                                                              Page 2 of 4
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                      Chapter 11
+                                                                                       RESET_CACHE Procedure
+
+See Also
+Changing the Evaluation Point Attribute in Oracle APEX App Builder User's Guide
+
+Syntax
+
+APEX_AUTHORIZATION.IS_AUTHORIZED (
+      p_authorization_name IN VARCHAR2 )
+      RETURN BOOLEAN;
+
+Parameters
+
+ Parameter                                             Description
+p_authorization_name                                   The name of an authorization scheme in the application.
+
+Returns
+
+Parameter                                              Description
+TRUE                                                   If the authorization is successful.
+FALSE                                                  If the authorization is not successful.
+
+Example
+This example prints the result of the authorization "User Is Admin."
+
+BEGIN
+      sys.htp.p('User Is Admin: '||
+                      case apex_authorization.is_authorized (
+                                    p_authorization_name => 'User Is Admin' )
+                      WHEN true THEN 'YES'
+                      WHEN false THEN 'NO'
+                      ELSE 'null'
+                      END);
+
+END;
+
+11.4 RESET_CACHE Procedure
+
+                       This procedure resets the authorization caches for the session and forces a re-evaluation
+                       when an authorization is checked next.
+
+                       Syntax
+
+APEX_AUTHORIZATION.RESET_CACHE;
+
+Parameters
+None.
+
+API Reference                                                                                                   July 24, 2026
+G26651-03                                                                                                         Page 3 of 4
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                            Chapter 11
+                                                       RESET_CACHE Procedure
+
+Example
+This examples resets the authorization cache.
+
+apex_authorization.reset_cache;
+
+API Reference                                          July 24, 2026
+G26651-03                                                Page 4 of 4
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+12

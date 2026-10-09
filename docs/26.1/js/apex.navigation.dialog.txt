@@ -1,0 +1,244 @@
+# apex.navigation.dialog (APEX 26.1 JavaScript API, JSDoc oficial)
+
+JSDoc: Namespace: dialog
+
+Skip to Main Content
+
+Namespace: dialog
+
+Functions
+
+cancel
+
+close
+
+registerCloseHandler
+
+This namespace contains functions related to a dialog opened with apex.navigation.dialog.
+All of the functions in the apex.navigation.dialog namespace need to be run in the context of the specified dialog page.
+
+ Functions
+
+(static) cancel(pIsModal)
+
+Closes the dialog window.
+
+Parameters:
+
+ | Name
+
+ | Type
+
+ | Description
+
+ | pIsModal
+
+ | 
+
+boolean
+
+ | If true, then the dialog is identified as being modal. If false, then the dialog is identified as being non-modal.
+
+Example
+
+This example demonstrates closing a modal dialog page
+
+apex.navigation.dialog.cancel( true );
+
+(static) close(pIsModal, pActionopt)
+
+Executes an action and then closes the dialog window.
+
+Parameters:
+
+ | Name
+
+ | Type
+
+ | Attributes
+
+ | Description
+
+ | pIsModal
+
+ | 
+
+boolean
+
+ | 
+
+ | If true, then the dialog is identified as being modal. If false, then the dialog is identified as being non-modal.
+
+ | pAction
+
+ | 
+
+string
+|
+
+function
+|
+
+Object
+
+ | 
+
+ <optional>
+
+ | The action can be one of the following:
+
+a URL which will trigger a redirect in the parent page
+
+a function to redirect to a different dialog page
+
+false to cancel the dialog
+
+an object of page items and values which will be exposed in the apexafterclosedialog or apexafterclosecanceldialog event
+
+an array of page item names, the values will be gathered from the page items to create
+ an object of page item values to be exposed in the apexafterclosedialog or apexafterclosecanceldialog event
+
+Examples
+
+This example demonstrates chaining from one modal dialog page to another, where the pAction parameter is
+a function that redirects to a different modal dialog page, specified in the URL:
+
+apex.navigation.dialog.close( true, function( pDialog ) {
+ apex.navigation.dialog(
+ url,
+ {
+ title: "About",
+ height: "480",
+ width: "800",
+ maxWidth: "1200",
+ modal: true,
+ dialog: pDialog,
+ resizable: false
+ },
+ "t-Dialog-page--standard",
+ $( "#mybutton" ) );
+} );
+
+This example demonstrates closing a modal dialog page, and returning an array of page items,
+P3_EMPNO and P3_ENAME. The values from the page items can then be used by the
+page that launched the modal dialog, via a Dialog Closed Dynamic Action event.
+
+apex.navigation.dialog.close( true, ["P3_EMPNO","P3_ENAME"] );
+
+This example demonstrates closing a modal dialog page, and returning an object of page item,
+dialogPageId and its value of 3. The returned value can be used by the
+page that launched the modal dialog, via a Dialog Closed Dynamic Action event, to identify the
+page ID of the modal dialog that triggered the event.
+
+apex.navigation.dialog.close( true, { dialogPageId: 3 } );
+
+(static) registerCloseHandler(pOptions)
+
+Registers the internal "close" event of a dialog. The event will be triggered by fireCloseEvent and depending on
+the passed in pAction will:
+
+Re-use the existing dialog and navigate to a different dialog page
+
+Navigate to a different page in the caller
+
+Cancel the dialog
+
+Close the dialog and trigger the "apexafterclosedialog" or "apexafterclosecanceldialog" event
+
+Parameters:
+
+ | Name
+
+ | Type
+
+ | Description
+
+ | pOptions
+
+ | 
+
+Object
+
+ | Has to contain the following attributes:
+ Properties
+
+ | Name
+
+ | Type
+
+ | Attributes
+
+ | Description
+
+ | handler$
+
+ | 
+
+Object
+
+ | 
+
+ <optional>
+
+ | jQuery object where the event will be registered for.
+
+ | dialog
+
+ | 
+
+Element
+|
+
+Object
+
+ | 
+
+ <optional>
+
+ | DOM Element/jQuery/... object of the current dialog instance which will be passed into the open dialog call if the existing dialog should be re-used.
+
+ | closeFunction
+
+ | 
+
+function
+
+ | 
+
+ <optional>
+
+ | Function which is used to close the dialog.
+
+ Deprecated:
+since version 18.2
+
+Example
+
+This example demonstrates a call to open the url in a named popup window, "Information".
+The new window can be accessed from variable myPopupWindow.
+Some additional parameters are also set in the call, to control scrolling, resizing and the visibility of a toolbar.
+The variable myTriggeringElement is used to define the triggering element of the popup,
+a button named myButton. Using a call to apex.navigation.dialog.registerCloseHandler,
+a new handler can be defined, to associate the close action of the dialog with the button.
+
+var myTriggeringElement,
+ myPopupWindow;
+
+myTriggeringElement = apex.jQuery( '#myButton' );
+
+myPopupWindow = apex.navigation.popup ( {
+ url: "f?p=102:2:&APP_SESSION.:::2::",
+ name: "Information",
+ scroll: "no",
+ resizable: "no",
+ toolbar: "yes"
+} );
+
+apex.navigation.dialog.registerCloseHandler( {
+ handler$: myTriggeringElement,
+ dialog: myPopupWindow,
+ triggeringElement$: myTriggeringElement,
+ closeFunction: function() {
+ myPopupWindow.close();
+ }
+});

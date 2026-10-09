@@ -1,0 +1,162 @@
+# APEX_APP_OBJECT_DEPENDENCY (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 4147-4307)
+
+APEX_APP_OBJECT_DEPENDENCY
+
+                       This API enables building the Application Database Object Dependencies report on demand.
+
+                       It scans the application (or a page in the application) for all database objects that it depends on
+                       (including but not limited to tables, views, procedures, functions, packages, and synonyms),
+                       whether these dependencies are in forms, reports, PL/SQL regions, conditions, plugins, or
+                       elsewhere. It can also be used to detect invalid SQL and PL/SQL in the application.
+
+                       The result of the scan may be viewed by querying the following views:
+
+                       � APEX_USED_DB_OBJECT_COMP_PROPS - all application SQL and PL/SQL found
+                       � APEX_USED_DB_OBJECTS - all database objects referred to
+                       � APEX_USED_DB_OBJ_DEPENDENCIES - all dependencies found
+                       In the event that a fragment of SQL or PL/SQL is invalid (such as a required object is missing),
+                       some dependencies may not be detected. The compilation error message may be queried in
+                       the APEX_USED_DB_OBJECT_COMP_PROPS view.
+
+                       � Constants
+                       � CLEAR_CACHE Procedure
+                       � SCAN Procedure
+
+4.1 Constants
+
+                       The APEX_APP_OBJECT_DEPENDENCY package uses the following constants.
+
+c_option_all                                           constant varchar2(30) := 'ALL';
+
+c_option_dependencies constant varchar2(30) := 'DEPENDENCIES';
+
+c_option_identifiers constant varchar2(30) := 'IDENTIFIERS';
+
+c_option_errors                                        constant varchar2(30) := 'ERRORS';
+
+4.2 CLEAR_CACHE Procedure
+
+                       This procedure removes all cached dependency report data for a given application.
+                       Syntax
+
+APEX_APP_OBJECT_DEPENDENCY.CLEAR_CACHE (
+      p_application_id IN NUMBER )
+
+Parameters
+
+Parameter                                              Description
+p_application_id                                       ID of the application for which cache is cleared.
+
+API Reference                                                                                             July 24, 2026
+G26651-03                                                                                                   Page 1 of 3
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                                            Chapter 4
+                                                                                                                                    SCAN Procedure
+
+                       Example
+
+                       BEGIN
+                              apex_app_object_dependency.clear_cache ( p_application_id => :app_id );
+
+                       END;
+
+4.3 SCAN Procedure
+
+                       This procedure generates the object dependency report.
+                       It scans the application or a page in the application for all database objects that it depends on
+                       (including tables, views, procedures, functions, packages, and synonyms) whether these
+                       dependencies are in forms, reports, PL/SQL regions, conditions, plugins, or elsewhere.
+                       The results are visible by querying the following views:
+                       � APEX_USED_DB_OBJECT_COMP_PROPS - all application SQL and PL/SQL found
+                       � APEX_USED_DB_OBJECTS - all database objects referred to
+                       � APEX_USED_DB_OBJ_DEPENDENCIES - all dependencies found
+                       In the event that a fragment of SQL or PL/SQL is invalid (for example, a required object is
+                       missing), the dependencies are not detected. The compilation error message may be queried
+                       in the APEX_USED_DB_OBJECT_COMP_PROPS view.
+                       The results of the scan are saved until:
+                       � a new scan initiates
+                       � apex_app_object_dependency.clear_cache is called
+                       � the Oracle APEX instance is upgraded
+
+                       PL/Scope
+                       The scanner only detects dependencies specific to functions and procedures within packages
+                       compiled with PL/Scope. Before starting the scan, you may choose to compile the schema(s)
+                       of interest with PL/Scope:
+
+                       alter session set plscope_settings='identifiers:all';
+                       exec sys.dbms_utility.compile_schema(user, true);
+                       alter session set plscope_settings='identifiers:none';
+
+                       This may take some time to run depending on the size of the codebase.
+                       For packages not compiled with PL/Scope, the scanner only detects a dependency on the
+                       package; but the report does not list each method referenced within it.
+
+                       Requirements
+                       The application owner schema requires CREATE PROCEDURE privilege.
+
+                       Known Limitations
+                       � Does not detect dependencies within SQL generated dynamically (such as using execute
+
+                             immediate or dbms_sql).
+
+API Reference                                          July 24, 2026
+G26651-03                                                Page 2 of 3
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                     Chapter 4
+                                                                                           SCAN Procedure
+
+� Does not detect dependencies arising from Function Returning SQL or Function Body
+     Returning SQL (the functions are not executed so the code that they generate is not
+     scanned for dependencies).
+
+� Does not detect recursive dependencies (other database objects referred to by the objects
+     detected in the scan). Tip: Recursive dependencies may be found by querying the
+     USER_DEPENDENCIES database view.
+
+� Does not detect dependencies in Supporting Object scripts, including those that may arise
+     in Required Object Names, Install Scripts, Upgrade Scripts, or Deinstall Scripts.
+
+Syntax
+
+APEX_APP_OBJECT_DEPENDENCY.SCAN (
+
+p_application_id IN NUMBER,
+
+p_page_id                                              IN NUMBER DEFAULT NULL,
+
+p_options                                              IN VARCHAR2 DEFAULT c_option_all )
+
+Parameters
+
+ Parameter                                             Description
+p_application_id
+p_page_id                                              ID of the application to be analyzed.
+p_options
+                                                       Set this parameter to analyze a single page of an
+Example                                                application.
+
+                                                       Options include:
+
+                                                       � c_option_all - (Default) Scan all sources.
+                                                       � c_option_dependencies - Only scan for top-level
+
+                                                            dependencies with dba_dependencies.
+                                                       � c_option_identifiers - Scan for detailed
+
+                                                             dependencies with PL/Scope where available. This
+                                                             enables detection of dependencies on columns in
+                                                             tables and views, and also member functions and
+                                                             procedures within packages compiled with
+                                                            identifiers:all.
+                                                       � c_option_errors - Scan neither (report compilation
+                                                             errors only).
+
+BEGIN
+      apex_app_object_dependency.scan ( p_application_id => :app_id );
+
+END;
+
+API Reference                                                                              July 24, 2026
+G26651-03                                                                                    Page 3 of 3
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+5

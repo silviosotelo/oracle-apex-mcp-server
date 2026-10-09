@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **APEX 26.1 reference docs** in `docs/26.1/`: PL/SQL API (64 packages, `plsql/`), JavaScript API (47 pages, `js/`), and APEXlang (1143 components grouped by parent, `apexlang/`, plus the official `apexlang.ebnf` grammar).
+
 ## [1.1.0] - 2026-03-06
 
 ### Added

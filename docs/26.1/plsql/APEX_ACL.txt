@@ -1,0 +1,534 @@
+# APEX_ACL (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 1860-2392)
+
+APEX_ACL
+
+                       The APEX_ACL package provides utilities that you can use when programming in the Oracle
+                       APEX environment related to the Shared Components for application access control. You can
+                       use the APEX_ACL package to add, remove, or replace user roles. You can also use the INSTEAD
+                       OF trigger on the APEX_APPL_ACL_USERS view to edit user roles with DML statements (INSERT,
+                       UPDATE, and DELETE).
+
+                       If you use the package outside of an APEX environment, set the security_group_id with
+                       APEX_UTIL.SET_WORKSPACE or APEX_UTIL.SET_SECURITY_GROUP_ID before you make the call.
+
+                       Use the related APEX views APEX_APPL_ACL_ROLES, APEX_APPL_ACL_USERS, and
+                       APEX_APPL_ACL_USER_ROLES to get more information on application users and roles.
+
+                       � ADD_USER_ROLE Procedure Signature 1
+                       � ADD_USER_ROLE Procedure Signature 2
+                       � HAS_USER_ANY_ROLES Function
+                       � HAS_USER_ROLE Function
+                       � IS_ROLE_REMOVED_FROM_USER Function
+                       � REMOVE_USER_ROLE Procedure Signature 1
+                       � REMOVE_USER_ROLE Procedure Signature 2
+                       � REPLACE_USER_ROLES Procedure Signature 1
+                       � REPLACE_USER_ROLES Procedure Signature 2
+                       � REMOVE_ALL_USER_ROLES Procedure
+
+2.1 ADD_USER_ROLE Procedure Signature 1
+
+                       This procedure assigns a role to a user.
+
+                       Syntax
+
+APEX_ACL.ADD_USER_ROLE (
+
+p_application_id IN NUMBER DEFAULT apex_application.g_flow_id,
+
+p_user_name                                            IN VARCHAR2,
+
+p_role_id                                              IN NUMBER )
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+                                                       The application ID for which you want to assign a role to a user.
+p_user_name                                            Defaults to the current application.
+p_role_id                                              The case-insensitive name of the application user to assign the role to.
+                                                       The ID of the role.
+
+API Reference                                                        July 24, 2026
+G26651-03                                                              Page 1 of 8
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                        Chapter 2
+                                                                               ADD_USER_ROLE Procedure Signature 2
+
+Example
+
+The following example uses the ADD_USER_ROLE procedure to assign the role ID of
+2505704029884282 to the user name called SCOTT in the application 255.
+
+BEGIN
+
+APEX_ACL.ADD_USER_ROLE (
+
+       p_application_id => 255,
+
+       p_user_name                                     => 'SCOTT',
+
+       p_role_id                                       => 2505704029884282 );
+
+END;
+
+2.2 ADD_USER_ROLE Procedure Signature 2
+
+                       This procedure assigns a role to a user.
+                       Syntax
+
+APEX_ACL.ADD_USER_ROLE (
+
+      p_application_id IN NUMBER DEFAULT apex_application.g_flow_id,
+
+      p_user_name                                      IN VARCHAR2,
+
+      p_role_static_id IN VARCHAR2 )
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+                                                       The application ID for which you want to assign a role to a user.
+p_user_name                                            Defaults to the current application.
+p_role_static_id                                       The case-insensitive name of the application user to assign the role to.
+                                                       The case-insensitive name of the role static ID.
+
+Example
+
+The following example uses the ADD_USER_ROLE procedure to assign the role static ID
+'ADMINISTRATOR' to the user name called SCOTT in application 255.
+
+BEGIN
+
+      APEX_ACL.ADD_USER_ROLE (
+
+       p_application_id => 255,
+
+       p_user_name                                     => 'SCOTT',
+
+       p_role_static_id => 'ADMINISTRATOR' );
+
+END;
+
+2.3 HAS_USER_ANY_ROLES Function
+
+                       This function returns TRUE when the specified user is assigned to any application role. This
+                       function can be used to check if a user is permitted to access an application.
+
+API Reference                                                                    July 24, 2026
+G26651-03                                                                          Page 2 of 8
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                          Chapter 2
+                                                                                                  HAS_USER_ROLE Function
+
+Syntax
+
+APEX_ACL.HAS_USER_ANY_ROLES (
+
+p_application_id IN NUMBER DEFAULT apex_application.g_flow_id,
+
+p_user_name                                            IN VARCHAR2 DEFAULT apex_application.g_user )
+
+RETURN BOOLEAN;
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+                                                       The application ID for which you want to check if a user is assigned to
+p_user_name                                            any application role. Defaults to the current application.
+                                                       The case insensitive name of the application user to check. Defaults to
+                                                       the current logged-in user.
+
+Example
+
+The following example uses the HAS_USER_ANY_ROLES function to check if the user name SCOTT
+is assigned to any application role in application 255.
+
+DECLARE
+
+l_has_user_any_roles boolean := false;
+
+BEGIN
+
+l_has_user_any_roles := APEX_ACL.HAS_USER_ANY_ROLES (
+
+                                                       p_application_id => 255,
+
+                                                       p_user_name  => 'SCOTT' );
+
+      IF NOT l_has_user_any_roles THEN
+            raise_application_error(-20001, 'Scott is not assigned to any
+
+application role' );
+      END IF;
+
+END;
+
+2.4 HAS_USER_ROLE Function
+
+                       This function returns TRUE if the user is assigned to the specified role.
+                       Syntax
+
+APEX_ACL.HAS_USER_ROLE (
+
+p_application_id IN NUMBER DEFAULT apex_application.g_flow_id,
+
+p_user_name                                            IN VARCHAR2 DEFAULT apex_application.g_user,
+
+p_role_static_id IN VARCHAR2 )
+
+RETURN BOOLEAN;
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+                                                       The application ID for which you want to check if a user is assigned to
+                                                       the specific role. Defaults to the current application.
+
+API Reference                                                                                         July 24, 2026
+G26651-03                                                                                               Page 3 of 8
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                               Chapter 2
+                                                                                 IS_ROLE_REMOVED_FROM_USER Function
+
+Parameter                                              Description
+p_user_name
+                                                       The case insensitive name of the application user to check. It defaults
+p_role_static_id                                       to the current logged in user.
+                                                       The case insensitive name of the role static ID.
+
+Example
+
+The following example uses the HAS_USER_ROLE function to check if the user name 'SCOTT' is
+assigned to any role static IDs of 'ADMINISTRATOR' in application 255.
+
+DECLARE
+
+l_is_admin boolean := false;
+
+BEGIN
+
+l_is_admin := APEX_ACL.HAS_USER_ROLE (
+
+                                                       p_application_id => 255,
+
+                                                       p_user_name   => 'SCOTT',
+
+                                                       p_role_static_id => 'ADMINISTRATOR' );
+
+      IF not l_is_admin THEN
+            raise_application_error(-20001, 'Scott is NOT an administrator' );
+
+      END IF;
+END;
+
+2.5 IS_ROLE_REMOVED_FROM_USER Function
+
+                       This function checks if a role is removed from a user. This function returns TRUE if a specific
+                       role is removed from the list of new role IDs for the user.
+
+                       This function is used to ensure that a user cannot remove a role identified by
+                       p_role_static_id from him/herself.
+
+                       Syntax
+
+APEX_ACL.IS_ROLE_REMOVED_FROM_USER (
+
+p_application_id IN NUMBER DEFAULT apex_application.g_flow_id,
+
+p_user_name                                            IN VARCHAR2,
+
+p_role_static_id IN VARCHAR2,
+
+p_role_ids                                             IN apex_t_number )
+
+RETURN BOOLEAN;
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+                                                       The application ID for which you want to check if a specific role
+p_user_name                                            removed from the list of roles was from a user. It defaults to the current
+p_role_static_id                                       application.
+p_role_ids                                             The case insensitive name of the application user to check.
+
+                                                       The case insensitive name of the role static ID to check if it is
+                                                       removed.
+                                                       The array of NUMBER type new role IDs the user is assigned to.
+
+API Reference                                                                                  July 24, 2026
+G26651-03                                                                                        Page 4 of 8
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                     Chapter 2
+                                                                      REMOVE_USER_ROLE Procedure Signature 1
+
+Returns
+
+Returns TRUE when p_user_name currently has the role identified by p_role_static_id but the
+roles identified by p_role_ids do not include the role identified by p_role_static_id.
+
+Return FALSE in all other cases.
+
+Example
+
+The following example uses the IS_ROLE_REMOVED_FROM_USER function to ensure the
+current user of the app who has the ADMINISTRATOR role does not remove him/herself from the
+role when updating or deleting the access to the app.
+
+BEGIN
+
+IF :P1_USER_NAME = :APP_USER
+
+       and apex_acl.is_role_removed_from_user (
+
+               p_application_id => :APP_ID,
+
+               p_user_name                             => :APP_USER,
+
+               p_role_static_id => 'ADMINISTRATOR',
+
+               p_role_ids                              => apex_string.split_numbers(
+
+                                                                     p_str => case when :REQUEST =
+
+'DELETE' THEN
+
+                                                                      null
+
+                                                                      ELSE
+
+                                                                      :P1_ROLE_IDS
+
+                                                                      END,
+
+                                                                     p_sep => ':') ) THEN
+
+            raise_application_error(-20001, 'You cannot remove administrator role
+from yourself.' );
+
+      END IF;
+END;
+
+2.6 REMOVE_USER_ROLE Procedure Signature 1
+
+                       This procedure removes an assigned role from a user.
+                       Syntax
+
+APEX_ACL.REMOVE_USER_ROLE (
+
+p_application_id IN NUMBER DEFAULT apex_application.g_flow_id,
+
+p_user_name                                            IN VARCHAR2,
+
+p_role_id                                              IN NUMBER );
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+p_user_name                                            The application ID from which you want to remove an assigned role
+p_role_id                                              from a user. Defaults to the current application.
+                                                       The case insensitive name of the application user to remove the role
+                                                       from.
+                                                       The ID of the role.
+
+API Reference                                                                                       July 24, 2026
+G26651-03                                                                                             Page 5 of 8
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                    Chapter 2
+                                                                     REMOVE_USER_ROLE Procedure Signature 2
+
+Example
+
+The following example uses the REMOVE_USER_ROLE procedure to remove the role ID of
+2505704029884282 from the user name 'SCOTT' in application 255.
+
+BEGIN
+
+APEX_ACL.REMOVE_USER_ROLE (
+
+       p_application_id => 255,
+
+       p_user_name                                     => 'SCOTT',
+
+       p_role_id                                       => 2505704029884282 );
+
+END;
+
+2.7 REMOVE_USER_ROLE Procedure Signature 2
+
+                       This procedure removes an assigned role from a user.
+                       Syntax
+
+APEX_ACL.REMOVE_USER_ROLE (
+
+       p_application_id IN NUMBER DEFAULT apex_application.g_flow_id,
+
+       p_user_name                                     IN VARCHAR2,
+
+       p_role_static_id IN VARCHAR2 )
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+p_user_name                                            The application ID from which you want to remove an assigned role
+p_role_static_id                                       from a user. It defaults to the current application.
+                                                       The case insensitive name of the application user to remove the role
+                                                       from.
+                                                       The case insensitive name of the role static ID.
+
+Example
+
+The following example uses the REMOVE_USER_ROLE procedure to remove the role static ID
+'ADMINISTRATOR' from the user name 'SCOTT' in application 255.
+
+BEGIN
+
+      APEX_ACL.REMOVE_USER_ROLE (
+
+       p_application_id => 255,
+
+       p_user_name                                     => 'SCOTT',
+
+       p_role_static_id => 'ADMINISTRATOR' );
+
+END;
+
+2.8 REPLACE_USER_ROLES Procedure Signature 1
+
+                       This procedure replaces any existing assigned user roles to a new array of roles.
+
+API Reference                                                                                             July 24, 2026
+G26651-03                                                                                                   Page 6 of 8
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                              Chapter 2
+                                                                            REPLACE_USER_ROLES Procedure Signature 2
+
+Syntax
+
+APEX_ACL.REPLACE_USER_ROLES (
+
+      p_application_id IN NUMBER DEFAULT apex_application.g_flow_id,
+
+      p_user_name                                      IN VARCHAR2,
+
+      p_role_ids                                       IN apex_t_number );
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+                                                       The application ID for which you want to replace the user roles.
+p_user_name                                            Defaults to the current application.
+p_role_ids                                             The case insensitive name of the application user to replace the role.
+                                                       The array of NUMBER type role IDs.
+
+Example
+
+The following example uses the REPLACE_USER_ROLES procedure to replace existing roles with
+new role IDs of 2505704029884282 and 345029884282 for the user name 'SCOTT' in application
+255.
+
+BEGIN
+
+APEX_ACL.REPLACE_USER_ROLES (
+
+        p_application_id => 255,
+
+        p_user_name                                    => 'SCOTT',
+
+        p_role_ids                                     => apex_t_number( 2505704029884282, 345029884282 ) );
+
+END;
+
+2.9 REPLACE_USER_ROLES Procedure Signature 2
+
+                       This procedure replaces any existing assigned user roles to a new array of roles.
+                       Syntax
+
+APEX_ACL.REPLACE_USER_ROLES (
+
+p_application_id IN NUMBER DEFAULT apex_application.g_flow_id,
+
+p_user_name                                            IN VARCHAR2,
+
+p_role_static_ids IN apex_t_varchar2 );
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+                                                       The application ID for which you want to replace the user roles.
+p_user_name                                            Defaults to the current application.
+p_role_static_ids                                      The case insensitive name of the application user to replace the role.
+                                                       The array of case-insensitive VARCHAR2-type role static IDs.
+
+API Reference                                                                                             July 24, 2026
+G26651-03                                                                                                   Page 7 of 8
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                Chapter 2
+                                                                       REMOVE_ALL_USER_ROLES Procedure
+
+Example
+
+The following example uses the REPLACE_USER_ROLES procedure to replace existing roles with
+new role static IDs of 'ADMINISTRATOR' and 'CONTRIBUTOR' for the user name 'SCOTT' in
+application 255.
+
+BEGIN
+
+APEX_ACL.REPLACE_USER_ROLES (
+
+       p_application_id => 255,
+
+       p_user_name                                     => 'SCOTT',
+
+       p_role_static_ids => apex_t_varchar2( 'ADMINISTRATOR',
+
+'CONTRIBUTOR' ) );
+
+END;
+
+2.10 REMOVE_ALL_USER_ROLES Procedure
+
+                       This procedure removes all assigned roles from a user.
+                       Syntax
+
+APEX_ACL.REMOVE_ALL_USER_ROLES (
+
+      p_application_id IN NUMBER DEFAULT apex_application.g_flow_id,
+
+      p_user_name                                      IN VARCHAR2 );
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+                                                       The application ID for which you want to remove all assigned roles from
+p_user_name                                            a user. Defaults to the current application.
+                                                       The case-insensitive name of the application user to remove all
+                                                       assigned roles from.
+
+Example
+
+The following example uses the REMOVE_ALL_USER_ROLES procedure to remove all assigned
+roles from the user name 'SCOTT' in application 255.
+
+BEGIN
+
+      APEX_ACL.REMOVE_ALL_USER_ROLES (
+
+       p_application_id => 255,
+
+       p_user_name                                     => 'SCOTT' );
+
+END;
+
+API Reference                                                                  July 24, 2026
+G26651-03                                                                        Page 8 of 8
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+3

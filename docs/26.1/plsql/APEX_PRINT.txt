@@ -1,0 +1,627 @@
+# APEX_PRINT (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 56264-56889)
+
+APEX_PRINT
+
+                       The APEX_PRINT package provides APIs to invoke remote print servers and generate
+                       documents based on templates and data.
+                       � Constants
+                       � GENERATE_DOCUMENT Function Signature 1
+                       � GENERATE_DOCUMENT Function Signature 2
+                       � GENERATE_DOCUMENT Function Signature 3
+                       � GENERATE_DOCUMENT Function Signature 4
+                       � GENERATE_DOCUMENT Function Signature 5
+                       � GENERATE_DOCUMENT Function Signature 6
+                       � REMOVE_TEMPLATE Procedure
+                       � UPLOAD_TEMPLATE Function
+
+49.1 Constants
+
+                       The APEX_PRINT package uses the following constants.
+
+                       Template Type Constants
+
+subtype t_template_type is pls_integer range 1..12;
+
+c_template_docx constant t_template_type := 1;
+
+c_template_xlsx constant t_template_type := 2;
+
+c_template_pptx constant t_template_type := 3;
+
+c_template_html constant t_template_type := 4;
+
+c_template_markdown constant t_template_type := 5;
+
+c_template_csv                                         constant t_template_type := 6;
+
+c_template_txt                                         constant t_template_type := 7;
+
+c_template_ods                                         constant t_template_type := 8;
+
+c_template_odt                                         constant t_template_type := 9;
+
+c_template_odp                                         constant t_template_type := 10;
+
+c_template_rtf                                         constant t_template_type := 11;
+
+c_template_xslfo constant t_template_type := 12;
+
+Output Type Constants
+
+subtype t_output_type is pls_integer range 1..15;
+
+c_output_pdf                                           constant t_output_type := 1;
+c_output_docx                                          constant t_output_type := 2;
+c_output_xlsx                                          constant t_output_type := 3;
+c_output_pptx                                          constant t_output_type := 5;
+c_output_html                                          constant t_output_type := 4;
+
+API Reference                                                                           July 24, 2026
+G26651-03                                                                               Page 1 of 10
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                         Chapter 49
+                                                                           GENERATE_DOCUMENT Function Signature 1
+
+c_output_markdown                                      constant t_output_type := 6;
+c_output_csv                                           constant t_output_type := 7;
+c_output_txt                                           constant t_output_type := 8;
+c_output_odt                                           constant t_output_type := 9;
+c_output_ods                                           constant t_output_type := 10;
+c_output_odp                                           constant t_output_type := 11;
+c_output_htm                                           constant t_output_type := 12;
+c_output_rtf                                           constant t_output_type := 13;
+c_output_xls                                           constant t_output_type := 14;
+c_output_xml                                           constant t_output_type := 15;
+
+49.2 GENERATE_DOCUMENT Function Signature 1
+
+                       This function generates a document based on data and a template and returns the contents.
+
+                       Can only be used when Oracle Document Generator Pre-built Function is configured as print
+                       server in the instance.
+
+                       To be used when printing a single document using a custom template, which is not stored as
+                       report layout.
+
+                       Syntax
+
+APEX_PRINT.GENERATE_DOCUMENT (
+
+p_data                                                 IN CLOB,
+
+p_template                                             IN BLOB,
+
+p_template_type                                        IN t_template_type  DEFAULT c_template_docx,
+                                                                           DEFAULT c_output_pdf,
+p_output_type                                          IN t_output_type    DEFAULT NULL ) )
+
+p_output_password IN VARCHAR2
+
+RETURN BLOB;
+
+Parameters
+
+Parameter                                                        Description
+p_data
+p_template                                                       Data for the document. Currently JSON format only.
+p_template_type                                                  Contents of the template.
+p_output_type                                                    Type of the template.
+p_output_password                                                The type of document.
+                                                                 The password to needed to open the generated document.
+                                                                 PDF only.
+
+Returns
+A BLOB containing the generated document.
+
+Example
+
+The following example generates a PDF document using an uploaded template and custom
+JSON data.
+
+DECLARE           blob;
+      l_template  sys.json_object_t := sys.json_object_t();
+      l_data      blob;
+      l_document
+
+API Reference                                                                                        July 24, 2026
+G26651-03                                                                                            Page 2 of 10
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                             Chapter 49
+                                                               GENERATE_DOCUMENT Function Signature 2
+
+BEGIN
+
+SELECT blob_content
+   INTO l_template
+   FROM apex_application_temp_files
+
+ WHERE name = :P1_TEMPLATE;
+
+l_data.put( 'name', 'Scott' );
+
+l_document := apex_print.generate_document(
+
+                                                       p_data  => l_data.to_clob,
+
+                                                       p_template => l_template );
+
+END;
+
+49.3 GENERATE_DOCUMENT Function Signature 2
+
+                       This function returns a document as BLOB using a pre-defined report query.
+                       Syntax
+
+APEX_PRINT.GENERATE_DOCUMENT (                                 IN NUMBER,           DEFAULT NULL,
+      p_application_id                                         IN VARCHAR2,         DEFAULT c_output_pdf,
+      p_report_query_static_id                                 IN VARCHAR2          DEFAULT NULL )
+      p_report_layout_static_id                                IN t_output_type
+      p_output_type                                            IN VARCHAR2
+      p_output_password
+      RETURN BLOB;
+
+Parameters
+
+Parameter                                                      Description
+p_application_id
+p_report_query_static_id                                       Defines the application ID of the report layout.
+
+p_report_layout_static_id                                      Static ID of the report query (stored under application's
+                                                               shared components).
+p_output_type
+                                                               Static ID of the report layout (stored under application's
+p_output_password                                              shared components).
+
+                                                               Defines the document format. See t_output_type for the
+                                                               available types in Constants.
+                                                               The password to needed to open the generated document.
+                                                               PDF only.
+
+Returns
+A BLOB containing the generated document.
+
+Example
+
+The following example generates a PDF document using a report query and a report layout
+defined in an application.
+
+DECLARE
+      l_document blob;
+
+API Reference                                                                                      July 24, 2026
+G26651-03                                                                                          Page 3 of 10
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                            Chapter 49
+                                                                              GENERATE_DOCUMENT Function Signature 3
+
+BEGIN
+
+l_document :=                                          => 100,
+      apex_print.generate_document (                   => 'MY_REPORT_QUERY',
+            p_application_id                           => 'MY_REPORT_LAYOUT',
+            p_report_query_static_id                   => apex_print.c_output_pdf );
+            p_report_layout_static_id
+            p_output_type
+
+apex_http.download(                                    => l_document,
+      p_blob                                           => 'application/pdf',
+      p_content_type                                   => 'my-report.pdf' );
+      p_filename
+
+END;
+
+       See Also
+       Constants
+
+49.4 GENERATE_DOCUMENT Function Signature 3
+
+                       This function returns a document as BLOB using a pre-defined report layout.
+                       Syntax
+
+APEX_PRINT.GENERATE_DOCUMENT (                         IN NUMBER,             DEFAULT c_output_pdf,
+      p_application_id                                 IN CLOB,               DEFAULT NULL )
+      p_data                                           IN VARCHAR2,
+      p_report_layout_static_id                        IN t_output_type
+      p_output_type                                    IN VARCHAR2
+      p_output_password
+      RETURN BLOB;
+
+Parameters
+
+Parameter                                              Description
+p_application_id
+p_data                                                 Defines the application ID of the report layout.
+
+p_report_layout_static_id                              Report data. The format depends on the type of print server
+                                                       that is used.
+p_output_type
+                                                       Static ID of the report layout (stored under application's
+p_output_password                                      shared components).
+
+                                                       Defines the document format. See t_output_type for the
+                                                       available types in Constants.
+                                                       The password to needed to open the generated document.
+                                                       PDF only.
+
+Returns
+A BLOB containing the generated document.
+
+API Reference                                                                                       July 24, 2026
+G26651-03                                                                                           Page 4 of 10
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                               Chapter 49
+                                                                 GENERATE_DOCUMENT Function Signature 4
+
+Example
+
+The following example generates a PDF document using custom JSON and a report layout
+defined in an application.
+
+DECLARE
+      l_document blob;
+      l_json sys.json_object_t := sys.json_object_t();
+
+BEGIN
+
+l_json.put( 'title', 'Hello World' );
+
+l_document :=                                                    => 100,
+      apex_print.generate_document (                             => l_json.to_clob(),
+            p_application_id                                     => 'MY_REPORT_LAYOUT',
+            p_data                                               => apex_print.c_output_pdf );
+            p_report_layout_static_id
+            p_output_type
+
+apex_http.download(                                    => l_document,
+      p_blob                                           => 'application/pdf',
+      p_content_type                                   => 'hello-world.pdf' );
+      p_filename
+
+END;
+
+      See Also
+      Constants
+
+49.5 GENERATE_DOCUMENT Function Signature 4
+
+                       This function generates a document using an uploaded template and returns the contents.
+
+                       Can only be used when Oracle Document Generator Pre-built Function is configured as print
+                       server in the instance.
+
+                       To be used in combination with the UPLOAD_TEMPLATE Function and REMOVE_TEMPLATE
+                       Procedure APIs to generate documents using the same custom template, which is not stored
+                       as a report layout.
+
+                       Syntax
+
+APEX_PRINT.GENERATE_DOCUMENT (
+
+      p_data                                           IN CLOB,
+
+      p_template_id IN NUMBER,
+
+      p_output_type IN t_output_type                             DEFAULT c_output_pdf,
+                                                                 DEFAULT NULL )
+      p_output_password IN VARCHAR2
+
+      RETURN BLOB;
+
+API Reference                                                                                   July 24, 2026
+G26651-03                                                                                       Page 5 of 10
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                         Chapter 49
+                                                           GENERATE_DOCUMENT Function Signature 5
+
+Parameters
+
+Parameter                                                  Description
+p_data
+p_template_id                                              Data for the document. Currently JSON format only.
+p_output_type                                              ID of the template.
+p_output_password                                          The type of document. Currently only c_output_pdf.
+                                                           The password to needed to open the generated document.
+                                                           PDF only.
+
+Returns
+A BLOB containing the generated document.
+
+Example
+See UPLOAD_TEMPLATE Function.
+
+See Also
+� UPLOAD_TEMPLATE Function
+� REMOVE_TEMPLATE Procedure
+
+49.6 GENERATE_DOCUMENT Function Signature 5
+
+                       Generates a document using an custom template stored in an OCI Object Storage Bucket and
+                       return the contents.
+
+                       Can only be used when Oracle Document Generator Pre-built Function is configured as print
+                       server in the instance.
+
+                       Syntax
+
+APEX_PRINT.GENERATE_DOCUMENT (
+
+p_data                                                 IN  CLOB,
+                                                           t_template_type,
+p_template_type                                        IN  VARCHAR2,
+                                                           VARCHAR2,
+p_template_bucket                                      IN  VARCHAR2,
+                                                           t_output_type DEFAULT
+p_template_namespace IN
+
+p_template_object                                      IN
+
+p_output_type                                          IN
+
+c_output_pdf,
+
+p_output_password                                      IN  VARCHAR2  DEFAULT NULL)
+
+RETURN BLOB;
+
+Parameters
+
+Parameter                                                  Description
+p_data
+                                                           Data for the document. Currently JSON format
+p_template_type                                            only.
+                                                           Type of the template.
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 6 of 10
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                         Chapter 49
+                                                           GENERATE_DOCUMENT Function Signature 6
+
+Parameter                                                  Description
+p_template_bucket
+p_template_namespace                                       Name of the Object Storage bucket.
+p_template_object                                          Object Storage namespace.
+p_output_type                                              Name of the Template Object in Object Storage.
+p_output_password                                          The type of document.
+                                                           The password to needed to open the generated
+                                                           document. PDF only.
+
+Example
+
+The following example gets a PDF using a custom JSON data and a custom template stored in
+an OCI Object Storage Bucket.
+
+declare
+      l_document blob;
+      l_json sys.json_object_t := sys.json_object_t();
+
+begin
+
+l_json.put( 'title', 'Hello World' );
+
+l_document :=
+
+      apex_print.generate_document (
+
+      p_data                                               => l_json.to_clob(),
+
+      p_template_type                                      => apex_print.c_template_docx,
+
+      p_template_bucket => 'mybucket',
+
+      p_template_namespace => 'mynamespace',
+
+      p_template_object => 'mytemplate.docx',
+
+      p_output_type                                        => apex_print.c_output_pdf,
+
+      p_output_password => '...put your password here...' );
+
+apex_http.download(                                    => l_document,
+      p_blob                                           => 'application/pdf',
+      p_content_type                                   => 'hello-world.pdf' );
+      p_filename
+
+end;
+
+49.7 GENERATE_DOCUMENT Function Signature 6
+
+                       Generates a document using a custom template stored in an OCI Object Storage Bucket and
+                       return the contents.
+
+                       Can only be used when Oracle Document Generator Pre-built Function is configured as print
+                       server in the instance.
+
+                       Syntax
+
+APEX_PRINT.GENERATE_DOCUMENT (
+
+      p_application_id                                 IN  NUMBER,
+                                                           VARCHAR2,
+      p_report_query_static_id IN                          t_template_type,
+                                                           VARCHAR2,
+      p_template_type                                  IN
+
+      p_template_bucket                                IN
+
+API Reference                                                                              July 24, 2026
+G26651-03                                                                                  Page 7 of 10
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                Chapter 49
+                                                                                   REMOVE_TEMPLATE Procedure
+
+p_template_namespace IN                                             VARCHAR2,
+                                                                    VARCHAR2,
+p_template_object                                      IN           t_output_type
+
+p_output_type                                          IN           VARCHAR2       DEFAULT
+                                                                                   DEFAULT NULL)
+c_output_pdf,
+
+p_output_password                                      IN
+
+RETURN BLOB;
+
+Parameters
+
+Parameter                                                  Description
+p_application_id
+p_report_query_static_id                                   Defines the application ID of the report query.
+                                                           Static ID of the report query (stored under
+p_template_type                                            application's Shared Components).
+p_template_bucket                                          Type of the template.
+p_template_namespace                                       Name of the Object Storage bucket.
+p_template_object                                          Object Storage namespace.
+p_output_type                                              Name of the Template Object in Object Storage.
+p_output_password                                          The type of document.
+                                                           The password to needed to open the generated
+                                                           document. PDF only.
+
+Example
+
+The following example gets a PDF using a report query and a custom template stored in an
+OCI Object Storage Bucket.
+
+declare
+      l_document blob;
+
+begin
+
+l_document :=
+
+      apex_print.generate_document (
+
+            p_application_id                               => 100,
+
+            p_report_query_static_id => 'MY_REPORT_QUERY',
+
+            p_template_type                                => apex_print.c_template_docx,
+
+            p_template_bucket                              => 'mybucket',
+
+            p_template_namespace => 'mynamespace',
+
+            p_template_object                              => 'mytemplate.docx',
+
+            p_output_type                                  => apex_print.c_output_pdf,
+
+            p_output_password                              => '...put your password here...' );
+
+apex_http.download(                                    => l_document,
+      p_blob                                           => 'application/pdf',
+      p_content_type                                   => 'hello-world.pdf' );
+      p_filename
+
+end;
+
+49.8 REMOVE_TEMPLATE Procedure
+
+                       This procedure removes a template from OCI Object Storage.
+
+API Reference                                                                              July 24, 2026
+G26651-03                                                                                  Page 8 of 10
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                     Chapter 49
+                                                                                           UPLOAD_TEMPLATE Function
+
+Can only be used when Oracle Document Generator Pre-built Function is configured as print
+server in the instance.
+To be used in combination with UPLOAD_TEMPLATE Function to generate documents using
+the same custom template, which is not stored as a report layout.
+
+Syntax
+
+APEX_PRINT.REMOVE_TEMPLATE (
+      p_template_id IN NUMBER )
+
+Parameters
+
+Parameter                                                        Description
+p_template_id                                                    ID of the the template.
+
+Example
+See UPLOAD_TEMPLATE Function.
+
+See Also
+UPLOAD_TEMPLATE Function
+
+49.9 UPLOAD_TEMPLATE Function
+
+                       This function uploads a template to OCI Object Storage and returns its corresponding ID.
+
+                       Can only be used when Oracle Document Generator Pre-built Function is configured as print
+                       server in the instance.
+
+                       To be used in combination with the APEX_PRINT.GENERATE_DOCUMENT and
+                       REMOVE_TEMPLATE Procedure APIs to generate documents using the same custom
+                       template, which is not stored as a report layout.
+
+                       Syntax
+
+APEX_PRINT.UPLOAD_TEMPLATE (
+
+p_template                                             IN BLOB,
+
+p_template_type IN t_template_type                               DEFAULT c_template_docx )
+
+RETURN NUMBER;
+
+Parameters
+
+Parameter                                                        Description
+p_template                                                       Content of the template.
+p_template_type                                                  Type of the template.
+
+Returns
+A number containing the unique ID to reference the template in future calls.
+
+API Reference                                                                               July 24, 2026
+G26651-03                                                                                   Page 9 of 10
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                    Chapter 49
+                                                                                          UPLOAD_TEMPLATE Function
+
+Example
+
+The following example uploads the template to Object Storage that was uploaded in Oracle
+APEX by an end user, generates a PDF document, and removes the template afterwards.
+
+DECLARE                                                blob;
+      l_template                                       number;
+      l_template_id                                    sys.json_object_t := sys.json_object_t();
+      l_data                                           blob;
+      l_document
+
+BEGIN
+
+SELECT blob_content
+   INTO l_template
+   FROM apex_application_temp_files
+
+ WHERE name = :P1_TEMPLATE;
+
+l_template_id := apex_print.upload_template( p_template => l_template );
+
+l_data.put( 'name', 'Scott' );
+
+l_document := apex_print.generate_document(
+
+                                                       p_data  => l_data.to_clob,
+
+                                                       p_template_id => l_template_id );
+
+apex_print.remove_template( p_template_id => l_template_id );
+
+EXCEPTION
+      WHEN others THEN
+            apex_print.remove_template( p_template_id => l_template_id );
+
+END;
+
+See Also
+� REMOVE_TEMPLATE Procedure
+
+API Reference                                                                                     July 24, 2026
+G26651-03                                                                                         Page 10 of 10
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+50

@@ -1,0 +1,2238 @@
+# APEX_ZIP (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 76861-79097)
+
+APEX_ZIP
+
+                       This package allows to compress and to uncompress files and store them in a ZIP file.
+                       � Data Types
+                       � ADD_FILE Procedure
+                       � FINISH Procedure
+                       � GET_DIR_ENTRIES Function
+                       � GET_FILE_CONTENT Function Signature 1 (Deprecated)
+                       � GET_FILE_CONTENT Function Signature 2
+                       � GET_FILES Function (Deprecated)
+
+66.1 Data Types
+
+                       The APEX_ZIP package uses the following data types.
+
+                       t_dir_entries
+                       An easily accessible directory of all the files in the archive that is indexed by the full name of
+                       the file including its path.
+
+type t_dir_entries is table of t_dir_entry index by VARCHAR2(32767);
+
+t_dir_entry
+A file in the archive with precomputed metadata.
+
+type t_dir_entry is record (
+
+file_name                                              VARCHAR2(32767),
+
+uncompressed_length NUMBER,
+
+is_directory                                           BOOLEAN );
+
+Attribute                                                                Description
+file_name
+                                                                         Name of the compressed file including the directory
+uncompressed_length                                                      path.
+is_directory                                                             The size of the decompressed file in bytes.
+                                                                         TRUE if the entry represents a file system directory.
+
+API Reference                                                            July 24, 2026
+G26651-03                                                                  Page 1 of 7
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                      Chapter 66
+                                                        ADD_FILE Procedure
+
+                       t_files
+
+                              Caution
+                                 This data type is deprecated. It will be removed in a future release. Use
+                                 t_dir_entries instead.
+
+                       Collection of file names and paths.
+
+                       type t_files is table of varchar2(32767) index by binary_integer;
+
+66.2 ADD_FILE Procedure
+
+                       This procedure adds a single file to a zip file. You can call this procedure multiple times to add
+                       multiple files to the same zip file.
+
+                              Tip
+                                 After all files are added, you must call the APEX_ZIP.FINISH procedure.
+
+Syntax
+
+APEX_ZIP.ADD_FILE (
+      p_zipped_blob IN OUT NOCOPY BLOB,
+      p_file_name IN VARCHAR2,
+      p_content IN BLOB )
+
+Parameters
+
+Parameter                                              Description
+p_zipped_blob                                          BLOB containing the zip file.
+p_file_name                                            File name, including path, of the file to be added to the zip file.
+p_content                                              BLOB containing the file.
+
+Example
+This example reads multiple files from a table and puts them into a single zip file.
+
+DECLARE
+      l_zip_file blob;
+
+BEGIN
+      FOR l_file in ( SELECT file_name,
+                                          file_content
+                                   FROM my_files )
+      LOOP
+            apex_zip.add_file (
+                   p_zipped_blob => l_zip_file,
+                   p_file_name => l_file.file_name,
+
+API Reference                                                                         July 24, 2026
+G26651-03                                                                               Page 2 of 7
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                    Chapter 66
+                                                                                          FINISH Procedure
+
+            p_content                                  => l_file.file_content );
+END LOOP;
+
+apex_zip.finish (
+      p_zipped_blob => l_zip_file );
+
+END;
+
+      See Also
+      FINISH Procedure
+
+66.3 FINISH Procedure
+
+                       This procedure completes the creation of a zip file after adding files with APEX_ZIP.ADD_FILE.
+                       Syntax
+
+                       APEX_ZIP.FINISH (
+                              p_zipped_blob IN OUT NOCOPY BLOB )
+
+                       Parameters
+
+Parameter                                              Description
+p_zipped_blob                                          BLOB containing the zip file.
+
+Example
+See ADD_FILE Procedure.
+
+66.4 GET_DIR_ENTRIES Function
+
+This function returns a table of directory entries containing information about each file in the
+provided ZIP file. The returned table of records is indexed by the file names (including the
+path).
+
+Syntax
+
+APEX_ZIP.GET_DIR_ENTRIES (
+      p_zipped_blob IN BLOB,
+      p_only_files IN BOOLEAN DEFAULT TRUE,
+      p_encoding IN VARCHAR2 DEFAULT NULL )
+      RETURN t_dir_entries;
+
+Parameters
+
+Parameter                                              Description
+p_zipped_blob                                          The BLOB containing the ZIP file.
+
+API Reference                                                                             July 24, 2026
+G26651-03                                                                                   Page 3 of 7
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                        Chapter 66
+                                                                                GET_DIR_ENTRIES Function
+
+Parameter                                                     Description
+p_only_files                                                  Only return files, not directories, in the directory listing.
+p_encoding                                                    The encoding used to compress the file.
+
+Returns
+A table of directory entries.
+
+Example
+
+The following example reads a ZIP file from a table, extracts it, and stores all files of the ZIP
+file into my_files.
+
+DECLARE
+
+l_zip_file                                             blob;
+
+l_unzipped_file blob;
+
+l_dir                                                  apex_zip.t_dir_entries;
+
+l_file_path varchar2(32767);
+
+BEGIN
+
+SELECT file_content
+
+       INTO l_zip_file
+
+       FROM my_zip_files
+
+WHERE file_name = 'my_file.zip';
+
+l_dir := apex_zip.get_dir_entries (
+                       p_zipped_blob => l_zip_file );
+
+l_file_path := l_dir.first;
+WHILE l_file_path IS NOT NULL LOOP
+
+      l_unzipped_file := apex_zip.get_file_content (
+                                          p_zipped_blob => l_zip_file,
+                                          p_dir_entry => l_dir(l_file_path) );
+
+         INSERT INTO my_files ( file_name, file_content )
+         values ( l_file_path, l_unzipped_file );
+
+            l_file_path := l_dir.next(l_file_path);
+      END LOOP;
+END;
+
+       See Also
+       � GET_FILE_CONTENT Function Signature 2
+       � GET_FILES Function (Deprecated)
+
+API Reference                                                                   July 24, 2026
+G26651-03                                                                         Page 4 of 7
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                Chapter 66
+                                      GET_FILE_CONTENT Function Signature 1 (Deprecated)
+
+66.5 GET_FILE_CONTENT Function Signature 1 (Deprecated)
+
+                              Caution
+                                 This API is deprecated and will be removed in a future release.
+                                 Use GET_FILE_CONTENT Function Signature 2 instead.
+
+This function returns the BLOB of a file contained in a provided zip file.
+
+Syntax
+
+APEX_ZIP.GET_FILE_CONTENT (
+      p_zipped_blob IN BLOB,
+      p_file_name IN VARCHAR2,
+      p_encoding IN VARCHAR2 DEFAULT NULL )
+
+RETURN BLOB;
+
+Parameters
+
+ Parameter     Description
+p_zipped_blob  This is the BLOB containing the zip file.
+p_file_name    File name, including path, of a file located in the zip file.
+p_encoding     Encoding used to zip the file.
+
+Returns
+
+Return         Description
+BLOB           BLOB of the file specified in p_file_name.
+
+Example
+See GET_FILES Function (Deprecated).
+
+                              See Also                                                             July 24, 2026
+                                 GET_FILE_CONTENT Function Signature 2                               Page 5 of 7
+
+66.6 GET_FILE_CONTENT Function Signature 2
+
+                       This function returns the BLOB of a file contained in a provided zip file.
+                       Syntax
+
+                       APEX_ZIP.GET_FILE_CONTENT (
+                              p_zipped_blob IN BLOB,
+
+API Reference
+G26651-03
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                                Chapter 66
+                                                                                                  GET_FILES Function (Deprecated)
+
+p_dir_entry                                            IN t_dir_entry )
+RETURN BLOB;
+
+Parameters
+
+ Parameter                                             Description
+p_zipped_blob                                          The BLOB containing the zip file.
+p_dir_entry                                            The directory entry describing the required file.
+
+Returns
+
+Return                                                 Description
+BLOB                                                   BLOB of the file specified in the p_dir_entry record.
+
+Example
+See GET_FILES Function (Deprecated).
+
+                              See Also
+                                 GET_DIR_ENTRIES Function
+
+66.7 GET_FILES Function (Deprecated)
+
+                              Caution
+                                 This API is deprecated and will be removed in a future release.
+                                 Use GET_DIR_ENTRIES Function instead.
+
+This function returns an array of file names, including the path, of a provided zip file that
+contains a BLOB.
+
+Syntax
+
+APEX_ZIP.GET_FILES (
+      p_zipped_blob IN BLOB,
+      p_only_files IN BOOLEAN DEFAULT TRUE,
+      p_encoding IN VARCHAR2 DEFAULT NULL )
+
+RETURN t_files;
+
+Parameters
+
+Parameter                                              Description
+p_zipped_blob                                          This is the zip file containing the BLOB.
+
+API Reference                                                                                                 July 24, 2026
+G26651-03                                                                                                       Page 6 of 7
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                        Chapter 66
+                                                                          GET_FILES Function (Deprecated)
+
+ Parameter                                                    Description
+p_only_files
+                                                              If set to TRUE, empty directory entries are not included in the returned
+p_encoding                                                    array. Otherwise, set to FALSE to include empty directory entries.
+Returns                                                       This is the encoding used to zip the file.
+
+Return                                                        Description
+t_files                                                       A table of file names and path. See "Data Types" for more details.
+
+Example
+
+This example demonstrates reading a zip file from a table, extracting it and storing all files of
+the zip file into my_files.
+
+declare
+
+l_zip_file                                             blob;
+
+l_unzipped_file blob;
+
+l_files                                                apex_zip.t_files;
+
+begin
+
+select file_content
+
+         into l_zip_file
+
+         from my_zip_files
+
+where file_name = 'my_file.zip';
+
+l_files := apex_zip.get_files (
+            p_zipped_blob => l_zip_file );
+
+for i in 1 .. l_files.count loop
+      l_unzipped_file := apex_zip.get_file_content (
+            p_zipped_blob => l_zip_file,
+            p_file_name => l_files(i) );
+
+            insert into my_files ( file_name, file_content )
+            values ( l_files(i), l_unzipped_file );
+      end loop;
+end;
+
+       See Also
+       GET_DIR_ENTRIES Function
+
+API Reference                                                             July 24, 2026
+G26651-03                                                                   Page 7 of 7
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+67
+
+JavaScript APIs
+
+                       This content has been moved to the Oracle APEX JavaScript API Reference.
+
+API Reference                                                                                    July 24, 2026
+G26651-03                                                                                          Page 1 of 1
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+Index                                                  ADD_DATA_SOURCE procedure
+                                                            APEX_DG_DATA_GEN, 8
+A
+                                                       ADD_DML_ARRAY_ROW procedure
+ABORT procedure                                             APEX_EXEC, 15
+     APEX_AUTOMATION, 1
+                                                       ADD_DML_ROW procedure
+ABORT procedure signature 1                                 APEX_EXEC, 20
+     APEX_BACKGROUND_PROCESS, 2
+                                                       ADD_ERROR procedure signature 1
+ABORT procedure signature 2                                 APEX_ERROR, 5
+     APEX_BACKGROUND_PROCESS, 3
+                                                       ADD_ERROR procedure signature 2
+ADD procedure                                               APEX_ERROR, 6
+     APEX_CSS, 1
+                                                       ADD_ERROR procedure signature 3
+ADD_3RD_PARTY_LIBRARY_FILE procedure                        APEX_ERROR, 7
+     APEX_CSS, 1
+     APEX_JAVASCRIPT, 2                                ADD_ERROR procedure signature 4
+                                                            APEX_ERROR, 8
+ADD_AD_COLUMN procedure
+     APEX_UI_DEFAULT_UPDATE, 2                         ADD_ERROR procedure signature 5
+                                                            APEX_ERROR, 9
+ADD_AD_SYNONYM procedure
+     APEX_UI_DEFAULT_UPDATE, 3                         ADD_FILE procedure
+                                                            APEX_CSS, 2
+ADD_AGGREGATE procedure                                     APEX_ZIP, 2
+     APEX_DATA_EXPORT, 5
+                                                       ADD_FILTER procedure
+ADD_ATTACHMENT procedure                                    APEX_EXEC, 21
+     APEX_MAIL, 2, 4                                        Oracle TEXT, 21
+
+ADD_ATTRIBUTE function signature 1                     ADD_FILTER procedure signature 1
+     APEX_JAVASCRIPT, 3                                     APEX_IG, 1
+                                                            APEX_IR, 2
+ADD_ATTRIBUTE function signature 2
+     APEX_JAVASCRIPT, 4                                ADD_FILTER procedure signature 2
+                                                            APEX_IG, 3
+ADD_ATTRIBUTE function signature 3                          APEX_IR, 3
+     APEX_JAVASCRIPT, 4
+                                                       ADD_FILTER procedure signature 3
+ADD_ATTRIBUTE function signature 4                          APEX_IG, 5
+     APEX_JAVASCRIPT, 5                                     APEX_IR, 5
+
+ADD_AUTO_PROV_RESTRICTIONS procedure                   ADD_HIGHLIGHT procedure
+     APEX_INSTANCE_ADMIN, 21                                APEX_DATA_EXPORT, 10
+
+ADD_BLUEPRINT procedure                                ADD_INLINE_CODE procedure
+     APEX_DG_DATA_GEN, 2                                    APEX_JAVASCRIPT, 6
+
+ADD_BLUEPRINT_FROM_FILE procedure                      ADD_JET procedure
+     APEX_DG_DATA_GEN, 3                                    APEX_JAVASCRIPT, 6
+
+ADD_BLUEPRINT_FROM_TABLES procedure                    ADD_LIBRARY procedure
+     APEX_DG_DATA_GEN, 4                                    APEX_JAVASCRIPT, 7
+
+ADD_COLUMN procedure                                   ADD_MEMBER function
+     APEX_DATA_EXPORT, 7                                    APEX_COLLECTION, 6
+     APEX_DG_DATA_GEN, 5
+     APEX_EXEC, 14                                     ADD_MEMBER procedure
+                                                            APEX_COLLECTION, 4
+ADD_COLUMN_GROUP procedure
+     APEX_DATA_EXPORT, 8                               ADD_MEMBERS procedure
+                                                            APEX_COLLECTION, 7
+ADD_DATA_REPORTER_REMAP procedure
+     APEX_APPLICATION_INSTALL, 7                                                                                           July 24, 2026
+                                                                                                                   Index-1 of Index-24
+API Reference
+G26651-03
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+ADD_MENU_ENTRY procedure                                                                                             Index
+     APEX_EXTENSION, 1
+                                                       APEX_CREDENTIAL, 1
+ADD_ONLOAD_CODE procedure                              APEX_CSS, 1
+     APEX_JAVASCRIPT, 9                                APEX_CUSTOM_AUTH, 1
+                                                       APEX_DATA_EXPORT, 1
+ADD_ORDER_BY procedure                                 APEX_DATA_INSTALL, 1
+     APEX_EXEC, 27                                     APEX_DATA_LOADING, 1
+                                                       APEX_DATA_PARSER, 1
+ADD_PARAMETER procedure                                APEX_DB_DICTIONARY, 1
+     APEX_EXEC, 28                                     APEX_DEBUG, 1
+                                                       APEX_DG_DATA_GEN, 1
+ADD_REQUIREJS procedure                                APEX_ERROR, 1
+     APEX_JAVASCRIPT, 8                                APEX_ESCAPE, 1
+                                                       APEX_EXEC, 1
+ADD_REQUIREJS_DEFINE procedure                         APEX_EXPORT, 1
+     APEX_JAVASCRIPT, 8                                APEX_EXTENSION, 1
+                                                       APEX_GENDEV, 1
+ADD_SCHEMA procedure                                   APEX_HTTP, 1
+     APEX_INSTANCE_ADMIN, 21                           APEX_HUMAN_TASK, 1
+                                                       APEX_IG, 1
+ADD_TABLE procedure                                    APEX_INSTANCE_ADMIN, 1
+     APEX_DG_DATA_GEN, 9                               APEX_INSTANCE_DEBUG, 1
+                                                       APEX_IR, 1
+ADD_TASK_COMMENT procedure                             APEX_ITEM, 1
+     APEX_APPROVAL, 5                                  APEX_JAVASCRIPT, 1
+     APEX_HUMAN_TASK, 5                                APEX_JSON, 1
+                                                       APEX_JWT, 1
+ADD_TASK_POTENTIAL_OWNER procedure                     APEX_LANG, 1
+     APEX_APPROVAL, 6                                  APEX_LDAP, 1
+     APEX_HUMAN_TASK, 6                                APEX_MAIL, 1
+                                                       APEX_MARKDOWN, 1
+ADD_TO_HISTORY procedure                               APEX_PAGE, 1
+     APEX_APPROVAL, 7                                  APEX_PLUGIN, 1
+     APEX_HUMAN_TASK, 7                                APEX_PLUGIN_UTIL, 1
+                                                       APEX_PRINT, 1
+ADD_USER_ROLE procedure signature 1                    APEX_PWA, 1
+     APEX_ACL, 1                                       APEX_REGION, 1
+                                                       APEX_REST_SOURCE_SYNC, 1
+ADD_USER_ROLE procedure signature 2                    APEX_SEARCH, 1
+     APEX_ACL, 2                                       APEX_SESSION, 1
+                                                       APEX_SESSION_STATE, 1
+ADD_VALUE function signature 1                         APEX_SPATIAL, 1
+     APEX_JAVASCRIPT, 9                                APEX_STRING, 1
+                                                       APEX_STRING_UTIL, 1
+ADD_VALUE function signature 2                         APEX_T_JAVASCRIPT_OBJECT, 1
+     APEX_JAVASCRIPT, 10                               APEX_THEME, 1
+                                                       APEX_UI_DEFAULT_UPDATE, 1
+ADD_VALUE function signature 3                         APEX_UTIL, 1
+     APEX_JAVASCRIPT, 11
+                                                            GET_EMAIL function, 52
+ADD_VALUE function signature 4                              IS_HIGH_CONTRAST_SESSION function,
+     APEX_JAVASCRIPT, 11
+                                                                       83
+ADD_WEB_ENTRY_POINT procedure                               IS_USERNAME_UNIQUE function, 86
+     APEX_INSTANCE_ADMIN, 22                                REMOVE_PREFERENCE procedure, 95
+                                                            SET_SECURITY_HIGH_CONTRAST_ON
+ADD_WORKSPACE procedure
+     APEX_INSTANCE_ADMIN, 23                                           procedure, 119
+                                                            SET_SESSION_STATE procedure, 123
+APEX_ACL, 1                                            APEX_WEB_SERVICE, 1
+APEX_ACL_USERS, 1
+APEX_AI, 1                                                                                                                 July 24, 2026
+APEX_APP_OBJECT_DEPENDENCY, 1                                                                                      Index-2 of Index-24
+APEX_APP_SETTING, 1
+APEX_APPLICATION, 1
+APEX_APPLICATION_ADMIN, 1
+APEX_APPLICATION_INSTALL, 1
+APEX_APPROVAL (deprecated), 1
+APEX_AUTHENTICATION, 1
+APEX_AUTHORIZATION, 1
+APEX_AUTOMATION, 1
+APEX_BACKGROUND_PROCESS, 1
+APEX_BARCODE, 1
+APEX_COLLECTION, 1
+
+API Reference
+G26651-03
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+APEX_WEB_SERVICE API, 2                                                                                              Index
+APEX_WORKFLOW, 1
+APEX_ZIP, 1                                            B
+APPEND Procedure Signature 1
+                                                       BLOB_TO_CLOB function
+     APEX_T_JAVASCRIPT_OBJECT, 2                            APEX_UTIL, 5
+APPEND Procedure Signature 2
+                                                       BLOB2CLOBBASE64 function
+     APEX_T_JAVASCRIPT_OBJECT, 3                            APEX_WEB_SERVICE, 9
+APPEND Procedure Signature 3
+                                                       BUILD_REQUEST_BODY procedure
+     APEX_T_JAVASCRIPT_OBJECT, 3                            APEX_PLUGIN_UTIL, 2
+APPEND Procedure Signature 4
+                                                       C
+     APEX_T_JAVASCRIPT_OBJECT, 4
+APPEND Procedure Signature 5                           CACHE_GET_DATE_OF_PAGE_CACHE
+                                                                 function
+     APEX_T_JAVASCRIPT_OBJECT, 5
+APPEND Procedure Signature 6                                APEX_UTIL, 6, 7
+                                                       CACHE_PURGE_BY_APPLICATION procedure
+     APEX_T_JAVASCRIPT_OBJECT, 5
+APPEND Procedure Signature 7                                APEX_UTIL, 7
+                                                       CACHE_PURGE_BY_PAGE procedure
+     APEX_T_JAVASCRIPT_OBJECT, 6
+APPEND_FUNCTION Procedure                                   APEX_UTIL, 8
+                                                       CACHE_PURGE_STALE procedure
+     APEX_T_JAVASCRIPT_OBJECT, 7
+APPEND_RAW Procedure                                        APEX_UTIL, 9
+                                                       Call sequence
+     APEX_T_JAVASCRIPT_OBJECT, 8
+APPEND_TO_MULTIPART procedure signature 1                   APEX_EXEC, 3�5
+                                                       CALLBACK procedure
+     APEX_WEB_SERVICE, 8
+APPEND_TO_MULTIPART procedure signature 2                   APEX_AUTHENTICATION, 1
+                                                       CALLBACK2 procedure
+     APEX_WEB_SERVICE, 9
+application                                                 APEX_AUTHENTICATION, 4
+                                                       CANCEL_TASK procedure
+     sending messages in APEX_MAIL_QUEUE, 8
+     sending outbound email, 14                             APEX_APPROVAL, 9
+     sending outbound email as attachment, 2, 4             APEX_HUMAN_TASK, 8
+application installation, 1                            CHANGE_CURRENT_USER_PW procedure
+APPLICATION_PAGE_ITEM_EXISTS function                       APEX_UTIL, 9
+     APEX_CUSTOM_AUTH, 1                               CHANGE_GEOM_METADATA procedure
+APPLY_XLIFF_DOCUMENT procedure                              APEX_SPATIAL, 2
+     APEX_LANG, 1                                      CHANGE_PASSWORD_ON_FIRST_USE
+APPROVE_TASK procedure
+     APEX_APPROVAL, 8                                            function
+     APEX_HUMAN_TASK, 7                                     APEX_UTIL, 10
+arrays                                                 CHANGE_REPORT_OWNER procedure
+     APEX_APPLICATION, 1                                    APEX_IG, 7
+     G_Fnn arrays, 1                                        APEX_IR, 6
+ASSERT_FILE_TYPE function                              CHANGE_SUBSCRIPTION_EMAIL procedure
+     APEX_DATA_PARSER, 2                                    APEX_IR, 7
+ATTACH procedure                                       CHANGE_SUBSCRIPTION_LANG procedure
+     APEX_SESSION, 1                                        APEX_IR, 7
+attribute values                                       CHAT function signature 1
+     setting, 106                                           APEX_AI, 8
+AUTHENTICATE function                                  CHAT function signature 2
+     APEX_LDAP, 1                                           APEX_AI, 9
+authenticated user                                     CHAT function signature 3
+     create user group, 19                                  APEX_AI, 11
+     delete user group, 22, 23                         CHECKBOX2 function
+authentication                                              APEX_ITEM, 1
+     scheme session cookies, 3                         CIRCLE_POLYGON function
+AUTO_SET_ASSOCIATED_ITEM procedure                          APEX_SPATIAL, 2
+     APEX_ERROR, 11                                    CLAIM_TASK procedure
+                                                            APEX_APPROVAL, 10
+API Reference                                               APEX_HUMAN_TASK, 9
+G26651-03
+Copyright � 2003, 2026, Oracle and/or its affiliates.                                                                      July 24, 2026
+                                                                                                                   Index-3 of Index-24
+CLEAR procedure signature 1                                                                                          Index
+     APEX_REGION, 1
+                                                       CLOSE_ARRAY Procedure
+CLEAR procedure signature 2                                 APEX_T_JAVASCRIPT_OBJECT, 9
+     APEX_REGION, 2
+                                                       CLOSE_OBJECT procedure
+CLEAR_ALL procedure                                         APEX_JSON, 5
+     APEX_APPLICATION_INSTALL, 8
+                                                       CLOSE_OBJECT Procedure
+CLEAR_ALL_USERS_STYLE procedure                             APEX_T_JAVASCRIPT_OBJECT, 9
+     APEX_THEME, 1
+                                                       CLOSE_OPEN_DB_LINKS procedure
+CLEAR_APP_CACHE procedure                                   APEX_UTIL, 12
+     APEX_UTIL, 13
+                                                       COLLECTION_EXISTS function
+CLEAR_CACHE procedure                                       APEX_COLLECTION, 8
+     APEX_APP_OBJECT_DEPENDENCY, 1
+                                                       COLLECTION_HAS_CHANGED function
+CLEAR_COMPONENT_VALUES procedure                            APEX_COLLECTION, 9
+     APEX_PLUGIN_UTIL, 4
+                                                       COLLECTION_MEMBER_COUNT function
+CLEAR_DATA_REPORTER_REMAP procedure                         APEX_COLLECTION, 10
+     APEX_APPLICATION_INSTALL, 9
+                                                       collections
+CLEAR_DATASET_IMPORT_MODES procedure                        accessing, 2
+     APEX_APPLICATION_INSTALL, 8                            APEX_COLLECTION API, 2
+                                                            clearing session state, 4
+CLEAR_DML_ROWS procedure                                    determining status, 3
+     APEX_EXEC, 31
+                                                       COLUMN_EXISTS function
+CLEAR_PAGE_CACHE procedure                                  APEX_EXEC, 32
+     APEX_UTIL, 13
+                                                       COMPLETE_TASK procedure
+CLEAR_REPORT procedure signature 1                          APEX_APPROVAL, 10
+     APEX_IG, 7                                             APEX_HUMAN_TASK, 9
+     APEX_IR, 8
+                                                       constants
+CLEAR_REPORT procedure signature 2                          APEX_AI, 1
+     APEX_IG, 8, 9                                          APEX_APP_OBJECT_DEPENDENCY, 1
+     APEX_IR, 9                                             APEX_APPLICATION, 2
+                                                            APEX_APPLICATION_ADMIN, 2
+CLEAR_REPORT procedure signature 3                          APEX_APPROVAL, 2
+     APEX_IR, 10                                            APEX_AUTHENTICATION, 1
+                                                            APEX_BACKGROUND_PROCESS, 1
+CLEAR_REQUEST_COOKIES procedure                             APEX_DATA_EXPORT, 1
+     APEX_WEB_SERVICE, 10                                   APEX_DATA_PARSER, 1
+                                                            APEX_DEBUG, 2
+CLEAR_REQUEST_HEADERS procedure                             APEX_ESCAPE, 2
+     APEX_WEB_SERVICE, 11                                   APEX_EXEC, 6
+                                                            APEX_EXPORT, 1
+CLEAR_TOKENS procedure                                      APEX_HUMAN_TASK, 2
+     APEX_CREDENTIAL, 1                                     APEX_IR, 1
+                                                            APEX_JSON, 3
+CLEAR_USER_CACHE procedure                                  APEX_MARKDOWN, 1
+     APEX_UTIL, 14                                          APEX_PAGE, 1
+                                                            APEX_PLUGIN, 2
+CLEAR_USER_STYLE procedure                                  APEX_PRINT, 1
+     APEX_THEME, 2                                          APEX_SESSION_STATE, 1
+                                                            APEX_SHARED_COMPONENT, 1
+clearing session state                                      APEX_WEB_SERVICE, 8
+     collections, 4                                         APEX_WORKFLOW, 2
+
+clicks, counting, 14                                   Constructor
+CLOB_TO_BLOB function                                       APEX_T_JAVASCRIPT_OBJECT, 2
+
+     APEX_UTIL, 11                                     CONTINUE_ACTIVITY procedure signature 1
+CLOBBASE642BLOB function                                    APEX_WORKFLOW, 4
+
+     APEX_WEB_SERVICE, 11                              CONTINUE_ACTIVITY procedure signature 2
+CLONE_REPORT function                                       APEX_WORKFLOW, 4
+
+     APEX_IR, 11                                                                                                           July 24, 2026
+CLOSE procedure                                                                                                    Index-4 of Index-24
+
+     APEX_EXEC, 31
+CLOSE_ALL procedure
+
+     APEX_JSON, 4
+CLOSE_ARRAY procedure
+
+     APEX_EXEC, 32
+     APEX_JSON, 5
+
+API Reference
+G26651-03
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+COPY_DATA procedure                                                                                                  Index
+     APEX_EXEC, 33
+                                                       CSV function signature 2
+COUNT_CLICK procedure                                       APEX_ESCAPE, 3
+     APEX_UTIL, 14
+                                                       CURRENT_PAGE_IS_PUBLIC function
+CREATE_CLOUD_CREDENTIAL procedure                           APEX_CUSTOM_AUTH, 2
+     APEX_INSTANCE_ADMIN, 24
+                                                       CURRENT_ROW_CHANGED function
+CREATE_COLLECTION procedure                                 API_PLUGIN_UTIL, 4
+     APEX_COLLECTION, 10
+                                                       CURRENT_USER_IN_GROUP function
+CREATE_COLLECTION_FROM_QUERY                                APEX_UTIL, 20
+          procedure
+                                                       CUSTOM_CALENDAR procedure
+     APEX_COLLECTION, 11                                    APEX_UTIL, 20
+CREATE_COLLECTION_FROM_QUERY_B
+                                                       D
+          procedure
+     APEX_COLLECTION, 13                               data types
+CREATE_COLLECTION_FROM_QUERY_B                              APEX_AI, 1
+                                                            APEX_APPLICATION_ADMIN, 2
+          procedure (no bind version)                       APEX_APPROVAL, 2
+     APEX_COLLECTION, 14                                    APEX_BACKGROUND_PROCESS, 2
+CREATE_COLLECTION_FROM_QUERY2                               APEX_DATA_EXPORT, 3
+                                                            APEX_DATA_LOADING, 1
+          procedure                                         APEX_DATA_PARSER, 1
+     APEX_COLLECTION, 12                                    APEX_EXEC, 10
+CREATE_COLLECTION_FROM_QUERYB2                              APEX_EXPORT, 1
+                                                            APEX_HUMAN_TASK, 2
+          procedure                                         APEX_IR, 1
+     APEX_COLLECTION, 15                                    APEX_JAVASCRIPT, 1
+CREATE_COLLECTION_FROM_QUERYB2                              APEX_JSON, 3
+                                                            APEX_PLUGIN, 3, 5�8, 10, 14, 15, 18
+          procedure (no bind version)                       APEX_SESSION_STATE, 1
+     APEX_COLLECTION, 17                                    APEX_SPATIAL, 1
+CREATE_CREDENTIAL procedure signature 1                     APEX_WEB_SERVICE, 7
+     APEX_CREDENTIAL, 2                                     APEX_WORKFLOW, 2
+CREATE_CREDENTIAL procedure signature 2                     APEX_ZIP, 1
+     APEX_CREDENTIAL, 3
+CREATE_LANGUAGE_MAPPING procedure                      DATE_POPUP function
+     APEX_LANG, 2                                           APEX_ITEM, 3, 4
+CREATE_MESSAGE procedure
+     APEX_LANG, 3                                      DB_OPERATION_ALLOWED function
+CREATE_OR_TRUNCATE_COLLECTION                               APEX_PLUGIN_UTIL, 6
+
+          procedure                                    DB_SIGNATURE function
+     APEX_COLLECTION, 18                                    APEX_INSTANCE_ADMIN, 26
+CREATE_OR_UPDATE_ADMIN_USER
+                                                       DEBUG_DYNAMIC_ACTION procedure
+          procedure                                         APEX_PLUGIN_UTIL, 7
+     APEX_INSTANCE_ADMIN, 24
+CREATE_SCHEMA_EXCEPTION procedure                      DEBUG_PAGE_ITEM procedure signature 1
+     APEX_INSTANCE_ADMIN, 25                                APEX_PLUGIN_UTIL, 7
+CREATE_SESSION procedure
+     APEX_SESSION, 2                                   DEBUG_PAGE_ITEM procedure signature 2
+CREATE_TASK function                                        APEX_PLUGIN_UTIL, 8
+     APEX_APPROVAL, 11
+     APEX_HUMAN_TASK, 10                               DEBUG_PROCESS procedure
+CREATE_USER procedure                                       APEX_PLUGIN_UTIL, 9
+     APEX_UTIL, 15
+CREATE_USER_GROUP procedure                            DEBUG_REGION procedure signature 1
+     APEX_UTIL, 19                                          APEX_PLUGIN_UTIL, 9
+CSS_SELECTOR function
+     APEX_ESCAPE, 2                                    DEBUG_REGION procedure signature 2
+CSV function                                                APEX_PLUGIN_UTIL, 10
+     APEX_ESCAPE, 2
+                                                       DECODE function
+API Reference                                               APEX_JWT, 3
+G26651-03
+Copyright � 2003, 2026, Oracle and/or its affiliates.  DEFINE_USER_SESSION procedure
+                                                            APEX_CUSTOM_AUTH, 3
+
+                                                                                                                           July 24, 2026
+                                                                                                                   Index-5 of Index-24
+DEL_AD_COLUMN procedure                                                                                              Index
+     APEX_UI_DEFAULT_UPDATE, 4
+                                                       DIFF function
+DEL_AD_SYNONYM procedure                                    APEX_STRING_UTIL, 1
+     APEX_UI_DEFAULT_UPDATE, 4
+                                                       DISABLE procedure
+DEL_COLUMN procedure                                        APEX_AUTOMATION, 2
+     APEX_UI_DEFAULT_UPDATE, 5                              APEX_DEBUG, 2
+                                                            APEX_INSTANCE_DEBUG, 1
+DEL_GROUP procedure                                         APEX_REST_SOURCE_SYNC, 1
+     APEX_UI_DEFAULT_UPDATE, 5
+                                                       DISABLE_DBMS_OUTPUT procedure
+DEL_TABLE procedure                                         APEX_DEBUG, 3
+     APEX_UI_DEFAULT_UPDATE, 6
+                                                       DISABLE_USER_STYLE procedure
+DELEGATE_TASK procedure                                     APEX_THEME, 3
+     APEX_APPROVAL, 13
+     APEX_HUMAN_TASK, 12                               DISCOVER function
+                                                            APEX_DATA_PARSER, 3
+DELETE_ALL_COLLECTIONS procedure
+     APEX_COLLECTION, 19                               DISPLAY_AND_SAVE function
+                                                            APEX_ITEM, 6
+DELETE_ALL_COLLECTIONS_SESSION
+          procedure                                    DOES_EXIST function
+                                                            APEX_JSON, 5
+     APEX_COLLECTION, 19
+DELETE_COLLECTION procedure                            DOWNLOAD procedure
+                                                            APEX_DATA_EXPORT, 11
+     APEX_COLLECTION, 20
+DELETE_FEEDBACK procedure                              DOWNLOAD procedure signature 1
+                                                            APEX_HTTP, 1
+     APEX_UTIL, 21
+DELETE_FEEDBACK_ATTACHMENT procedure                   DOWNLOAD procedure signature 2
+                                                            APEX_HTTP, 2
+     APEX_UTIL, 21
+DELETE_GEOM_METADATA procedure                         DOWNLOAD_PRINT_DOCUMENT procedure
+                                                                 signature 1
+     APEX_SPATIAL, 3
+DELETE_LANGUAGE_MAPPING procedure                           APEX_UTIL, 23
+                                                       DOWNLOAD_PRINT_DOCUMENT procedure
+     APEX_LANG, 4
+DELETE_MEMBER procedure                                          signature 2
+                                                            APEX_UTIL, 24
+     APEX_COLLECTION, 20                               DOWNLOAD_PRINT_DOCUMENT procedure
+DELETE_MEMBERS procedure
+                                                                 signature 3
+     APEX_COLLECTION, 21                                    APEX_UTIL, 25
+DELETE_MESSAGE procedure                               DOWNLOAD_PRINT_DOCUMENT procedure
+
+     APEX_LANG, 6                                                signature 4
+DELETE_REPORT procedure                                     APEX_UTIL, 27
+                                                       DROP_CLOUD_CREDENTIAL procedure
+     APEX_IG, 10                                            APEX_INSTANCE_ADMIN, 26
+     APEX_IR, 11                                       DROP_CREDENTIAL procedure
+DELETE_SESSION procedure                                    APEX_CREDENTIAL, 4
+     APEX_SESSION, 3                                   DYNAMIC_SYNCHRONIZE_DATA procedure
+DELETE_SUBSCRIPTION procedure                               APEX_REST_SOURCE_SYNC, 2
+     APEX_IR, 12
+DELETE_TASKS procedure                                 E
+     APEX_HUMAN_TASK, 12
+DELETE_USER_GROUP procedure signature 1                EDIT_USER procedure
+     APEX_UTIL, 22                                          APEX_UTIL, 28
+DELETE_USER_GROUP procedure signature 2
+     APEX_UTIL, 23                                     email
+DELETE_WORKFLOWS procedure                                  sending as an attachment, 2, 4
+     APEX_WORKFLOW, 5                                       sending messages in APEX_MAIL_QUEUE, 8
+DESCRIBE_QUERY function signature 1                         sending outbound, 14
+     APEX_EXEC, 35
+DESCRIBE_QUERY function signature 2                    EMIT_LANGUAGE_SELECTOR_LIST procedure
+     APEX_EXEC, 36                                          APEX_LANG, 7
+DETACH procedure
+     APEX_SESSION, 3                                   ENABLE procedure
+                                                            APEX_AUTOMATION, 3
+API Reference                                               APEX_DEBUG, 3
+G26651-03                                                   APEX_INSTANCE_DEBUG, 1
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                           July 24, 2026
+                                                                                                                   Index-6 of Index-24
+ENABLE procedure (continued)                                                                                         Index
+     APEX_REST_SOURCE_SYNC, 3
+                                                       EXIT procedure
+ENABLE_DBMS_OUTPUT procedure                                APEX_AUTOMATION, 6
+     APEX_DEBUG, 5
+                                                       EXPIRE_END_USER_ACCOUNT procedure
+ENABLE_DYNAMIC_GROUPS procedure                             APEX_UTIL, 32
+     APEX_AUTHORIZATION, 1
+                                                       EXPIRE_WORKSPACE_ACCOUNT procedure
+ENABLE_USER_STYLE procedure                                 APEX_UTIL, 33
+     APEX_THEME, 4
+                                                       export file
+ENCODE function                                             of workspace, 34
+     APEX_JWT, 1
+                                                       EXPORT function
+END_USER_ACCOUNT_DAYS_LEFT function                         APEX_DATA_EXPORT, 12
+     APEX_UTIL, 31
+                                                       EXPORT_BLUEPRINT function
+ENQUOTE_LITERAL function                                    APEX_DG_DATA_GEN, 11
+     APEX_EXEC, 37
+                                                       EXPORT_DATA function
+ENQUOTE_NAME function                                       APEX_REGION, 3
+     APEX_EXEC, 38
+                                                       EXPORT_SAVED_REPORTS function
+ENTER procedure                                             APEX_IR, 12
+     APEX_DEBUG, 4
+                                                       EXPORT_TEXT_MESSAGES function signature
+error handling function                                          1
+     APEX_ERROR, 3
+                                                            APEX_LANG, 7
+ERROR procedure                                        EXPORT_TEXT_MESSAGES function signature
+     APEX_DEBUG, 6
+                                                                 2
+ESCAPE function                                             APEX_LANG, 8
+     APEX_JAVASCRIPT, 12                               EXPORT_USERS procedure
+     APEX_PLUGIN_UTIL, 11                                   APEX_UTIL, 34
+                                                       EXTRACT_CONSTRAINT_NAME function
+EXCECUTE_DML procedure                                      APEX_ERROR, 11
+     APEX_EXEC, 39
+                                                       F
+EXCLUDE_POTENTIAL_OWNER procedure
+     APEX_HUMAN_TASK, 13                               FEEDBACK_ENABLED function
+                                                            APEX_UTIL, 35
+EXECUTE for query context procedure
+     APEX_AUTOMATION, 5                                FETCH_APP_ITEM function
+                                                            APEX_UTIL, 35
+EXECUTE procedure signature 1
+     APEX_AUTOMATION, 3                                FETCH_USER procedure signature 1
+                                                            APEX_UTIL, 36
+EXECUTE procedure signature 2
+     APEX_AUTOMATION, 4                                FETCH_USER procedure signature 2
+                                                            APEX_UTIL, 38
+EXECUTE_PLSQL procedure signature 1
+     APEX_EXEC, 40                                     FETCH_USER procedure signature 3
+                                                            APEX_UTIL, 40
+EXECUTE_PLSQL procedure signature 2
+     APEX_EXEC, 41                                     file repository
+                                                            downloading files, 54
+EXECUTE_PLSQL_CODE procedure                                obtaining primary key, 55
+     APEX_PLUGIN_UTIL, 11
+                                                       FIND_EMAIL_ADDRESSES function
+EXECUTE_REMOTE_PLSQL procedure                              APEX_STRING_UTIL, 2
+          signature 1
+                                                       FIND_EMAIL_FROM function
+     APEX_EXEC, 41                                          APEX_STRING_UTIL, 3
+EXECUTE_REMOTE_PLSQL procedure
+                                                       FIND_EMAIL_SUBJECT function
+          signature 2                                       APEX_STRING_UTIL, 4
+     APEX_EXEC, 42
+EXECUTE_REST_SOURCE procedure signature                FIND_IDENTIFIERS function
+                                                            APEX_STRING_UTIL, 4
+          1
+     APEX_EXEC, 43                                     FIND_LINKS function
+EXECUTE_REST_SOURCE procedure signature                     APEX_STRING_UTIL, 5
+
+          2                                            FIND_PATHS_LIKE function
+     APEX_EXEC, 44                                          APEX_JSON, 6
+EXECUTE_WEB_SOURCE procedure
+     APEX_EXEC, 45                                     FIND_PHRASES function
+                                                            APEX_STRING_UTIL, 6
+API Reference
+G26651-03                                                                                                                  July 24, 2026
+Copyright � 2003, 2026, Oracle and/or its affiliates.                                                              Index-7 of Index-24
+FIND_SECURITY_GROUP_ID function                                                                                      Index
+     APEX_UTIL, 43
+                                                       GET function
+FIND_TAGS function                                          APEX_EXEC, 46
+     APEX_STRING_UTIL, 7
+                                                       GET_ACCOUNT_LOCKED_STATUS function
+FIND_WORKSPACE function                                     APEX_UTIL, 44
+     APEX_UTIL, 44
+                                                       GET_AJAX_IDENTIFIER function
+FINISH procedure                                            APEX_PLUGIN, 30
+     APEX_ZIP, 3
+                                                       GET_ALL_USER_ATTRIBUTES procedure
+flexible remote servers, 1                                  APEX_LDAP, 2
+FLUSH procedure
+                                                       GET_APEX_OWNER function
+     APEX_JSON, 7                                           APEX_UTIL, 45
+FORMAT function
+                                                       GET_APPLICATION function
+     APEX_STRING, 2                                         APEX_EXPORT, 2
+FORMAT_METADATA Function Signature 1
+                                                       GET_APPLICATION_ALIAS function
+     APEX_DB_DICTIONARY, 10                                 APEX_APPLICATION_ADMIN, 2
+FORMAT_METADATA Function Signature 2                        APEX_APPLICATION_INSTALL, 10
+
+     APEX_DB_DICTIONARY, 11                            GET_APPLICATION_ID function
+FREE_OUTPUT procedure                                       APEX_APPLICATION_INSTALL, 11
+
+     APEX_JSON, 8                                      GET_APPLICATION_NAME function
+FREE_WORKSPACE_APP_IDS procedure                            APEX_APPLICATION_ADMIN, 3
+                                                            APEX_APPLICATION_INSTALL, 12
+     APEX_INSTANCE_ADMIN, 27
+                                                       GET_APPLICATION_STATUS function
+G                                                           APEX_APPLICATION_ADMIN, 4
+                                                            APEX_UTIL, 46
+G_Fnn arrays, 1
+GENERATE function signature 1                          GET_APPLICATION_VERSION function
+                                                            APEX_APPLICATION_ADMIN, 4
+     APEX_AI, 11
+GENERATE function signature 2                          GET_ARRAY_ROW_DML_OPERATION function
+                                                            APEX_EXEC, 49
+     APEX_AI, 12
+GENERATE function signature 3                          GET_ARRAY_ROW_VERSION_CHECKSUM
+                                                                 function
+     APEX_AI, 17
+GENERATE_APPLICATION_ID procedure                           APEX_EXEC, 50
+                                                       GET_ATTRIBUTE function
+     APEX_APPLICATION_INSTALL, 9
+GENERATE_DATA procedure                                     APEX_UTIL, 47
+                                                       GET_ATTRIBUTE_AS_NUMBER function
+     APEX_DG_DATA_GEN, 12, 13
+GENERATE_DATA_INTO_COLLECTION                               APEX_PLUGIN_UTIL, 12
+                                                       GET_AUTHENTICATION_RESULT function
+          procedure
+     APEX_DG_DATA_GEN, 15                                   APEX_UTIL, 47
+GENERATE_DOCUMENT function signature 1                 GET_AUTHENTICATION_SCHEME function
+     APEX_PRINT, 2
+GENERATE_DOCUMENT function signature 2                      APEX_APPLICATION_ADMIN, 5
+     APEX_PRINT, 3                                          APEX_APPLICATION_INSTALL, 12
+GENERATE_DOCUMENT function signature 3                 GET_AUTO_INSTALL_SUP_OBJ function
+     APEX_PRINT, 4                                          APEX_APPLICATION_INSTALL, 13
+GENERATE_DOCUMENT function signature 4                 GET_AVAILABLE_TOKENS function
+     APEX_PRINT, 5                                          APEX_AI, 18
+GENERATE_DOCUMENT function signature 5                 GET_BLOB_FILE_SRC function
+     APEX_PRINT, 6                                          APEX_UTIL, 48
+GENERATE_DOCUMENT function Signature 6                 GET_BLUEPRINT_ID function
+     APEX_PRINT, 7                                          APEX_DG_DATA_GEN, 16
+GENERATE_OFFSET procedure                              GET_BOOLEAN function
+     APEX_APPLICATION_INSTALL, 10                           APEX_JSON, 8
+GENERATE_PUSH_CREDENTIALS procedure                         APEX_SESSION_STATE, 2
+     APEX_PWA, 1                                       GET_BP_TABLE_ID function
+GENERATE_REQUEST_BODY function                              APEX_DG_DATA_GEN, 17
+     APEX_WEB_SERVICE, 12                              GET_BUILD_OPTION_STATUS function
+
+API Reference                                                    signature 1
+G26651-03                                                   APEX_APPLICATION_ADMIN, 6
+Copyright � 2003, 2026, Oracle and/or its affiliates.       APEX_UTIL, 49
+
+                                                                                                                           July 24, 2026
+                                                                                                                   Index-8 of Index-24
+GET_BUILD_OPTION_STATUS function                                                                                     Index
+          signature 2
+                                                       GET_DATA2 function signature 2
+     APEX_APPLICATION_ADMIN, 6                              APEX_PLUGIN_UTIL, 20
+     APEX_UTIL, 50
+GET_BUILD_STATUS function                              GET_DATASET_IMPORT_MODE function
+     APEX_APPLICATION_ADMIN, 7                              APEX_APPLICATION_INSTALL, 14
+     APEX_APPLICATION_INSTALL, 13
+GET_BUILDER_LINK function                              GET_DATE function
+     APEX_EXTENSION, 2                                      APEX_JSON, 12
+GET_CACHE_DATE function
+     APEX_PAGE, 1                                      GET_DEFAULT_SCHEMA function
+     APEX_REGION, 5                                         APEX_UTIL, 51
+GET_CALLBACK_URL procedure
+     APEX_AUTHENTICATION, 5                            GET_DIR_ENTRIES function
+GET_CLOB function                                           APEX_ZIP, 3
+     APEX_JSON, 9
+     APEX_SESSION_STATE, 2                             GET_DISPLAY_DATA function signature 1
+GET_CLOB_OUTPUT function                                    APEX_PLUGIN_UTIL, 22
+     APEX_JSON, 10
+GET_CODE128_PNG function                               GET_DISPLAY_DATA function signature 2
+     APEX_BARCODE, 1                                        APEX_PLUGIN_UTIL, 23
+GET_CODE128_SVG function
+     APEX_BARCODE, 2                                   GET_DML_STATUS_CODE function
+GET_COLUMN function                                         APEX_EXEC, 53
+     APEX_EXEC, 50
+GET_COLUMN_COUNT function                              GET_DML_STATUS_MESSAGE function
+     APEX_EXEC, 51                                          APEX_EXEC, 53
+GET_COLUMN_POSITION function
+     APEX_EXEC, 52                                     GET_DOMAIN function
+GET_COLUMNS function                                        APEX_STRING_UTIL, 8
+     APEX_DATA_PARSER, 5
+     APEX_EXEC, 51                                     GET_EAN8_PNG function
+GET_COOKIE_PROPS procedure                                  APEX_BARCODE, 3
+     APEX_CUSTOM_AUTH, 3
+GET_COUNT function                                     GET_EAN8_SVG function
+     APEX_JSON, 11                                          APEX_BARCODE, 4
+GET_CSV_ENCLOSED_BY function
+     APEX_ESCAPE, 4                                    GET_EDITION function
+GET_CSV_SEPARATED_BY function                               APEX_UTIL, 52
+     APEX_ESCAPE, 5
+GET_CURRENT_DATABASE_TYPE function                     GET_ELEMENT_ATTRIBUTES function
+     APEX_PLUGIN_UTIL, 13                                   APEX_PLUGIN_UTIL, 25
+GET_CURRENT_EXECUTION function
+     APEX_BACKGROUND_PROCESS, 4                        GET_EXAMPLE function
+GET_CURRENT_USER_ID function                                APEX_DG_DATA_GEN, 17
+     APEX_UTIL, 51
+GET_DATA function signature 1                          GET_EXECUTION function
+     APEX_PLUGIN_UTIL, 13                                   APEX_BACKGROUND_PROCESS, 4
+GET_DATA function signature 2
+     APEX_PLUGIN_UTIL, 15                              GET_FEEDBACK function
+GET_DATA_REPORTER_REMAP function                            APEX_EXPORT, 4
+     APEX_APPLICATION_INSTALL, 14
+GET_DATA_TYPE function                                 GET_FEEDBACK_FOLLOW_UP function
+     APEX_EXEC, 52                                          APEX_UTIL, 53
+GET_DATA2 function signature 1
+     APEX_PLUGIN_UTIL, 17                              GET_FILE procedure
+                                                            APEX_UTIL, 54
+API Reference
+G26651-03                                              GET_FILE_CONTENT function signature 1
+Copyright � 2003, 2026, Oracle and/or its affiliates.            (deprecated)
+
+                                                            APEX_ZIP, 5
+                                                       GET_FILE_CONTENT function signature 2
+
+                                                            APEX_ZIP, 5
+                                                       GET_FILE_EXTENSION function
+
+                                                            APEX_STRING_UTIL, 8
+                                                       GET_FILE_ID function
+
+                                                            APEX_UTIL, 55
+                                                       GET_FILE_PROFILE function
+
+                                                            APEX_DATA_LOADING, 1
+                                                            APEX_DATA_PARSER, 6
+                                                       GET_FILE_STORAGE function
+                                                            APEX_APPLICATION_ADMIN, 8
+                                                       GET_FILE_TYPE function
+                                                            APEX_DATA_PARSER, 8
+                                                       GET_FILES function
+                                                            APEX_ZIP, 6
+
+                                                                                                                           July 24, 2026
+                                                                                                                   Index-9 of Index-24
+GET_FIRST_NAME function                                                                                              Index
+     APEX_UTIL, 56
+                                                       GET_LAST_SYNC_TIMESTAMP function
+GET_FIRST_ORA_ERROR_TEXT procedure                          APEX_REST_SOURCE_SYNC, 3
+     APEX_ERROR, 12
+                                                       GET_LAST_VIEWED_REPORT_ID function
+GET_GLOBAL_NOTIFICATION function                            APEX_IG, 11
+     APEX_APPLICATION_ADMIN, 8                              APEX_IR, 13
+     APEX_UTIL, 57
+                                                       GET_LDAP_PROPS procedure
+GET_GRANTOR_WORKSPACE function                              APEX_CUSTOM_AUTH, 4
+     APEX_EXTENSION, 4
+                                                       GET_LOGIN_USERNAME_COOKIE_LOGIN
+GET_GROUP_ID function                                            function
+     APEX_UTIL, 58
+                                                            APEX_AUTHENTICATION, 5
+GET_GROUP_NAME function                                GET_LOV_ACTIVITY_STATE function
+     APEX_UTIL, 59
+                                                            APEX_WORKFLOW, 6
+GET_GROUPS_USER_BELONGS_TO function                    GET_LOV_PRIORITY function
+     APEX_UTIL, 58
+                                                            APEX_APPROVAL, 14
+GET_HASH function                                           APEX_HUMAN_TASK, 14
+     APEX_UTIL, 60                                     GET_LOV_STATE function
+                                                            APEX_APPROVAL, 14
+GET_HIGH_CONTRAST_MODE_TOGGLE                               APEX_HUMAN_TASK, 14
+          function                                     GET_LOV_TYPE function
+                                                            APEX_HUMAN_TASK, 15
+     APEX_UTIL, 61                                     GET_LOV_WORKFLOW_STATE function
+GET_HTML_ATTR function                                      APEX_WORKFLOW, 6
+                                                       GET_MAX_SCHEDULER_JOBS function
+     APEX_PLUGIN_UTIL, 27                                   APEX_APPLICATION_ADMIN, 9
+GET_ID function signature 1                                 APEX_APPLICATION_INSTALL, 18
+                                                       GET_MEMBER_MD5 function
+     APEX_REGION, 6                                         APEX_COLLECTION, 22
+GET_ID function signature 2                            GET_MEMBERS function
+                                                            APEX_JSON, 13
+     APEX_REGION, 6                                    GET_MESSAGE function
+GET_IMAGE_PREFIX function                                   APEX_LANG, 10
+                                                       GET_METADATA Function
+     APEX_APPLICATION_ADMIN, 9                              APEX_DB_DICTIONARY, 1
+     APEX_APPLICATION_INSTALL, 15                      GET_NEXT_PURGE_TIMESTAMP function
+GET_IMAGES_URL function                                     APEX_APPROVAL, 15
+     APEX_MAIL, 5                                           APEX_HUMAN_TASK, 15
+GET_INFO function                                           APEX_WORKFLOW, 7
+     APEX_APPLICATION_INSTALL, 16                      GET_NEXT_SESSION_ID function
+GET_INITIALS function                                       APEX_CUSTOM_AUTH, 5
+     APEX_STRING, 3                                    GET_NO_PROXY_DOMAINS function
+GET_INPUT_NAME_FOR_ITEM function                            APEX_APPLICATION_ADMIN, 10
+     APEX_PLUGIN, 32                                        APEX_APPLICATION_INSTALL, 19
+GET_INPUT_NAME_FOR_PAGE_ITEM function                  GET_NUMBER function
+     APEX_PLUGIN, 32                                        APEX_JSON, 14
+GET_INSTANCE_URL function                                   APEX_SESSION_STATE, 2
+     APEX_MAIL, 6                                      GET_NUMERIC_SESSION_STATE function
+GET_KEEP_BACKGROUND_EXECS function                          APEX_UTIL, 62
+     APEX_APPLICATION_INSTALL, 17, 31                  GET_OFFSET function
+GET_KEEP_SESSIONS function                                  APEX_APPLICATION_INSTALL, 19
+     APEX_APPLICATION_INSTALL, 18                      GET_ORDERBY_NULLS_SUPPORT function
+GET_LANGUAGE_SELECTOR_LIST function                         APEX_PLUGIN_UTIL, 27
+     APEX_LANG, 9                                      GET_PAGE_MODE function
+GET_LAST_MESSAGE_ID function                                APEX_PAGE, 2
+     APEX_DEBUG, 7                                     GET_PAGE_VIEW_ID function
+GET_LAST_NAME function                                      APEX_DEBUG, 8
+     APEX_UTIL, 62
+GET_LAST_RUN function                                                                                                      July 24, 2026
+     APEX_AUTOMATION, 6                                                                                          Index-10 of Index-24
+GET_LAST_RUN_TIMESTAMP function
+     APEX_AUTOMATION, 7
+
+API Reference
+G26651-03
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+GET_PARAMETER function                                                                                               Index
+     APEX_EXEC, 54
+     APEX_INSTANCE_ADMIN, 27                           GET_REMOTE_SERVER_BASE_URL function
+                                                            APEX_APPLICATION_INSTALL, 24
+GET_PARSING_SCHEMA function
+     APEX_APPLICATION_ADMIN, 10                        GET_REMOTE_SERVER_DEFAULT_DB function
+                                                            APEX_APPLICATION_INSTALL, 24
+GET_PASS_ECID function
+     APEX_APPLICATION_ADMIN, 11                        GET_REMOTE_SERVER_HTTPS_HOST
+     APEX_APPLICATION_INSTALL, 20                                function
+
+GET_PLSQL_EXPR_RESULT_BOOLEAN                               APEX_APPLICATION_INSTALL, 25
+          function                                     GET_REMOTE_SERVER_SQL_MODE function
+
+     APEX_PLUGIN_UTIL, 28                                   APEX_APPLICATION_INSTALL, 26
+GET_PLSQL_EXPR_RESULT_CLOB function                    GET_REPORT function
+
+     APEX_PLUGIN_UTIL, 29                                   APEX_IR, 14
+GET_PLSQL_EXPRESSION_RESULT function                   GET_REQUEST_HEADER function
+
+     APEX_PLUGIN_UTIL, 29                                   APEX_WEB_SERVICE, 12
+GET_PLSQL_FUNC_RESULT_BOOLEAN                          GET_REST_SOURCE_CATALOG_GROUP
+
+          function                                               function
+     APEX_PLUGIN_UTIL, 30                                   APEX_APPLICATION_INSTALL, 26
+GET_PLSQL_FUNC_RESULT_CLOB function                    GET_ROW_VERSION_CHECKSUM function
+     APEX_PLUGIN_UTIL, 31                                   APEX_EXEC, 55
+GET_PLSQL_FUNCTION_RESULT function                     GET_SCHEDULER_JOB_NAME function
+     APEX_PLUGIN_UTIL, 32                                   APEX_AUTOMATION, 8
+GET_POSITION_IN_LIST function                          GET_SCHEMA function
+     APEX_PLUGIN_UTIL, 32                                   APEX_APPLICATION_INSTALL, 27
+GET_PREFERENCE function                                GET_SCHEMAS function
+     APEX_UTIL, 63                                          APEX_INSTANCE_ADMIN, 28
+GET_PRIMARY_KEY_COLUMNS Function                       GET_SCREEN_READER_MODE_TOGGLE
+     APEX_DB_DICTIONARY, 2
+GET_PRINT_CONFIG function                                        function
+     APEX_DATA_EXPORT, 14                                   APEX_UTIL, 67
+GET_PRINT_DOCUMENT function signature 1                GET_SDO_GEOMETRY function
+     APEX_UTIL, 64                                          APEX_JSON, 15
+GET_PRINT_DOCUMENT function signature 2                GET_SEARCH_STRING function
+     APEX_UTIL, 65                                          APEX_PLUGIN_UTIL, 33
+GET_PRINT_DOCUMENT function signature 3                GET_SEARCHABLE_PHRASES function
+     APEX_UTIL, 65                                          APEX_STRING, 4
+GET_PRINT_DOCUMENT function signature 4                GET_SECURITY_GROUP_ID function
+     APEX_UTIL, 66                                          APEX_CUSTOM_AUTH, 6
+GET_PROXY function                                     GET_SESSION_ID function
+     APEX_APPLICATION_INSTALL, 20                           APEX_CUSTOM_AUTH, 6
+GET_PROXY_SERVER function                              GET_SESSION_ID_FROM_COOKIE
+     APEX_APPLICATION_ADMIN, 11                             APEX_CUSTOM_AUTH, 6
+GET_QRCODE_PNG function                                GET_SESSION_LANG function
+     APEX_BARCODE, 5                                        APEX_UTIL, 68
+GET_QRCODE_SVG function                                GET_SESSION_STATE function
+     APEX_BARCODE, 6                                        APEX_UTIL, 69
+GET_REMOTE_SERVER_AI_ATTRS function                    GET_SESSION_TERRITORY function
+     APEX_APPLICATION_INSTALL, 21                           APEX_UTIL, 69
+GET_REMOTE_SERVER_AI_HEADERS function                  GET_SESSION_TIME_ZONE function
+     APEX_APPLICATION_INSTALL, 22                           APEX_UTIL, 70
+GET_REMOTE_SERVER_AI_MAXTOKENS                         GET_SINCE function signature 1
+                                                            APEX_UTIL, 70
+          function                                     GET_SINCE function signature 2
+     APEX_APPLICATION_INSTALL, 22                           APEX_UTIL, 71
+GET_REMOTE_SERVER_AI_MODEL function                    GET_SLUG function
+     APEX_APPLICATION_INSTALL, 23                           APEX_STRING_UTIL, 9
+                                                       GET_SUBSCRIPTION_MAPPING function
+API Reference                                               APEX_APPLICATION_INSTALL, 27
+G26651-03
+Copyright � 2003, 2026, Oracle and/or its affiliates.                                                                      July 24, 2026
+                                                                                                                 Index-11 of Index-24
+GET_SUBSCRIPTION_MODE function                                                                                       Index
+     APEX_APPLICATION_INSTALL, 28
+                                                       GET_USER_ATTRIBUTES procedure
+GET_SUPPORTING_OBJECT_SCRIPT function                       APEX_LDAP, 3
+     APEX_UTIL, 72
+                                                       GET_USER_ID function
+GET_SUPPORTING_OBJECT_SCRIPT                                APEX_UTIL, 74
+          procedure
+                                                       GET_USER_ROLES function
+     APEX_UTIL, 73                                          APEX_UTIL, 75
+GET_SYNC_TABLE_DEFINITION_SQL function
+                                                       GET_USER_STYLE Function
+     APEX_REST_SOURCE_SYNC, 4                               APEX_THEME, 5
+GET_T_NUMBER function
+                                                       GET_USERNAME
+     APEX_JSON, 16                                          APEX_CUSTOM_AUTH, 7
+GET_T_VARCHAR2 function
+                                                       GET_USERNAME function
+     APEX_JSON, 17                                          APEX_UTIL, 75
+GET_TABLE_INFO Function Signature 1
+                                                       GET_VALUE function
+     APEX_DB_DICTIONARY, 3                                  APEX_APP_SETTING, 1
+GET_TABLE_INFO Function Signature 2                         APEX_JSON, 19
+                                                            APEX_SESSION_STATE, 3
+     APEX_DB_DICTIONARY, 4
+GET_TABLE_INFO_REGEX Function                          GET_VALUE_AS_VARCHAR2 function
+                                                            APEX_PLUGIN_UTIL, 34
+     APEX_DB_DICTIONARY, 5
+GET_TABLES_ARRAY Function                              GET_VALUE_KIND function
+                                                            APEX_JSON, 19
+     APEX_DB_DICTIONARY, 6
+GET_TABLES_JSON Function                               GET_VARCHAR2 function
+                                                            APEX_JSON, 21
+     APEX_DB_DICTIONARY, 7                                  APEX_SESSION_STATE, 3
+GET_TABLES_SUMMARY Function
+                                                       GET_VARIABLE_CLOB_VALUE function
+     APEX_DB_DICTIONARY, 9                                  APEX_WORKFLOW, 7
+GET_TASK_DELEGATES function
+                                                       GET_VARIABLE_VALUE function
+     APEX_APPROVAL, 15                                      APEX_WORKFLOW, 8
+     APEX_HUMAN_TASK, 15
+GET_TASK_HISTORY function                              GET_VECTOR_EMBEDDINGS function signature
+     APEX_APPROVAL, 16                                           1
+     APEX_HUMAN_TASK, 16
+GET_TASK_PARAMETER_OLD_VALUE function                       APEX_AI, 19
+     APEX_APPROVAL, 18                                 GET_VECTOR_EMBEDDINGS function signature
+     APEX_HUMAN_TASK, 17
+GET_TASK_PARAMETER_VALUE function                                2
+     APEX_APPROVAL, 18                                      APEX_AI, 19
+     APEX_HUMAN_TASK, 17                               GET_VECTOR_EMBEDDINGS function signature
+GET_TASK_PRIORITIES function
+     APEX_APPROVAL, 19                                           3
+     APEX_HUMAN_TASK, 18                                    APEX_AI, 20
+GET_TASKS function                                     GET_WEB_SOURCE_OPERATION function
+     APEX_APPROVAL, 20                                      APEX_PLUGIN_UTIL, 35
+     APEX_HUMAN_TASK, 19                               GET_WEIGHTED_INLINE_DATA function
+GET_THEME_ID function                                       APEX_DG_DATA_GEN, 18
+     APEX_APPLICATION_INSTALL, 28                      GET_WORKFLOW_STATE function
+GET_TIMESTAMP function                                      APEX_WORKFLOW, 9
+     APEX_SESSION_STATE, 2                             GET_WORKFLOWS function
+GET_TOTAL_ROW_COUNT function                                APEX_WORKFLOW, 9
+     APEX_EXEC, 55                                     GET_WORKSPACE function
+GET_UI_TYPE function (deprecated)                           APEX_EXPORT, 5
+     APEX_PAGE, 2                                      GET_WORKSPACE_FILES function
+GET_URL function                                            APEX_EXPORT, 6
+     APEX_PAGE, 2                                      GET_WORKSPACE_ID function
+GET_USER function                                           APEX_APPLICATION_INSTALL, 29
+     APEX_CUSTOM_AUTH, 7                               GET_WORKSPACE_PARAMETER procedure
+                                                            APEX_INSTANCE_ADMIN, 28
+API Reference                                          GET_XLIFF_DOCUMENT function
+G26651-03                                                   APEX_LANG, 11
+Copyright � 2003, 2026, Oracle and/or its affiliates.  GET_XLSX_WORKSHEETS function
+                                                            APEX_DATA_PARSER, 9
+
+                                                                                                                           July 24, 2026
+                                                                                                                 Index-12 of Index-24
+global constants                                                                                                     Index
+     APEX_APP_OBJECT_DEPENDENCY, 1
+     APEX_APPLICATION, 2                               HAS_USER_ROLE function
+     APEX_APPLICATION_ADMIN, 2                              APEX_ACL, 3
+     APEX_APPROVAL, 2
+     APEX_AUTHENTICATION, 1                            HAVE_ERRORS_OCCURRED function
+     APEX_BACKGROUND_PROCESS, 1                             APEX_ERROR, 12
+     APEX_DATA_EXPORT, 1
+     APEX_DATA_PARSER, 1                               HELP Procedure
+     APEX_DEBUG, 2                                          APEX_APPLICATION, 3
+     APEX_ESCAPE, 2
+     APEX_EXEC, 6                                      HIDDEN function
+     APEX_EXPORT, 1                                         APEX_ITEM, 6
+     APEX_HUMAN_TASK, 2
+     APEX_IR, 1                                        HOST_URL function
+     APEX_JSON, 3                                           APEX_UTIL, 76
+     APEX_MARKDOWN, 1
+     APEX_PAGE, 1                                      HTML function
+     APEX_PLUGIN, 2                                         APEX_ERROR, 5
+     APEX_PRINT, 1
+     APEX_SESSION_STATE, 1                             HTML_ALLOWLIST function
+     APEX_SHARED_COMPONENT, 1                               APEX_ESCAPE, 7
+     APEX_WEB_SERVICE, 8
+     APEX_WORKFLOW, 2                                  HTML_ALLOWLIST_CLOB function
+                                                            APEX_ESCAPE, 7
+global variables
+     APEX_APPLICATION, 2                               HTML_ATTRIBUTE function
+     APEX_WEB_SERVICE, 8                                    APEX_ESCAPE, 8
+
+GRANT_EXTENSION_WORKSPACE procedure                    HTML_ATTRIBUTE_CLOB function
+     APEX_INSTANCE_ADMIN, 29                                APEX_ESCAPE, 9
+
+GREP function signature 1                              HTML_CLOB function
+     APEX_STRING, 5                                         APEX_ESCAPE, 10
+
+GREP function signature 2                              HTML_TRUNC function signature 1
+     APEX_STRING, 6                                         APEX_ESCAPE, 11
+
+GREP function signature 3                              HTML_TRUNC function signature 2
+     APEX_STRING, 7                                         APEX_ESCAPE, 12
+
+H                                                      I
+
+HANDLE_TASK_DEADLINES procedure                        import application, 6
+     APEX_APPROVAL, 22                                 Import Data Types
+     APEX_HUMAN_TASK, 21
+                                                            APEX_APPLICATION_INSTALL, 4
+HAS_ACCESS function                                    import script, 6
+     APEX_AUTHORIZATION, 2                             IMPORT_BLUEPRINT procedure
+
+HAS_ERROR function                                          APEX_DG_DATA_GEN, 18
+     APEX_EXEC, 56                                     IMPORT_SAVED_REPORTS procedure
+
+HAS_MORE_ARRAY_ROWS function                                APEX_IR, 15
+     APEX_EXEC, 56                                     IMPORT_TEXT_MESSAGES procedure
+
+HAS_MORE_ROWS function                                           signature 1
+     APEX_EXEC, 57                                          APEX_LANG, 11
+                                                       IMPORT_TEXT_MESSAGES procedure
+HAS_PUSH_SUBSCRIPTION function
+     APEX_PWA, 1                                                 signature 2
+                                                            APEX_LANG, 12
+HAS_TASK_PARAM_CHANGED function                        INDEX_OF function signature 1
+     APEX_APPROVAL, 23                                      APEX_STRING, 8
+     APEX_HUMAN_TASK, 21                               INDEX_OF function signature 2
+                                                            APEX_STRING, 9
+HAS_USER_ANY_ROLES function                            INFO procedure
+     APEX_ACL, 2                                            APEX_DEBUG, 8
+                                                       INITIALIZE_OUTPUT procedure
+API Reference                                               APEX_JSON, 22, 23
+G26651-03                                              INSERT_GEOM_METADATA procedure
+Copyright � 2003, 2026, Oracle and/or its affiliates.       APEX_SPATIAL, 4
+                                                       INSERT_GEOM_METADATA_LONLAT procedure
+                                                            APEX_SPATIAL, 5
+
+                                                                                                                           July 24, 2026
+                                                                                                                 Index-13 of Index-24
+INSTALL procedure                                                                                                    Index
+     APEX_APPLICATION_INSTALL, 29
+                                                       IS_READ_ONLY function
+installation, 1                                             APEX_PAGE, 4
+INT_ERROR_RESULT function                                   APEX_REGION, 7
+
+     APEX_ERROR, 13                                    IS_REMOTE_SQL_AUTH_VALID function
+IR_CLEAR procedure                                          APEX_EXEC, 59
+
+     APEX_UTIL, 79                                     IS_ROLE_REMOVED_FROM_USER function
+IR_DELETE_REPORT procedure                                  APEX_ACL, 4
+
+     APEX_UTIL, 80                                     IS_RUNNING function
+IR_DELETE_SUBSCRIPTION procedure                            APEX_AUTOMATION, 8
+                                                            APEX_REST_SOURCE_SYNC, 5
+     APEX_UTIL, 80
+IR_FILTER procedure                                    IS_SCREEN_READER_SESSION function
+                                                            APEX_UTIL, 85
+     APEX_UTIL, 81
+IR_RESET procedure                                     IS_SCREEN_READER_SESSION_YN function
+                                                            APEX_UTIL, 86
+     APEX_UTIL, 82
+IS_ADMIN function                                      IS_SESSION_VALID function
+                                                            APEX_CUSTOM_AUTH, 8
+     APEX_WORKFLOW, 11
+IS_ALLOWED function                                    IS_SUPPORTED Function
+                                                            APEX_DB_DICTIONARY, 12
+     APEX_APPROVAL, 24
+     APEX_HUMAN_TASK, 22                               IS_USER_CONSENT_NEEDED function
+     APEX_WORKFLOW, 12                                      APEX_AI, 21
+IS_AUTHENTICATED function
+     APEX_AUTHENTICATION, 6                            J
+IS_AUTHORIZED function
+     APEX_AUTHORIZATION, 2                             JOIN function signature 1, 11
+IS_BUSINESS_ADMIN function                             JOIN function signature 2
+     APEX_APPROVAL, 25
+     APEX_HUMAN_TASK, 23                                    APEX_STRING, 11
+IS_COMPONENT_USED function                             JOIN_CLOB
+     APEX_PLUGIN_UTIL, 37
+IS_DB_SIGNATURE_VALID function                              APEX_STRING, 10
+     APEX_INSTANCE_ADMIN, 30                           JOIN_CLOBS function
+IS_DESKTOP_UI function (deprecated)
+     APEX_PAGE, 4                                           APEX_STRING, 10
+IS_ENABLED function                                    JS_LITERAL function
+     APEX_AI, 20
+     APEX_INSTANCE_DEBUG, 2                                 APEX_ESCAPE, 13
+IS_EQUAL function                                      JS_LITERAL_CLOB function
+     APEX_PLUGIN_UTIL, 36
+IS_GROUP_END function                                       APEX_ESCAPE, 14
+     APEX_EXEC, 58                                     JSON function
+IS_HIGH_CONTRAST_SESSION_YN function
+     APEX_UTIL, 84                                          APEX_ESCAPE, 15
+IS_LOGIN_PASSWORD_VALID function                       JSON_CLOB function
+     APEX_UTIL, 84
+IS_MEMBER function                                          APEX_ESCAPE, 16
+     APEX_LDAP, 4                                      JSON_TO_PROFILE function
+IS_NULL Function
+     APEX_T_JAVASCRIPT_OBJECT, 10                           APEX_DATA_PARSER, 10
+IS_OF_PARTICIPANT_TYPE function
+     APEX_APPROVAL, 26                                 K
+     APEX_HUMAN_TASK, 23
+     APEX_WORKFLOW, 13                                 KEYVAL_NUM function
+IS_PUBLIC_USER function                                     APEX_UTIL, 87
+     APEX_AUTHENTICATION, 7
+                                                       KEYVAL_VC2 function
+API Reference                                               APEX_UTIL, 87
+G26651-03
+Copyright � 2003, 2026, Oracle and/or its affiliates.  L
+
+                                                       LANG function
+                                                            APEX_LANG, 13
+
+                                                       LDAP attributes
+                                                            obtaining, 4
+
+                                                       LDAP_DN function
+                                                            APEX_ESCAPE, 16
+
+                                                                                                                           July 24, 2026
+                                                                                                                 Index-14 of Index-24
+LDAP_DNPREP function                                                                                                 Index
+     APEX_CUSTOM_AUTH, 8
+                                                       MEMBER_OF function
+LDAP_SEARCH_FILTER function                                 APEX_LDAP, 6
+     APEX_ESCAPE, 17
+                                                       MEMBER_OF2 function
+LIST_ACTIVITY procedure                                     APEX_LDAP, 7
+     APEX_INSTANCE_DEBUG, 2
+                                                       MERGE_MEMBERS procedure
+LIST_MESSAGES procedure                                     APEX_COLLECTION, 23
+     APEX_INSTANCE_DEBUG, 3
+                                                       MESSAGE function (deprecated)
+LIST_PAGE_VIEWS procedure                                   APEX_LANG, 14
+     APEX_INSTANCE_DEBUG, 3
+                                                       MESSAGE procedure
+LOAD_DATA function                                          APEX_DEBUG, 13
+     APEX_DATA_LOADING, 2, 3
+                                                       MOVE_MEMBER_DOWN procedure
+LOAD_SUPPORTING_OBJECT_DATA procedure                       APEX_COLLECTION, 25
+     APEX_DATA_INSTALL, 1
+                                                       MOVE_MEMBER_UP procedure
+LOCK_ACCOUNT procedure                                      APEX_COLLECTION, 25
+     APEX_UTIL, 88, 139
+                                                       N
+LOG_DBMS_OUTPUT procedure
+     APEX_DEBUG, 9                                     NEXT_ARRAY_ROW function
+                                                            APEX_EXEC, 60
+LOG_ERROR procedure
+     APEX_AUTOMATION, 9                                NEXT_CHUNK function
+                                                            APEX_STRING, 12
+LOG_INFO procedure
+     APEX_AUTOMATION, 10                               NEXT_ROW function
+                                                            APEX_EXEC, 61
+LOG_LONG_MESSAGE procedure
+     APEX_DEBUG, 10                                    NOOP function signature 1
+                                                            APEX_ESCAPE, 18
+LOG_MESSAGE procedure
+     APEX_DEBUG, 11                                    NOOP function signature 2
+                                                            APEX_ESCAPE, 19
+LOG_PAGE_SESSION_STATE procedure
+     APEX_DEBUG, 13                                    NUMBER
+                                                            APEX_MAIL, 9
+LOG_WARN procedure
+     APEX_AUTOMATION, 10                               O
+
+LOGIN procedure                                        OAUTH_AUTHENTICATE procedure signature 1
+     APEX_AUTHENTICATION, 7                                 APEX_WEB_SERVICE, 22
+     APEX_CUSTOM_AUTH, 9
+                                                       OAUTH_AUTHENTICATE procedure signature 2
+LOGOUT procedure                                            APEX_WEB_SERVICE, 23
+     APEX_CUSTOM_AUTH, 10
+                                                       OAUTH_AUTHENTICATE_CREDENTIAL
+LOGOUT Procedure                                                 procedure
+     APEX_AUTHENTICATION, 8
+                                                            APEX_WEB_SERVICE, 24
+M                                                      OAUTH_GET_LAST_TOKEN function
+
+MAKE_REQUEST function signature 1                           APEX_WEB_SERVICE, 25
+     APEX_WEB_SERVICE, 13                              OAUTH_SET_TOKEN procedure
+
+MAKE_REQUEST function signature 2                           APEX_WEB_SERVICE, 25
+     APEX_WEB_SERVICE, 15                              OPEN_ARRAY procedure
+
+MAKE_REQUEST procedure signature 1                          APEX_JSON, 23
+     APEX_WEB_SERVICE, 16                              OPEN_ARRAY Procedure
+
+MAKE_REQUEST procedure signature 2                          APEX_T_JAVASCRIPT_OBJECT, 10
+     APEX_WEB_SERVICE, 18                              OPEN_ARRAY procedure signature 1
+
+MAKE_REST_REQUEST function                                  APEX_EXEC, 61
+     APEX_WEB_SERVICE, 19, 20                          OPEN_ARRAY procedure signature 2
+
+MAKE_REST_REQUEST procedure                                 APEX_EXEC, 63
+     APEX_PLUGIN_UTIL, 37, 39                          OPEN_DUALITY_VIEW_DML_CONTEXT
+
+MD5_CHECKSUM function                                            function
+     APEX_ITEM, 7                                           APEX_EXEC, 64
+
+MD5_HIDDEN function                                                                                                        July 24, 2026
+     APEX_ITEM, 8                                                                                                Index-15 of Index-24
+
+API Reference
+G26651-03
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+OPEN_JSON_SOURCE_DML_CONTEXT                                                                                         Index
+          function
+                                                       password (continued)
+     APEX_EXEC, 66                                          resetting and emailing, 101
+OPEN_LOCAL_DML_CONTEXT function
+                                                       PASSWORD_FIRST_USE_OCCURRED function
+     APEX_EXEC, 66                                          APEX_UTIL, 89
+OPEN_OBJECT procedure
+                                                       PERSISTENT_AUTH_ENABLED function
+     APEX_JSON, 24                                          APEX_AUTHENTICATION, 9
+OPEN_OBJECT Procedure
+                                                       PERSISTENT_COOKIES_ENABLED function
+     APEX_T_JAVASCRIPT_OBJECT, 11                           APEX_AUTHENTICATION, 9
+OPEN_QUERY_CONTEXT function signature 1
+                                                       PHRASE_EXISTS function
+     APEX_EXEC, 70                                          APEX_STRING_UTIL, 9
+     APEX_REGION, 8
+OPEN_QUERY_CONTEXT function signature 2                PLIST_DELETE procedure
+     APEX_EXEC, 73                                          APEX_STRING, 13
+     APEX_REGION, 9
+OPEN_REMOTE_DML_CONTEXT function                       PLIST_EXISTS function
+     APEX_EXEC, 74                                          APEX_STRING, 13
+OPEN_REMOTE_SQL_QUERY function
+     APEX_EXEC, 77                                     PLIST_GET function
+OPEN_REST_SOURCE_DML_CONTEXT                                APEX_STRING, 14
+
+          function                                     PLIST_GET_KEY function
+     APEX_EXEC, 79                                          APEX_STRING, 15
+OPEN_REST_SOURCE_QUERY function
+     APEX_EXEC, 82                                     PLIST_PUSH procedure
+OPEN_WEB_SOURCE_DML_CONTEXT                                 APEX_STRING, 15
+
+          function                                     PLIST_PUT function
+     APEX_EXEC, 84                                          APEX_STRING, 16
+OPEN_WEB_SOURCE_QUERY function
+     APEX_EXEC, 87                                     PLIST_TO_JSON_CLOB function
+Oracle TEXT                                                 APEX_STRING, 17
+     ADD_FILTER procedure, 21
+                                                       plugins
+P                                                           remote servers, 1
+
+PAGE_ITEM_NAMES_TO_JQUERY function                     POINT function
+     APEX_PLUGIN_UTIL, 41                                   APEX_SPATIAL, 6
+
+parameter values                                       POPUP_FROM_LOV function
+     APEX_INSTANCE_ADMIN, 2                                 APEX_ITEM, 9
+
+PARSE function                                         POPUP_FROM_QUERY function
+     APEX_DATA_PARSER, 10                                   APEX_ITEM, 11
+
+PARSE procedure signature 1                            POPUPKEY_FROM_LOV function
+     APEX_JSON, 25                                          APEX_ITEM, 12
+
+PARSE procedure signature 2                            POPUPKEY_FROM_QUERY function
+     APEX_JSON, 25                                          APEX_ITEM, 14
+
+PARSE_REFETCH_RESPONSE function                        POST_LOGIN procedure
+     APEX_PLUGIN_UTIL, 42                                   APEX_AUTHENTICATION, 10
+                                                            APEX_CUSTOM_AUTH, 10
+PARSE_RESPONSE function
+     APEX_WEB_SERVICE, 26                              PREPARE_TEMPLATE procedure
+                                                            APEX_MAIL, 7
+PARSE_RESPONSE_CLOB function
+     APEX_WEB_SERVICE, 27                              PREPARE_URL function
+                                                            APEX_UTIL, 90
+PARSE_XML function
+     APEX_WEB_SERVICE, 27                              PREVIEW_BLUEPRINT procedure
+                                                            APEX_DG_DATA_GEN, 19
+PARSE_XML_CLOB function
+     APEX_WEB_SERVICE, 29                              PRINT_DISPLAY_ONLY procedure signature 1
+                                                            APEX_PLUGIN_UTIL, 44
+password
+     changing, 9                                       PRINT_DISPLAY_ONLY procedure signature 2
+                                                            APEX_PLUGIN_UTIL, 45
+API Reference
+G26651-03                                              PRINT_ESCAPED_VALUE procedure signature 1
+Copyright � 2003, 2026, Oracle and/or its affiliates.       APEX_PLUGIN_UTIL, 46
+
+                                                       PRINT_ESCAPED_VALUE procedure signature 2
+                                                            APEX_PLUGIN_UTIL, 46
+
+                                                       PRINT_HIDDEN procedure
+                                                            APEX_PLUGIN_UTIL, 47
+
+                                                                                                                           July 24, 2026
+                                                                                                                 Index-16 of Index-24
+PRINT_HIDDEN_IF_READONLY procedure                                                                                   Index
+     APEX_PLUGIN_UTIL, 47
+                                                       PUSH procedure signature 7
+PRINT_JSON_HTTP_HEADER procedure                            APEX_STRING, 21
+     APEX_PLUGIN_UTIL, 48
+                                                       PUSH_QUEUE procedure
+PRINT_LOV_AS_JSON procedure                                 APEX_MAIL, 8
+     APEX_PLUGIN_UTIL, 49                                   APEX_PWA, 2
+
+PRINT_OPTION procedure                                 PUT Procedure Signature 1
+     APEX_PLUGIN_UTIL, 50                                   APEX_T_JAVASCRIPT_OBJECT, 12
+
+PRINT_READ_ONLY procedure signature 1                  PUT Procedure Signature 2
+     APEX_PLUGIN_UTIL, 50                                   APEX_T_JAVASCRIPT_OBJECT, 13
+
+PRINT_READ_ONLY procedure signature 2                  PUT Procedure Signature 3
+     APEX_PLUGIN_UTIL, 52                                   APEX_T_JAVASCRIPT_OBJECT, 13
+
+PRN procedure                                          PUT Procedure Signature 4
+     APEX_UTIL, 92                                          APEX_T_JAVASCRIPT_OBJECT, 14
+
+PROCESS_BLUEPRINT Procedure                            PUT Procedure Signature 5
+     APEX_GENDEV, 1                                         APEX_T_JAVASCRIPT_OBJECT, 15
+
+PROCESS_DML_RESPONSE procedure                         PUT Procedure Signature 6
+     APEX_PLUGIN_UTIL, 53                                   APEX_T_JAVASCRIPT_OBJECT, 16
+
+PUBLIC_CHECK_AUTHORIZATION function                    PUT Procedure Signature 7
+     APEX_UTIL, 92                                          APEX_T_JAVASCRIPT_OBJECT, 16
+
+PUBLISH procedure                                      PUT_FUNCTION Procedure
+     APEX_SHARED_COMPONENT, 2                               APEX_T_JAVASCRIPT_OBJECT, 17
+
+PUBLISH_APPLICATION procedure                          PUT_RAW Procedure
+     APEX_LANG, 15                                          APEX_T_JAVASCRIPT_OBJECT, 18
+
+PURGE_CACHE procedure                                  Q
+     APEX_PAGE, 4
+                                                       QUERY_EXPERT_SEARCH function
+PURGE_CACHE procedure signature 1                           APEX_SEARCH, 1
+     APEX_REGION, 11
+                                                       QUERY_SEARCH_ENGINE function
+PURGE_CACHE procedure signature 2                           APEX_SEARCH, 2
+     APEX_REGION, 12
+                                                       R
+PURGE_DUALITY_VIEW_CACHE procedure
+     APEX_EXEC, 89                                     RADIOGROUP function
+                                                            APEX_ITEM, 15
+PURGE_JSON_SOURCE_CACHE procedure
+     APEX_EXEC, 89                                     RECTANGLE function
+                                                            APEX_SPATIAL, 6
+PURGE_REGIONS_BY_APP procedure
+     APEX_UTIL, 93                                     REDIRECT_URL procedure
+                                                            APEX_UTIL, 95
+PURGE_REGIONS_BY_NAME procedure
+     APEX_UTIL, 94                                     REFRESH procedure
+                                                            APEX_SHARED_COMPONENT, 2
+PURGE_REGIONS_BY_PAGE procedure
+     APEX_UTIL, 94                                     REFRESH_BUSINESS_ADMINS procedure
+                                                            APEX_HUMAN_TASK, 24
+PURGE_REST_SOURCE_CACHE procedure
+     APEX_EXEC, 90                                     REFRESH_PARTICIPANTS procedure
+                                                            APEX_WORKFLOW, 13
+PURGE_WEB_SOURCE_CACHE procedure
+     APEX_EXEC, 90                                     REGEXP function
+                                                            APEX_ESCAPE, 19
+PUSH procedure signature 1
+     APEX_STRING, 17                                   REJECT_TASK procedure
+                                                            APEX_APPROVAL, 27
+PUSH procedure signature 2                                  APEX_HUMAN_TASK, 25
+     APEX_STRING, 18
+                                                       RELEASE_TASK procedure
+PUSH procedure signature 3                                  APEX_APPROVAL, 28
+     APEX_STRING, 19                                        APEX_HUMAN_TASK, 25
+
+PUSH procedure signature 4                             remote servers, 1
+     APEX_STRING, 19                                   REMOVE_ALL_USER_ROLES procedure
+
+PUSH procedure signature 5                                  APEX_ACL, 8
+     APEX_STRING, 20
+                                                                                                                           July 24, 2026
+PUSH procedure signature 6                                                                                       Index-17 of Index-24
+     APEX_STRING, 20
+
+API Reference
+G26651-03
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+REMOVE_APPLICATION procedure                                                                                         Index
+     APEX_APPLICATION_INSTALL, 31
+     APEX_INSTANCE_ADMIN, 31                           REMOVE_USER_ROLE procedure signature 1
+                                                            APEX_ACL, 5
+REMOVE_AUTO_PROV_RESTRICTIONS
+          procedure                                    REMOVE_USER_ROLE procedure signature 2
+                                                            APEX_ACL, 6
+     APEX_INSTANCE_ADMIN, 31
+REMOVE_BLUEPRINT procedure                             REMOVE_WEB_ENTRY_POINT procedure
+                                                            APEX_INSTANCE_ADMIN, 36
+     APEX_DG_DATA_GEN, 20
+REMOVE_COLUMN procedure                                REMOVE_WORKSPACE procedure
+                                                            APEX_INSTANCE_ADMIN, 36
+     APEX_DG_DATA_GEN, 20
+REMOVE_CURRENT_PERSISTENT_AUTH                         REMOVE_WORKSPACE_EXCEPTIONS
+                                                                 procedure
+          procedure
+     APEX_AUTHENTICATION, 10                                APEX_INSTANCE_ADMIN, 37
+REMOVE_DATA_SOURCE procedure                           RENEW_TASK function
+     APEX_DG_DATA_GEN, 21
+REMOVE_DEBUG_BY_AGE procedure                               APEX_APPROVAL, 29
+     APEX_DEBUG, 15                                         APEX_HUMAN_TASK, 27
+REMOVE_DEBUG_BY_APP procedure                          REPLACE_SUBSTITUTIONS function
+     APEX_DEBUG, 15                                         APEX_PLUGIN_UTIL, 54
+REMOVE_DEBUG_BY_VIEW procedure                         REPLACE_USER_ROLES procedure signature 1
+     APEX_DEBUG, 16                                         APEX_ACL, 6
+REMOVE_DEVELOPMENT_INSTANCES                           REPLACE_USER_ROLES procedure signature 2
+                                                            APEX_ACL, 7
+          procedure                                    REPLACE_WHITESPACE function
+     APEX_WORKFLOW, 14                                      APEX_STRING_UTIL, 10
+REMOVE_MENU_ENTRY procedure                            REPLY_TO_FEEDBACK procedure
+     APEX_EXTENSION, 4                                      APEX_UTIL, 98
+REMOVE_PERSISTENT_AUTH procedure                       REQUEST_MORE_INFORMATION procedure
+     APEX_AUTHENTICATION, 11                                APEX_APPROVAL, 30
+REMOVE_POTENTIAL_OWNER procedure                            APEX_HUMAN_TASK, 27
+     APEX_APPROVAL, 28                                 RESCHEDULE procedure
+     APEX_HUMAN_TASK, 26                                    APEX_AUTOMATION, 11
+REMOVE_REQUEST_HEADER procedure                             APEX_REST_SOURCE_SYNC, 5
+     APEX_WEB_SERVICE, 30                              RESEQUENCE_BLUEPRINT procedure
+REMOVE_SAVED_REPORT procedure                               APEX_DG_DATA_GEN, 22
+     APEX_INSTANCE_ADMIN, 32                           RESEQUENCE_COLLECTION procedure
+REMOVE_SAVED_REPORTS procedure                              APEX_COLLECTION, 26
+     APEX_INSTANCE_ADMIN, 32                           RESERVE_WORKSPACE_APP_IDS procedure
+REMOVE_SCHEMA procedure                                     APEX_INSTANCE_ADMIN, 38
+     APEX_INSTANCE_ADMIN, 33                           RESET Procedure
+REMOVE_SCHEMA_EXCEPTION procedure                           APEX_T_JAVASCRIPT_OBJECT, 19
+     APEX_INSTANCE_ADMIN, 34                           RESET procedure signature 1
+REMOVE_SCHEMA_EXCEPTIONS procedure                          APEX_REGION, 13
+     APEX_INSTANCE_ADMIN, 34                           RESET procedure signature 2
+REMOVE_SESSION_MESSAGES procedure                           APEX_REGION, 13
+     APEX_DEBUG, 16                                    RESET_AUTHORIZATIONS procedure
+REMOVE_SORT_PREFERENCES procedure                           APEX_UTIL, 99
+     APEX_UTIL, 96                                     RESET_CACHE procedure
+REMOVE_SUBSCRIPTION procedure                               APEX_AUTHORIZATION, 3
+     APEX_INSTANCE_ADMIN, 35                           RESET_COLLECTION_CHANGED procedure
+REMOVE_TABLE procedure                                      APEX_COLLECTION, 27
+     APEX_DG_DATA_GEN, 21                              RESET_COLLECTION_CHANGED_ALL
+REMOVE_TEMPLATE procedure
+     APEX_PRINT, 8                                               procedure
+REMOVE_USER procedure                                       APEX_COLLECTION, 27
+     APEX_UTIL, 97                                     RESET_PASSWORD procedure
+                                                            APEX_UTIL, 100
+API Reference                                          RESET_PW procedure
+G26651-03                                                   APEX_UTIL, 101
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                           July 24, 2026
+                                                                                                                 Index-18 of Index-24
+RESET_REPORT procedure signature 1                                                                                   Index
+     APEX_IG, 12
+     APEX_IR, 16                                       SEND function
+                                                            APEX_MAIL, 12
+RESET_REPORT procedure signature 2
+     APEX_IG, 12                                       SEND function signature 1
+     APEX_IR, 17                                            APEX_MAIL, 9
+
+RESET_REPORT procedure signature 3                     SEND procedure signature 1
+     APEX_IG, 13                                            APEX_MAIL, 14
+     APEX_IR, 18
+                                                       SEND procedure signature 2
+REST Data Source                                            APEX_MAIL, 17
+     constants, 2
+     format, 2                                         SEND_LOGIN_USERNAME_COOKIE procedure
+                                                            APEX_AUTHENTICATION, 12
+RESTful Web Service, 4
+RESTRICT_SCHEMA procedure                              SEND_PUSH_NOTIFICATION procedure
+                                                            APEX_PWA, 2
+     APEX_INSTANCE_ADMIN, 39
+RESUME procedure                                       sending email in queue
+                                                            APEX_MAIL_QUEUE, 8
+     APEX_WORKFLOW, 14
+Retrieving Cookies and HTTP Headers                    session cookies, 3
+                                                       session state
+     APEX_WEB_SERVICE, 5
+RETRY procedure                                             fetching for current application, 35
+                                                            removing for current page, 13
+     APEX_WORKFLOW, 15                                      removing for current session, 13
+REVOKE_EXTENSION_WORKSPACE procedure                        setting, 120, 123
+                                                       SESSION_ID_EXISTS function
+     APEX_INSTANCE_ADMIN, 40                                APEX_CUSTOM_AUTH, 11
+REVOKE_USER_CONSENT procedure                          SET_ACTIVITY_DUE_DATE procedure
+                                                            APEX_WORKFLOW, 16
+     APEX_AI, 22                                       SET_ALLOWED_URLS procedure
+REVOKE_USER_CONSENT_FOR_ALL                                 APEX_CREDENTIAL, 5
+                                                       SET_APP_BUILD_STATUS Procedure
+          procedure                                         APEX_UTIL, 103
+     APEX_AI, 22                                       SET_APPLICATION_ALIAS procedure
+                                                            APEX_APPLICATION_ADMIN, 12
+S                                                           APEX_APPLICATION_INSTALL, 31
+                                                       SET_APPLICATION_ID procedure
+SAML_CALLBACK procedure                                     APEX_APPLICATION_INSTALL, 32
+     APEX_AUTHENTICATION, 11                           SET_APPLICATION_NAME procedure
+                                                            APEX_APPLICATION_ADMIN, 13
+SAML_METADATA procedure                                     APEX_APPLICATION_INSTALL, 32
+     APEX_AUTHENTICATION, 12                           SET_APPLICATION_STATUS procedure
+                                                            APEX_APPLICATION_ADMIN, 14
+SAVEKEY_NUM function                                        APEX_UTIL, 104
+     APEX_UTIL, 102                                    SET_APPLICATION_VERSION procedure
+                                                            APEX_APPLICATION_ADMIN, 15
+SAVEKEY_VC2 function                                   SET_ARRAY_CURRENT_ROW procedure
+     APEX_UTIL, 102                                         APEX_EXEC, 91
+                                                       SET_ARRAY_ROW_VERSION_CHECKSUM
+SCAN procedure
+     APEX_APP_OBJECT_DEPENDENCY, 2                               procedure
+                                                            APEX_EXEC, 92
+SEARCH function                                        SET_ATTRIBUTE procedure
+     APEX_LDAP, 8                                           APEX_UTIL, 106
+     APEX_SEARCH, 3                                    SET_AUTHENTICATION_RESULT procedure
+                                                            APEX_UTIL, 106
+SEED_TRANSLATIONS procedure                            SET_AUTHENTICATION_SCHEME procedure
+     APEX_LANG, 16                                          APEX_APPLICATION_ADMIN, 16
+                                                            APEX_APPLICATION_INSTALL, 33
+SELECT_LIST function                                   SET_AUTO_INSTALL_SUP_OBJ procedure
+     APEX_ITEM, 16                                          APEX_APPLICATION_INSTALL, 34
+
+SELECT_LIST_FROM_LOV function                                                                                              July 24, 2026
+     APEX_ITEM, 18                                                                                               Index-19 of Index-24
+
+SELECT_LIST_FROM_LOV_XL function
+     APEX_ITEM, 19
+
+SELECT_LIST_FROM_QUERY function
+     APEX_ITEM, 20
+
+SELECT_LIST_FROM_QUERY_XL function
+     APEX_ITEM, 21
+
+API Reference
+G26651-03
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+SET_BUILD_OPTION_STATUS procedure                                                                                    Index
+     APEX_UTIL, 108
+                                                       SET_KEEP_SESSIONS procedure
+SET_BUILD_OPTION_STATUS procedure                           APEX_APPLICATION_INSTALL, 37
+          signature 1
+                                                       SET_LAST_NAME procedure
+     APEX_APPLICATION_ADMIN, 16                             APEX_UTIL, 116
+SET_BUILD_OPTION_STATUS procedure
+                                                       SET_LOG_LEVEL procedure
+          signature 2                                       APEX_WORKFLOW, 16
+     APEX_APPLICATION_ADMIN, 17
+SET_BUILD_STATUS function                              SET_LOG_SWITCH_INTERVAL procedure
+     APEX_APPLICATION_INSTALL, 35                           APEX_INSTANCE_ADMIN, 40
+SET_BUILD_STATUS procedure
+     APEX_APPLICATION_ADMIN, 18                        SET_MAX_SCHEDULER_JOBS procedure
+SET_COMPONENT_VALUES procedure                              APEX_APPLICATION_ADMIN, 21
+     APEX_PLUGIN_UTIL, 55                                   APEX_APPLICATION_INSTALL, 38
+SET_CSV_PARAMETERS procedure
+     APEX_ESCAPE, 20                                   SET_NULL procedure
+SET_CURRENT_ROW procedure                                   APEX_EXEC, 92
+     APEX_EXEC, 92
+SET_CURRENT_STYLE procedure                            SET_OFFSET procedure
+     APEX_THEME, 6                                          APEX_APPLICATION_INSTALL, 39
+SET_CURRENT_THEME_STYLE procedure
+     APEX_UTIL, 109                                    SET_PARAMETER procedure
+SET_CUSTOM_AUTH_STATUS procedure                            APEX_INSTANCE_ADMIN, 41
+     APEX_UTIL, 110
+SET_DATABASE_CREDENTIAL procedure                      SET_PARSER_FLAGS procedure
+     APEX_CREDENTIAL, 6                                     APEX_DATA_PARSER, 15
+SET_DATASET_IMPORT_MODE procedure
+     APEX_APPLICATION_INSTALL, 35                      SET_PARSING_SCHEMA procedure
+SET_DEBUG procedure                                         APEX_APPLICATION_ADMIN, 21
+     APEX_SESSION, 4
+SET_EDITION procedure                                  SET_PARSING_SCHEMA_FOR _REQUEST
+     APEX_UTIL, 111                                              procedure
+SET_EMAIL procedure
+     APEX_UTIL, 112                                         APEX_UTIL, 117
+SET_FILE_STORAGE procedure                             SET_PASS_ECID procedure
+     APEX_APPLICATION_ADMIN, 19
+SET_FIRST_NAME procedure                                    APEX_APPLICATION_ADMIN, 22
+     APEX_UTIL, 113                                         APEX_APPLICATION_INSTALL, 40
+SET_GLOBAL_NOTIFICATION procedure                      SET_PERSISTENT_CREDENTIALS procedure
+     APEX_APPLICATION_ADMIN, 20                             APEX_CREDENTIAL, 7, 9
+     APEX_UTIL, 114                                    SET_PERSISTENT_CREDENTIALS procedure
+SET_GROUP_GROUP_GRANTS procedure
+     APEX_UTIL, 114                                              signature 2
+SET_GROUP_USER_GRANTS procedure                             APEX_CREDENTIAL, 8
+     APEX_UTIL, 115                                    SET_PERSISTENT_TOKEN procedure
+SET_HTML_ESCAPING_MODE procedure                            APEX_CREDENTIAL, 9
+     APEX_ESCAPE, 21                                   SET_PREFERENCE procedure
+SET_IMAGE_PREFIX procedure                                  APEX_UTIL, 117
+     APEX_APPLICATION_ADMIN, 20                        SET_PROGRESS procedure
+     APEX_APPLICATION_INSTALL, 36                           APEX_BACKGROUND_PROCESS, 5
+SET_INITIATOR_CAN_COMPLETE procedure                   SET_PROXY procedure
+     APEX_APPROVAL, 31                                      APEX_APPLICATION_INSTALL, 40
+     APEX_HUMAN_TASK, 28                               SET_PROXY_SERVER procedure
+SET_KEEP_BACKGROUND_EXECS procedure                         APEX_APPLICATION_ADMIN, 23
+     APEX_APPLICATION_INSTALLf, 37                     SET_REMOTE_SERVER procedure
+                                                            APEX_APPLICATION_ADMIN, 24
+API Reference                                               APEX_APPLICATION_INSTALL, 41
+G26651-03                                              SET_REQUEST_ECID_CONTEXT procedure
+Copyright � 2003, 2026, Oracle and/or its affiliates.       APEX_WEB_SERVICE, 30
+                                                       SET_REQUEST_HEADERS procedure
+                                                            APEX_WEB_SERVICE, 32
+                                                       SET_REST_SOURCE_CATALOG_GROUP
+
+                                                                 procedure
+                                                            APEX_APPLICATION_INSTALL, 43
+                                                       SET_ROW_VERSION_CHECKSUM procedure
+                                                            APEX_EXEC, 93
+                                                       SET_SCHEMA procedure
+                                                            APEX_APPLICATION_INSTALL, 44
+
+                                                                                                                           July 24, 2026
+                                                                                                                 Index-20 of Index-24
+SET_SCOPE procedure                                                                                                  Index
+     APEX_CREDENTIAL, 10
+                                                       SET_TENANT_ID procedure
+SET_SECURITY_GROUP_ID procedure                             APEX_SESSION, 5
+     APEX_UTIL, 118, 120
+                                                       SET_THEME_ID procedure
+SET_SECURITY_HIGH_CONTRAST_OFF                              APEX_APPLICATION_INSTALL, 46
+          procedure
+                                                       SET_TOOL_RESULT procedure signature 1
+     APEX_UTIL, 119                                         APEX_AI, 23
+SET_SESSION_CREDENTIALS procedure
+                                                       SET_TOOL_RESULT procedure signature 2
+          signature 1                                       APEX_AI, 24
+     APEX_CREDENTIAL, 11
+SET_SESSION_CREDENTIALS procedure                      SET_TRACE procedure
+                                                            APEX_SESSION, 6
+          signature 2
+     APEX_CREDENTIAL, 12                               SET_USER procedure
+SET_SESSION_CREDENTIALS procedure                           APEX_CUSTOM_AUTH, 12
+
+          signature 3                                  SET_USER_CONSENT procedure
+     APEX_CREDENTIAL, 13                                    APEX_AI, 25
+SET_SESSION_ID procedure
+     APEX_CUSTOM_AUTH, 11                              SET_USER_STYLE procedure
+SET_SESSION_ID_TO_NEXT_VALUE procedure                      APEX_THEME, 9
+     APEX_CUSTOM_AUTH, 12
+SET_SESSION_MAX_IDLE_SECONDS                           SET_USERNAME procedure
+                                                            APEX_UTIL, 125
+          procedure
+     APEX_UTIL, 121                                    SET_VALUE procedure
+SET_SESSION_SCREEN_READER_OFF                               APEX_APP_SETTING, 1
+                                                            APEX_EXEC, 95
+          procedure
+     APEX_UTIL, 122                                    SET_VALUE procedure signature 1
+SET_SESSION_SCREEN_READER_ON                                APEX_SESSION_STATE, 3
+
+          procedure                                    SET_VALUE procedure signature 2
+     APEX_UTIL, 122                                         APEX_SESSION_STATE, 4
+SET_SESSION_STATE procedure
+     APEX_UTIL, 120                                    SET_VALUE procedure signature 3
+SET_SESSION_STYLE procedure                                 APEX_SESSION_STATE, 4
+     APEX_THEME, 7
+SET_SESSION_STYLE_CSS procedure                        SET_VALUE procedure signature 4
+     APEX_THEME, 8                                          APEX_SESSION_STATE, 5
+SET_SESSION_TERRITORY procedure
+     APEX_UTIL, 124                                    SET_VALUES procedure
+SET_SESSION_TIME_ZONE procedure                             APEX_EXEC, 99
+     APEX_UTIL, 124
+SET_SESSION_TOKEN procedure                            SET_WORKSPACE procedure
+     APEX_CREDENTIAL, 14                                    APEX_APPLICATION_INSTALL, 47
+SET_STATUS procedure                                        APEX_UTIL, 126
+     APEX_BACKGROUND_PROCESS, 6
+SET_SUBSCRIPTION_MAPPING procedure                     SET_WORKSPACE procedure signature 1
+     APEX_APPLICATION_INSTALL, 44                           APEX_EXTENSION, 5
+SET_SUBSCRIPTION_MODE procedure
+     APEX_APPLICATION_INSTALL, 45                      SET_WORKSPACE procedure signature 2
+SET_TASK_DUE procedure                                      APEX_EXTENSION, 5
+     APEX_APPROVAL, 32
+     APEX_HUMAN_TASK, 29                               SET_WORKSPACE_CONSUMER_GROUP
+SET_TASK_PARAMETER_VALUES procedure                              procedure
+     APEX_APPROVAL, 33
+     APEX_HUMAN_TASK, 29                                    APEX_INSTANCE_ADMIN, 42
+SET_TASK_PRIORITY procedure                            SET_WORKSPACE_ID procedure
+     APEX_APPROVAL, 34
+     APEX_HUMAN_TASK, 30                                    APEX_APPLICATION_INSTALL, 46
+                                                       SET_WORKSPACE_PARAMETER procedure
+API Reference
+G26651-03                                                   APEX_INSTANCE_ADMIN, 43
+Copyright � 2003, 2026, Oracle and/or its affiliates.  Setting Cookies and HTTP Headers
+
+                                                            APEX_WEB_SERVICE, 5
+                                                       SHOW_HIGH_CONTRAST_MODE_TOGGLE
+
+                                                                 procedure
+                                                            APEX_UTIL, 126
+                                                       SHOW_SCREEN_READER_MODE_TOGGLE
+
+                                                                 procedure
+                                                            APEX_UTIL, 127
+                                                       SHUFFLE function
+                                                            APEX_STRING, 22
+
+                                                                                                                           July 24, 2026
+                                                                                                                 Index-21 of Index-24
+SHUFFLE procedure                                                                                                    Index
+     APEX_STRING, 22
+                                                       SUBSCRIBE_PUSH_NOTIFICATIONS procedure
+SKIP_CURRENT_ROW procedure                                  APEX_PWA, 3
+     APEX_AUTOMATION, 12
+                                                       SUSPEND procedure
+SOAP web service, 2                                         APEX_WORKFLOW, 18
+SORT_MEMBERS procedure
+                                                       SUSPEND_BACKGROUND_EXECS procedure
+     APEX_COLLECTION, 28                                    APEX_APPLICATION_INSTALL, 47
+SPATIAL_IS_AVAILABLE function
+                                                       SWITCH function
+     APEX_SPATIAL, 7                                        APEX_ITEM, 22
+special characters, encoding, 140
+SPLIT function signature 1                             SYNCH_TABLE procedure
+                                                            APEX_UI_DEFAULT_UPDATE, 7
+     APEX_STRING, 23
+SPLIT function signature 2                             SYNCHRONIZE_DATA procedure
+                                                            APEX_REST_SOURCE_SYNC, 6
+     APEX_STRING, 24
+SPLIT_CLOBS function                                   SYNCHRONIZE_TABLE_DEFINITION procedure
+                                                            APEX_REST_SOURCE_SYNC, 7
+     APEX_STRING, 24
+SPLIT_MUTLIPLE_VALUE_TO_TABLE function                 T
+
+     APEX_PLUGIN_UTIL, 57                              t_dir_entries
+SPLIT_NUMBERS function                                      APEX_ZIP, 1
+
+     APEX_STRING, 25                                   t_dir_entry
+START_WORKFLOW function                                     APEX_ZIP, 1
+
+     APEX_WORKFLOW, 17                                 t_files
+STOP_APEX_ENGINE Procedure                                  APEX_ZIP, 1
+
+     APEX_APPLICATION, 5                               t_token
+STOP_DATA_GENERATION procedure                              APEX_JWT, 1
+
+     APEX_DG_DATA_GEN, 22                              TABLE_TO_CLOB function
+STRING_TO_TABLE function                                    APEX_STRING, 26
+
+     APEX_STRING, 25                                   TABLE_TO_STRING function
+STRING_TO_TABLE function (deprecated)                       APEX_STRING, 27
+
+     APEX_UTIL, 128                                    TABLE_TO_STRING function (deprecated)
+STRINGIFY function signature 1                              APEX_UTIL, 135
+
+     APEX_JSON, 26                                     TERMINATE procedure
+STRINGIFY function signature 2                              APEX_AUTOMATION, 12
+                                                            APEX_WORKFLOW, 18
+     APEX_JSON, 27
+STRINGIFY function signature 3                         TERMINATE procedure signature 1
+                                                            APEX_BACKGROUND_PROCESS, 7
+     APEX_JSON, 27
+STRINGIFY function signature 4                         TERMINATE procedure signature 2
+                                                            APEX_BACKGROUND_PROCESS, 8
+     APEX_JSON, 28
+STRINGIFY function signature 5                         TERMINATE_FAULTED_WORKFLOWS
+                                                                 procedure
+     APEX_JSON, 28
+STRIPHTML function signature 1                              APEX_WORKFLOW, 19
+                                                       TEXT function
+     APEX_ESCAPE, 21
+STRIPHTML function signature 2                              APEX_ITEM, 23
+                                                       TEXT_FROM_LOV function
+     APEX_ESCAPE, 23
+STRONG_PASSWORD_CHECK procedure                             APEX_ITEM, 25
+                                                       TEXT_FROM_LOV_QUERY function
+     APEX_UTIL, 129
+STRONG_PASSWORD_VALIDATION function                         APEX_ITEM, 26
+                                                       TEXTAREA function
+     APEX_UTIL, 132
+SUBMIT_FEEDBACK procedure                                   APEX_ITEM, 24
+                                                       TO_CLOB Function
+     APEX_UTIL, 133
+SUBMIT_FEEDBACK_FOLLOWUP procedure                          APEX_T_JAVASCRIPT_OBJECT, 20
+                                                       TO_DISPLAY_FILESIZE function
+     APEX_UTIL, 135
+SUBMIT_INFORMATION procedure                                APEX_STRING_UTIL, 11
+                                                       TO_HTML function
+     APEX_APPROVAL, 34
+     APEX_HUMAN_TASK, 31                                    APEX_MARKDOWN, 1
+
+API Reference                                                                                                              July 24, 2026
+G26651-03                                                                                                        Index-22 of Index-24
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+TO_MEMBER_NAME function                                                                                              Index
+     APEX_JSON, 29
+                                                       UPD_REPORT_ALIGNMENT procedure
+TO_XMLTYPE function                                         APEX_UI_DEFAULT_UPDATE, 17
+     APEX_JSON, 30
+                                                       UPD_REPORT_FORMAT_MASK procedure
+TO_XMLTYPE_SQL function                                     APEX_UI_DEFAULT_UPDATE, 17
+     APEX_JSON, 31
+                                                       UPD_REPORT_REGION_TITLE procedure
+TOCHAR function                                             APEX_UI_DEFAULT_UPDATE, 18
+     APEX_DEBUG, 17
+                                                       UPD_TABLE procedure
+TRACE procedure                                             APEX_UI_DEFAULT_UPDATE, 18
+     APEX_DEBUG, 18
+                                                       UPDATE_BLUEPRINT procedure
+TRUNCATE_COLLECTION procedure                               APEX_DG_DATA_GEN, 23
+     APEX_COLLECTION, 29
+                                                       UPDATE_COLUMN procedure
+TRUNCATE_LOG procedure                                      APEX_DG_DATA_GEN, 24
+     APEX_INSTANCE_ADMIN, 43
+                                                       UPDATE_DATA_SOURCE procedure
+U                                                           APEX_DG_DATA_GEN, 27
+
+UNEXPIRE_END_USER_ACCOUNT procedure                    UPDATE_LANGUAGE_MAPPING procedure
+     APEX_UTIL, 137                                         APEX_LANG, 18
+
+UNEXPIRE_WORKSPACE_ACCOUNT                             UPDATE_MEMBER procedure
+          procedure                                         APEX_COLLECTION, 29
+
+     APEX_UTIL, 138                                    UPDATE_MEMBER_ATTRIBUTE procedure
+UNLOCK_USER procedure                                            signature 1
+
+     APEX_INSTANCE_ADMIN, 44                                APEX_COLLECTION, 32
+UNRESTRICT_SCHEMA procedure                            UPDATE_MEMBER_ATTRIBUTE procedure
+
+     APEX_INSTANCE_ADMIN, 45                                     signature 2
+UNSUBSCRIBE_PUSH_NOTIFICATIONS                              APEX_COLLECTION, 33
+                                                       UPDATE_MEMBER_ATTRIBUTE procedure
+          procedure
+     APEX_PWA, 4                                                 signature 3
+UNZIP function                                              APEX_COLLECTION, 34
+     APEX_EXPORT, 7                                    UPDATE_MEMBER_ATTRIBUTE procedure
+UPD_AD_COLUMN procedure
+     APEX_UI_DEFAULT_UPDATE, 7                                   signature 4
+UPD_AD_SYNONYM procedure                                    APEX_COLLECTION, 35
+     APEX_UI_DEFAULT_UPDATE, 8                         UPDATE_MEMBER_ATTRIBUTE procedure
+UPD_COLUMN procedure
+     APEX_UI_DEFAULT_UPDATE, 9                                   signature 5
+UPD_DISPLAY_IN_FORM procedure                               APEX_COLLECTION, 36
+     APEX_UI_DEFAULT_UPDATE, 11                        UPDATE_MEMBER_ATTRIBUTE procedure
+UPD_DISPLAY_IN_REPORT procedure
+     APEX_UI_DEFAULT_UPDATE, 11                                  signature 6
+UPD_FORM_REGION_TITLE procedure                             APEX_COLLECTION, 37
+     APEX_UI_DEFAULT_UPDATE, 12                        UPDATE_MEMBERS procedure
+UPD_GROUP procedure                                         APEX_COLLECTION, 31
+     APEX_UI_DEFAULT_UPDATE, 13                        UPDATE_MESSAGE procedure signature 1
+UPD_ITEM_DISPLAY_HEIGHT procedure                           APEX_LANG, 19
+     APEX_UI_DEFAULT_UPDATE, 14                        UPDATE_MESSAGE procedure signature 2
+UPD_ITEM_DISPLAY_WIDTH procedure                            APEX_LANG, 20
+     APEX_UI_DEFAULT_UPDATE, 14                        UPDATE_TABLE procedure
+UPD_ITEM_FORMAT_MASK procedure                              APEX_DG_DATA_GEN, 28
+     APEX_UI_DEFAULT_UPDATE, 15                        UPDATE_TRANSLATED_STRING procedure
+UPD_ITEM_HELP procedure                                     APEX_LANG, 21
+     APEX_UI_DEFAULT_UPDATE, 15                        UPDATE_VARIABLES procedure
+UPD_ITEM_LABEL procedure                                    APEX_WORKFLOW, 19
+     APEX_UI_DEFAULT_UPDATE, 16                        UPLOAD_TEMPLATE function
+                                                            APEX_PRINT, 9
+API Reference                                          URL_ENCODE function
+G26651-03                                                   APEX_UTIL, 140
+Copyright � 2003, 2026, Oracle and/or its affiliates.  user
+                                                            get e-mail address, 52
+                                                            remove preference, 95
+
+                                                                                                                           July 24, 2026
+                                                                                                                 Index-23 of Index-24
+                                                                                     Index
+
+user account                                           WRITE procedure signature 12
+     altering, 28                                           APEX_JSON, 37
+     creating new, 15
+     fetching, 36, 38, 40                              WRITE procedure signature 13
+     removing, 97                                           APEX_JSON, 38
+     update email address, 112
+     updating FIRST_NAME, 113                          WRITE procedure signature 14
+     updating LAST_NAME value, 116                          APEX_JSON, 38
+     updating USER_NAME value, 125
+                                                       WRITE procedure signature 15
+V                                                           APEX_JSON, 39
+
+VALIDATE procedure                                     WRITE procedure signature 16
+     APEX_JWT, 4                                            APEX_JSON, 40
+
+VALIDATE_BLUEPRINT procedure                           WRITE procedure signature 17
+     APEX_DG_DATA_GEN, 29                                   APEX_JSON, 40
+
+VALIDATE_EMAIL_CONFIG Procedure                        WRITE procedure signature 18
+     APEX_INSTANCE_ADMIN, 46                                APEX_JSON, 41
+
+VALIDATE_INSTANCE_SETTING procedure                    WRITE procedure signature 19
+     APEX_DG_DATA_GEN, 30                                   APEX_JSON, 42
+
+variables                                              WRITE procedure signature 2
+     APEX_APPLICATION, 2                                    APEX_JSON, 32
+     APEX_WEB_SERVICE, 8
+                                                       WRITE procedure signature 20
+W                                                           APEX_JSON, 43
+
+WARN procedure                                         WRITE procedure signature 3
+     APEX_DEBUG, 19                                         APEX_JSON, 33
+
+Web Credentials                                        WRITE procedure signature 4
+     APEX_WEB_SERVICE, 7                                    APEX_JSON, 33
+
+workspace                                              WRITE procedure signature 5
+     export file, 34                                        APEX_JSON, 34
+     numeric security group ID, 43
+                                                       WRITE procedure signature 6
+WORKSPACE_ACCOUNT_DAYS_LEFT function                        APEX_JSON, 34
+     APEX_UTIL, 141
+                                                       WRITE procedure signature 7
+WRITE procedure                                             APEX_JSON, 35
+     APEX_JSON, 43
+                                                       WRITE Procedure Signature 8
+WRITE procedure signature 1                                 APEX_JSON, 35
+     APEX_JSON, 32
+                                                       WRITE procedure signature 9
+WRITE procedure signature 10                                APEX_JSON, 36
+     APEX_JSON, 36
+                                                       WRITE_CONTEXT procedure
+WRITE procedure signature 11                                APEX_JSON, 44
+     APEX_JSON, 37
+                                                       Z
+
+                                                       ZIP function
+                                                            APEX_EXPORT, 8
+
+API Reference                                                                                 July 24, 2026
+G26651-03                                                                            Index-24 of Index-24
+Copyright � 2003, 2026, Oracle and/or its affiliates.

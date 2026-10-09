@@ -1,0 +1,456 @@
+# APEX_REST_SOURCE_SYNC (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 58095-58549)
+
+APEX_REST_SOURCE_SYNC
+
+                       The APEX_REST_SOURCE_SYNC package enables you to synchronize data between tables by
+                       merging rows instantly or at scheduled intervals.
+                       � DISABLE Procedure
+                       � DYNAMIC_SYNCHRONIZE_DATA Procedure
+                       � ENABLE Procedure
+                       � GET_LAST_SYNC_TIMESTAMP Function
+                       � GET_SYNC_TABLE_DEFINITION_SQL Function
+                       � IS_RUNNING Function
+                       � RESCHEDULE Procedure
+                       � SYNCHRONIZE_DATA Procedure
+                       � SYNCHRONIZE_TABLE_DEFINITION Procedure
+
+52.1 DISABLE Procedure
+
+                       This procedure disables automatic synchronization.
+
+                       Syntax
+
+                       APEX_REST_SOURCE_SYNC.DISABLE (
+                          p_application_id IN NUMBER DEFAULT {current application id},
+                          p_module_static_id IN VARCHAR2 )
+
+                       Parameters
+
+Parameter                                              Description
+p_application_id                                       (Optional) The application ID.
+p_module_static_id                                     Static ID to identify the REST Data Source.
+
+Example
+
+The following example disables synchronization for the rest_movie REST Data Source in
+application 152.
+
+BEGIN
+apex_rest_source_sync.disable(
+
+      p_application_id => 152,
+      p_module_static_id => 'rest_movie' );
+END;
+
+API Reference                                                                                       July 24, 2026
+G26651-03                                                                                             Page 1 of 7
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                            Chapter 52
+                                                                                DYNAMIC_SYNCHRONIZE_DATA Procedure
+
+52.2 DYNAMIC_SYNCHRONIZE_DATA Procedure
+
+                       This procedure executes a dynamic data synchronization to the local table based on the
+                       provided parameters. The predefined synchronization steps are not executed.
+
+                       Syntax
+
+APEX_REST_SOURCE_SYNC.DYNAMIC_SYNCHRONIZE_DATA (
+
+      p_module_static_id                                      IN VARCHAR2,
+
+      --
+
+      p_sync_static_id                                        IN VARCHAR2,
+
+      p_sync_external_filter_expr IN VARCHAR2                                         DEFAULT NULL,
+
+      p_sync_parameters                                       IN apex_exec.t_parameters DEFAULT
+
+apex_exec.c_empty_parameters,
+
+      --
+
+      p_application_id                                        IN NUMBER               DEFAULT
+
+apex_application.g_flow_id );
+
+Parameters
+
+Parameter                                                       Description
+p_module_static_id
+p_sync_static_id                                                Static ID to identify the REST Data Source.
+p_sync_external_filter_expr                                     Static ID for this dynamic synchronization.
+p_sync_parameters                                               External filter expression to use for this synchronization.
+                                                                REST Data Source parameters to use for this
+p_application_id                                                synchronization.
+                                                                ID of the application containing the REST Data Source.
+
+Example
+
+The following example performs a dynamic data synchronization with Oracle APEX as the
+REST Data Source's query parameter.
+
+DECLARE
+
+l_parameters apex_exec.t_parameters;
+
+BEGIN
+
+apex_exec.add_parameter(
+
+          p_parameters                                 => l_parameters,
+
+          p_name                                       => 'query',
+
+          p_value                                      => 'Oracle APEX' );
+
+apex_session.create_session(
+
+          p_app_id                                     => 100,
+
+          p_page_id                                    => 1,
+
+          p_username                                   => '...' );
+
+apex_rest_source_sync.dynamic_synchronize_data(
+
+          p_module_static_id                                  => 'rest_movie',
+
+          p_sync_static_id                                    => 'Sync_Oracle_APEX',
+
+          p_sync_parameters                                   => l_parameters );
+
+END;
+
+API Reference                                                                                        July 24, 2026
+G26651-03                                                                                              Page 2 of 7
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                               Chapter 52
+                                                                                                   ENABLE Procedure
+
+52.3 ENABLE Procedure
+
+                       This procedure enables synchronization for the REST Data Source.
+                       Syntax
+
+                       APEX_REST_SOURCE_SYNC.ENABLE (
+                          p_application_id IN NUMBER DEFAULT {current application id},
+                          p_module_static_id IN VARCHAR2 )
+
+                       Parameters
+
+Parameter                                              Description
+p_application_id                                       (Optional) The application ID.
+p_module_static_id                                     Static ID to identify the REST Data Source.
+
+Example
+
+The following example enables synchronization for the rest_movie REST Data Source in
+application 152.
+
+BEGIN
+      apex_rest_source_sync.enable(
+      p_application_id => 152,
+      p_module_static_id => 'rest_movie' );
+
+END;
+
+52.4 GET_LAST_SYNC_TIMESTAMP Function
+
+                       This function returns the timestamp of the last successful sync operation.
+                       Syntax
+
+APEX_REST_SOURCE_SYNC.GET_LAST_SYNC_TIMESTAMP (
+      p_module_static_id IN VARCHAR2,
+      p_application_id IN NUMBER DEFAULT {current application id} )
+      RETURN timestamp with time zone;
+
+Parameters
+
+Parameter                                              Description
+p_module_static_id                                     Static ID to identify the REST Data Source.
+p_application_id                                       ID of the application containing the REST Data Source.
+
+Returns
+This function returns the timestamp of the last successful sync operation.
+
+API Reference                                                                                       July 24, 2026
+G26651-03                                                                                             Page 3 of 7
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                     Chapter 52
+                                                                     GET_SYNC_TABLE_DEFINITION_SQL Function
+
+Example
+
+The following example returns the last synchronization timestamp of the "rest_movie" REST
+Data Source.
+
+DECLARE
+
+l_last_sync_time timestamp with time zone;
+
+BEGIN
+
+apex_session.create_session(
+
+         p_app_id                                      => 100,
+
+         p_page_id                                     => 1,
+
+         p_username                                    => '...' );
+
+l_last_sync_time := apex_rest_source_sync.get_last_sync_timestamp(
+
+                                                       p_module_static_id       => 'rest_movie' );
+
+END;
+
+52.5 GET_SYNC_TABLE_DEFINITION_SQL Function
+
+                       This function generates SQL to synchronize the local table definition with the data profile.
+                       Syntax
+
+APEX_REST_SOURCE_SYNC.GET_SYNC_TABLE_DEFINITION_SQL (
+
+p_module_static_id                                     IN VARCHAR2,
+
+p_application_id                                       IN NUMBER DEFAULT {current application id},
+
+p_include_drop_columns IN BOOLEAN DEFAULT FALSE )
+
+RETURN VARCHAR2;
+
+Parameters
+
+Parameter                                                       Description
+p_module_static_id
+p_application_id                                                Static ID to identify the REST Data Source.
+p_include_drop_columns                                          (Optional) The application ID.
+                                                                If TRUE, generate ALTER TABLE DROP COLUMN statements
+                                                                for columns which do not exist in the data profile any more.
+
+Example
+
+The following example generates the SQL statements (ALTER TABLE) to bring the table in sync
+with the data profile after the REST Data Source named "rest_movie" has changed.
+
+DECLARE
+
+      l_sql varchar2(32767);
+
+BEGIN
+
+      apex_session.create_session(
+
+         p_app_id                                      => 100,
+
+         p_page_id                                     => 1,
+
+         p_username                                    => '...' );
+
+      l_sql := apex_rest_source_sync.get_sync_table_definition_sql(
+
+         p_module_static_id                                   => 'rest_movie',
+
+API Reference                                                                                       July 24, 2026
+G26651-03                                                                                             Page 4 of 7
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                Chapter 52
+                                                                IS_RUNNING Function
+
+      p_include_drop_columns => true );
+
+END;
+
+52.6 IS_RUNNING Function
+
+                       This function determines whether synchronization for the given REST data source is currently
+                       running.
+
+                       Syntax
+
+APEX_REST_SOURCE_SYNC.IS_RUNNING (
+      p_application_id IN NUMBER DEFAULT apex_application.g_flow_id,
+      p_module_static_id IN VARCHAR2 )
+      RETURN BOOLEAN;
+
+Parameters
+
+Parameter                                              Description
+p_application_id                                       ID of the application which contains the automation.
+p_module_static_id                                     Static ID of the automation to disable.
+
+Returns
+TRUE if synchronization is currently running. FALSE otherwise.
+
+Example
+The following example prints out whether synchronization is currently running.
+
+BEGIN
+      IF apex_rest_source_sync.is_running(
+            p_application_id => 152,
+            p_module_static_id => 'rest_movie' )
+            THEN
+                   dbms_output.put_line( 'Synchronization is currently running.' );
+            ELSE
+                   dbms_output.put_line( 'Synchronization is currently not
+
+running.' );
+      END IF;
+
+END;
+
+52.7 RESCHEDULE Procedure
+
+                       This procedure sets the next scheduled execution timestamp of the synchronization.
+                       Syntax
+
+APEX_REST_SOURCE_SYNC.RESCHEDULE (
+
+p_application_id IN NUMBER DEFAULT apex_application.g_flow_id,
+
+p_module_static_id IN VARCHAR2,
+
+p_next_run_at                                          IN timestamp with time zone DEFAULT systimestamp );
+
+API Reference                                                                                              July 24, 2026
+G26651-03                                                                                                    Page 5 of 7
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                        Chapter 52
+                                                                           SYNCHRONIZE_DATA Procedure
+
+Parameters
+
+Parameter                                                       Description
+p_application_id                                                (Optional): The application ID.
+p_module_static_id                                              Static ID to identify the REST Data Source.
+p_next_run_at                                                   Timestamp to execute the next synchronization.
+
+Example
+The following example synchronizes the REST Data Source named "rest_movie" immediately.
+
+BEGIN
+
+apex_session.create_session(
+
+       p_app_id                                        => 100,
+
+       p_page_id                                       => 1,
+
+       p_username                                      => '...' );
+
+apex_rest_source_sync.reschedule(
+
+       p_static_id                                     => 'rest_movie' );
+
+END;
+
+52.8 SYNCHRONIZE_DATA Procedure
+
+                       This procedure executes the configured data synchronization to the local table. The
+                       SYNCHRONIZE_DATA procedure requires an APEX session context.
+
+                       Syntax
+
+APEX_REST_SOURCE_SYNC.SYNCHRONIZE_DATA (
+
+      p_module_static_id                               IN VARCHAR2,
+
+      p_run_in_background IN BOOLEAN DEFAULT FALSE,
+
+      p_application_id                                 IN NUMBER DEFAULT {current application id} );
+
+Parameters
+
+Parameter                                                       Description
+p_module_static_id
+p_run_in_background                                             Static ID to identify the REST Data Source.
+                                                                If TRUE, synchronization runs in the background as a one-
+p_application_id                                                time DBMS_SCHEDULER job.
+                                                                ID of the application containing the REST Data Source.
+
+Example
+
+The following example performs data synchronization immediately, independent of the next
+scheduled time.
+
+BEGIN
+
+      apex_session.create_session(
+
+       p_app_id                                        => 100,
+
+       p_page_id                                       => 1,
+
+       p_username                                      => '...' );
+
+API Reference                                                                                                   July 24, 2026
+G26651-03                                                                                                         Page 6 of 7
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                     Chapter 52
+                                                                     SYNCHRONIZE_TABLE_DEFINITION Procedure
+
+apex_rest_source_sync.synchronize_data(
+
+       p_module_static_id                                     => 'rest_movie',
+
+       p_run_in_background => true );
+
+END;
+
+52.9 SYNCHRONIZE_TABLE_DEFINITION Procedure
+
+                       This procedure synchronizes the local table definition with the data profile.
+                       If the table does not exist, a CREATE TABLE statement executes. Table columns are created for
+                       visible data profile columns.
+                       If the table already exists, a series of ALTER TABLE statements execute in order to align the
+                       table with the data profile.
+
+                       Syntax
+
+APEX_REST_SOURCE_SYNC.SYNCHRONIZE_TABLE_DEFINITION (
+
+p_module_static_id                                     IN VARCHAR2,
+
+p_application_id                                       IN NUMBER DEFAULT {current application id},
+
+p_drop_unused_columns IN BOOLEAN DEFAULT FALSE );
+
+Parameters
+
+Parameter                                                            Description
+p_module_static_id
+p_application_id                                                     Static ID to identify the REST Data Source.
+p_drop_unused_columns                                                (Optional) The application ID.
+                                                                     If TRUE, the procedure also drops columns
+                                                                     which do not exist in the data profile any
+                                                                     more.
+
+Example
+
+The following example demonstrates bringing the local synchronization table in sync with the
+data profile after the REST Data Source named "rest_movie" has changed.
+
+BEGIN
+
+      apex_session.create_session(
+
+       p_app_id                                        => 100,
+
+       p_page_id                                       => 1,
+
+       p_username                                      => '...' );
+
+      apex_rest_source_sync.synchronize_table_definition(
+
+       p_module_static_id => 'rest_movie',
+
+       p_drop_unused_columns => true );
+
+END;
+
+API Reference                                                                   July 24, 2026
+G26651-03                                                                         Page 7 of 7
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+53

@@ -1,0 +1,1284 @@
+# APEX_MAIL (APEX 26.1 PL/SQL API, texto extraído del PDF oficial, líneas 48108-49390)
+
+APEX_MAIL
+
+                       You can use the APEX_MAIL package to send an email from an Oracle APEX application. This
+                       package is built on top of the Oracle-supplied UTL_SMTP package. Because of this dependence,
+                       the UTL_SMTP package must be installed and functioning to use APEX_MAIL.
+
+                       APEX_MAIL contains three notable procedures:
+                       � Use APEX_MAIL.SEND to send an outbound email message from your application.
+                       � Use APEX_MAIL.PUSH_QUEUE to deliver mail messages stored in APEX_MAIL_QUEUE.
+                       � Use APEX_MAIL.ADD_ATTACHMENT to send an outbound email message from your
+
+                             application as an attachment.
+
+                       APEX installs the database job ORACLE_APEX_MAIL_QUEUE, which periodically sends all mail
+                       messages stored in the active mail queue.
+
+                              Note
+                                 The APEX_MAIL package may be used from outside the context of an APEX application
+                                 (such as from SQLcl or from a Database Scheduler job) as long as the database user
+                                 making the call is mapped to an APEX workspace. If the database user is mapped to
+                                 multiple workspaces, you must first call APEX_UTIL.SET_WORKSPACE or
+                                 APEX_UTIL.SET_SECURITY_GROUP_ID as in the following examples. The APEX_MAIL
+                                 package cannot be used by database users that are not mapped to any workspace
+                                 unless they have been granted the role APEX_ADMINISTRATOR_ROLE.
+
+                                 -- Example 1
+                                 apex_util.set_workspace(p_workspace => 'MY_WORKSPACE');
+
+                                 -- Example 2
+                                 FOR c1 in (
+
+                                      select workspace_id
+                                         from apex_applications
+
+                                       where application_id = 100 )
+                                 LOOP
+
+                                      apex_util.set_security_group_id(p_security_group_id =>
+                                 c1.workspace_id);
+                                 END LOOP;
+
+                       � Configuring Oracle APEX to Send Email  July 24, 2026
+                       � ADD_ATTACHMENT Procedure Signature 1   Page 1 of 19
+                       � ADD_ATTACHMENT Procedure Signature 2
+                       � GET_IMAGES_URL Function
+                       � GET_INSTANCE_URL Function
+
+API Reference
+G26651-03
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                         Chapter 44
+                                                                     Configuring Oracle APEX to Send Email
+
+� PREPARE_TEMPLATE Procedure
+� PUSH_QUEUE Procedure
+� SEND Function Signature 1
+� SEND Function Signature 2
+� SEND Procedure Signature 1
+� SEND Procedure Signature 2
+
+See Also
+
+� Sending Email from an Application in Oracle APEX App Builder User's Guide
+
+� Oracle AI Database PL/SQL Packages and Types Reference for more information
+     about the UTL_SMTP package
+
+44.1 Configuring Oracle APEX to Send Email
+
+                       Before you can send email from an App Builder application, you must:
+
+                       1. Log in to APEX Administration Services and configure the email settings on the Instance
+                             Settings page. See Configuring Email in Oracle APEX Administration Guide.
+
+                       2. Enable network services that are disabled by default in Oracle Database 11g release 2
+                             (11.2) and newer. See Enabling Network Service in Oracle Database 11g in Enabling
+                             Network Services in Oracle Database 11g or Later in Oracle APEX App Builder User's
+                             Guide.
+
+                                   Tip
+
+                                      You can configure APEX to automatically email users their login credentials when
+                                      a new workspace request has been approved. To learn more, see Selecting a
+                                      Provisioning Mode in Oracle APEX Administration Guide.
+
+44.2 ADD_ATTACHMENT Procedure Signature 1
+
+                       This procedure adds an attachment of type BLOB to an outbound email message. To add
+                       multiple attachments to a single email, APEX_MAIL.ADD_ATTACHMENT can be called repeatedly
+                       for a single email message.
+
+                       Syntax
+
+APEX_MAIL.ADD_ATTACHMENT (
+
+p_mail_id                                              IN NUMBER,
+
+p_attachment                                           IN BLOB,
+
+p_filename                                             IN VARCHAR2,
+
+p_mime_type                                            IN VARCHAR2
+
+p_content_id                                           IN VARCHAR2   DEFAULT NULL );
+
+API Reference                                                                         July 24, 2026
+G26651-03                                                                             Page 2 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                           Chapter 44
+                                                                                  ADD_ATTACHMENT Procedure Signature 1
+
+Parameters
+
+Parameter                                              Description
+p_mail_id
+                                                       The numeric ID associated with the email. This is the
+p_attachment                                           numeric identifier returned from the call to
+p_filename                                             APEX_MAIL.SEND to compose the email body.
+p_mime_type
+p_content_id                                           A BLOB variable containing the binary content to be
+                                                       attached to the email message.
+
+                                                       The filename associated with the email attachment.
+
+                                                       A valid MIME type (or Internet media type) to associate
+                                                       with the email attachment.
+
+                                                       An optional identifier for the attachment. If non-null, then
+                                                       the file attaches inline. That attachment may then be
+                                                       referenced in the HTML of the email body by using the cid.
+
+                                                       Note: Be aware that automatic displaying of inlined images
+                                                       may not be supported by all e-mail clients.
+
+Example 1
+
+The following example demonstrates how to access files stored in APEX_APPLICATION_FILES
+and add them to an outbound email message.
+
+DECLARE
+
+l_id NUMBER;
+
+BEGIN
+
+l_id := APEX_MAIL.SEND(
+
+         p_to                                          => 'fred@flintstone.com',
+
+         p_from                                        => 'barney@rubble.com',
+
+         p_subj                                        => 'APEX_MAIL with attachment',
+
+         p_body                                        => 'Please review the attachment.',
+
+         p_body_html => '<b>Please</b> review the attachment');
+
+FOR c1 IN (SELECT filename, blob_content, mime_type
+
+         FROM APEX_APPLICATION_FILES
+
+         WHERE ID IN (123,456)) LOOP
+
+            APEX_MAIL.ADD_ATTACHMENT(
+                   p_mail_id => l_id,
+                   p_attachment => c1.blob_content,
+                   p_filename => c1.filename,
+                   p_mime_type => c1.mime_type);
+
+            END LOOP;
+      COMMIT;
+END;
+/
+
+Example 2
+
+This example shows how to attach a file inline, by using a content identifier, and how to refer to
+that attachment in the HTML of the email.
+
+DECLARE
+   l_id number;
+   l_body clob;
+
+API Reference                                                                               July 24, 2026
+G26651-03                                                                                   Page 3 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                Chapter 44
+                                                                       ADD_ATTACHMENT Procedure Signature 2
+
+   l_body_html clob;
+   l_content_id varchar2(100) := 'my-inline-image';
+   l_filename varchar2(100);
+   l_mime_type varchar2(100);
+   l_image blob;
+BEGIN
+   l_body := 'To view the content of this message, please use an HTML enabled
+mail client.' || utl_tcp.crlf;
+
+   l_body_html := '<html><body>' || utl_tcp.crlf ||
+                           '<p>Here is the image you requested.</p>' || utl_tcp.crlf ||
+                           '<p><img src="cid:' || l_content_id || '" alt="Requested
+
+Image"></p>' || utl_tcp.crlf ||
+                           '<p>Thanks,<br />' || utl_tcp.crlf ||
+                           'The EveryCorp Dev Team<br />' || utl_tcp.crlf ||
+                           '</body></html>';
+
+   l_id := apex_mail.send (
+      p_to => 'some_user@example.com', -- change to your email address
+      p_from => 'some_sender@example.com', -- change to a real senders email
+
+address
+      p_body => l_body,
+      p_body_html => l_body_html,
+      p_subj => 'Requested Image' );
+
+   select filename, mime_type, blob_content
+      into l_filename, l_mime_type, l_image
+      from apex_application_files
+
+    where id = 123;
+
+   apex_mail.add_attachment(
+      p_mail_id => l_id,
+      p_attachment => l_image,
+      p_filename => l_filename,
+      p_mime_type => l_mime_type,
+      p_content_id => l_content_id );
+
+   COMMIT;
+END;
+
+44.3 ADD_ATTACHMENT Procedure Signature 2
+
+                       This procedure adds an attachment of type CLOB to an outbound email message. To add
+                       multiple attachments to a single email, APEX_MAIL.ADD_ATTACHMENT can be called repeatedly
+                       for a single email message.
+
+                       Syntax
+
+APEX_MAIL.ADD_ATTACHMENT (                             IN NUMBER,
+      p_mail_id                                        IN CLOB,
+      p_attachment                                     IN VARCHAR2,
+      p_filename                                       IN VARCHAR2 );
+      p_mime_type
+
+API Reference                                                          July 24, 2026
+G26651-03                                                              Page 4 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                               Chapter 44
+                                                       GET_IMAGES_URL Function
+
+Parameters
+
+Parameter                                              Description
+p_mail_id
+                                                       The numeric ID associated with the email. This is
+p_attachment                                           the numeric identifier returned from the call to
+p_filename                                             APEX_MAIL.SEND to compose the email body.
+p_mime_type
+                                                       A CLOB variable containing the text content to be
+                                                       attached to the email message.
+
+                                                       The filename associated with the email
+                                                       attachment.
+
+                                                       A valid MIME type (or Internet media type) to
+                                                       associate with the email attachment.
+
+Examples
+
+The following example demonstrates how to attached a CLOB-based attachment to an
+outbound email message.
+
+DECLARE
+      l_id NUMBER;
+      l_clob CLOB := 'Value1,Value2,Value3,42';
+
+BEGIN
+      l_id := APEX_MAIL.SEND(
+            p_to => 'fred@flintstone.com',
+            p_from => 'barney@rubble.com',
+            p_subj => 'APEX_MAIL with a text attachment',
+            p_body => 'Please review the attachment.',
+            p_body_html => '<b>Please</b> review the attachment');
+
+      APEX_MAIL.ADD_ATTACHMENT(
+            p_mail_id => l_id,
+            p_attachment => l_clob,
+            p_filename => 'data.csv',
+            p_mime_type => 'text/csv');
+
+      COMMIT;
+END;
+/
+
+44.4 GET_IMAGES_URL Function
+
+                       This function gets the image prefixed URL if the email includes Oracle APEX instance images.
+                       Syntax
+
+APEX_MAIL.GET_IMAGES_URL return VARCHAR2;
+
+Parameters
+None.
+
+API Reference                                                       July 24, 2026
+G26651-03                                                           Page 5 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                              Chapter 44
+                                                                                   GET_INSTANCE_URL Function
+
+Example
+
+The following example sends an Order Confirmation email which includes the Oracle Logo
+image.
+
+DECLARE
+
+l_body           clob;
+
+l_body_html clob;
+
+BEGIN
+
+l_body := 'To view the content of this message, please use an HTML
+
+enabled mail client.' || utl_tcp.crlf;
+
+l_body_html := '<html><body>' || utl_tcp.crlf ||
+
+                 '<p>Please confirm your order on the <a href="' ||
+
+                 apex_mail.get_instance_url || 'f?p=100:10">Order
+
+Confirmation</a> page.</p>' || utl_tcp.crlf ||
+
+                 '<p>Sincerely,<br />' || utl_tcp.crlf ||
+
+                 'The EveryCorp Dev Team<br />' || utl_tcp.crlf ||
+
+                 '<img src="' || apex_mail.get_images_url || 'oracle.gif"
+
+alt="Oracle Logo"></p>' || utl_tcp.crlf ||
+
+                 '</body></html>';
+
+apex_mail.send (
+
+         p_to                                          => 'some_user@example.com', -- change to your email
+
+address
+
+         p_from                                        => 'some_sender@example.com', -- change to a real senders
+
+email address
+
+         p_body                                        => l_body,
+
+         p_body_html => l_body_html,
+
+         p_subj                                        => 'Order Confirmation' );
+
+END;
+
+44.5 GET_INSTANCE_URL Function
+
+                       This function gets the instance URL if an email includes a link to an Oracle APEX instance.
+
+       Note
+
+       This function requires that the APEX Instance URL parameter is set on the Manage
+       Instance, Instance Settings page in the Email section in Administration Services.
+
+Syntax
+APEX_MAIL.GET_INSTANCE_URL return VARCHAR2;
+
+Parameters
+None.
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 6 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                                 Chapter 44
+                                                                                   PREPARE_TEMPLATE Procedure
+
+Example
+
+The following example sends an Order Confirmation email which includes an absolute URL to
+page 10 of application 100.
+
+DECLARE
+
+l_body           clob;
+
+l_body_html clob;
+
+BEGIN
+
+l_body := 'To view the content of this message, please use an HTML
+
+enabled mail client.' || utl_tcp.crlf;
+
+l_body_html := '<html><body>' || utl_tcp.crlf ||
+
+                 '<p>Please confirm your order on the <a href="' ||
+
+                 apex_mail.get_instance_url || 'f?p=100:10">Order
+
+Confirmation</a> page.</p>' || utl_tcp.crlf ||
+
+                 '</body></html>';
+
+apex_mail.send (
+
+         p_to                                          => 'some_user@example.com', -- change to your email
+
+address
+
+         p_from                                        => 'some_sender@example.com', -- change to a real senders
+
+email address
+
+         p_body                                        => l_body,
+
+         p_body_html => l_body_html,
+
+         p_subj                                        => 'Order Confirmation' );
+
+END;
+
+       See Also
+       � Configuring Email in Oracle APEX Administration Guide
+
+44.6 PREPARE_TEMPLATE Procedure
+
+                       Procedure to return a formatted mail based on an e-mail template where the placeholders
+                       specified as JSON string are substituted.
+
+                       Syntax
+
+APEX_MAIL.PREPARE_TEMPLATE (
+
+p_static_id                                            IN VARCHAR2,
+
+p_placeholders                                         IN CLOB,
+
+p_application_id IN NUMBER DEFAULT apex_application.g_flow_id,
+
+p_subject                                              OUT VARCHAR2,
+
+p_html                                                 OUT CLOB,
+
+p_text                                                 OUT CLOB,
+
+p_language_override IN VARCHAR2 DEFAULT NULL );
+
+API Reference                                                                      July 24, 2026
+G26651-03                                                                          Page 7 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                      Chapter 44
+                                                                                  PUSH_QUEUE Procedure
+
+Parameters
+
+ Parameters                                            Description
+p_static_id
+p_placeholders                                         The identifier which was specified when the
+p_application_id                                       template was created in the Oracle APEX Builder.
+p_subject
+p_html                                                 A JSON formatted string containing name/value
+p_text                                                 pairs specifying values for the placeholders to be
+p_language_override                                    replaced in the email template.
+
+Example                                                Application ID where the email template is defined.
+                                                       Defaults to the current application (if called from
+                                                       within an application).
+
+                                                       The subject line generated from the template, after
+                                                       any placeholders and substitutions have been
+                                                       made.
+
+                                                       The HTML code for the email, after placeholders
+                                                       have been replaced.
+
+                                                       The plain text of the email, with substitutions made.
+
+                                                       Language of a translated template to use. Use a
+                                                       language code like "en", "fr" or "de-at" here. An
+                                                       application translation for this language must exist,
+                                                       otherwise the argument is ignored.
+
+declare
+
+l_subject varchar2( 4000 );
+
+l_html clob;
+
+l_text clob;
+
+begin
+
+apex_mail.prepare_template (
+
+p_static_id => 'ORDER',
+
+p_placeholders => '{ "ORDER_NUMBER": 5321, "ORDER_DATE": "01-Feb-2018",
+
+"ORDER_TOTAL": "$12,000" }',
+
+p_subject   => l_subject,
+
+p_html      => l_html,
+
+p_text      => l_text );
+
+end;
+
+44.7 PUSH_QUEUE Procedure
+
+                       This procedure manually delivers queued mail messages stored in the APEX_MAIL_QUEUE
+                       dictionary view to the SMTP gateway.
+
+                       Oracle APEX logs successfully submitted messages in the APEX_MAIL_LOG dictionary view with
+                       the timestamp reflecting your server's local time.
+
+                       Syntax
+
+APEX_MAIL.PUSH_QUEUE (
+
+      p_smtp_hostname IN VARCHAR2 DEFAULT NULL,
+
+      p_smtp_portno                                    IN NUMBER DEFAULT NULL );
+
+API Reference                                                                     July 24, 2026
+G26651-03                                                                         Page 8 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                      Chapter 44
+                                                                                 SEND Function Signature 1
+
+Parameters                                             Description
+                                                       SMTP gateway host name
+ Parameters                                            SMTP gateway port number
+p_smtp_hostname
+p_smtp_portno
+
+Note
+
+Note These parameter values are provided for backward compatibility, but their
+respective values are ignored. The SMTP gateway hostname and SMTP gateway port
+number are exclusively derived from values entered on the Instance Settings page in
+Administration Services or set using APEX_INSTANCE_ADMIN API.
+
+Example
+
+The following example demonstrates the use of the APEX_MAIL.PUSH_QUEUE procedure using a
+shell script. This example only applies to UNIX/LINUX installations.
+
+sql / <<EOF
+APEX_MAIL.PUSH_QUEUE;
+DISCONNECT
+EXIT
+EOF
+
+See Also
+� Configuring Email in Oracle APEX Administration Guide
+� Sending an Email from an Application in Oracle APEX App Builder User's Guide
+
+44.8 SEND Function Signature 1
+
+                       This function sends an outbound email message from an application. Although you can use
+                       this function to pass in either a VARCHAR2 or a CLOB to p_body and p_body_html, the data types
+                       must be the same. In other words, you cannot pass a CLOB to P_BODY and a VARCHAR2 to
+                       p_body_html.
+
+                       This function returns a NUMBER. The NUMBER returned is the unique numeric identifier associated
+                       with the mail message.
+
+                       Usage Notes
+
+                       When using APEX_MAIL.SEND, remember the following:
+
+                       � No single line may exceed 1000 characters. The SMTP/MIME specification dictates that
+                             no single line shall exceed 1000 characters. To comply with this restriction, you must add a
+                             carriage return or line feed characters to break up your p_body or p_body_html parameters
+                             into chunks of 1000 characters or less. Failing to do so results in erroneous email
+                             messages, including partial messages or messages with extraneous exclamation points.
+
+API Reference                                                                    July 24, 2026
+G26651-03                                                                        Page 9 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                             Chapter 44
+                                                        SEND Function Signature 1
+
+� Plain text and HTML email content. Passing a value to p_body, but not p_body_html
+     results in a plain text message. Passing a value to p_body and p_body_html yields a multi-
+     part message that includes both plain text and HTML content. The settings and capabilities
+     of the recipient's email client determine what displays. Although most modern email clients
+     can read an HTML formatted email, remember that some users disable this functionality to
+     address security issues.
+
+� Avoid images. When referencing images in p_body_html using the <img /> tag,
+     remember that the images must be accessible to the recipient's email client in order for
+     them to see the image.
+
+     For example, suppose you reference an image on your network called hello.gif as
+     follows:
+
+<img src="http://example.com/hello.gif" alt="Hello" />
+
+In this example, the image is not attached to the email, but is referenced by the email. For
+the recipient to see it, they must be able to access the image using a web browser. If the
+image is inside a firewall and the recipient is outside of the firewall, the image is not
+displayed.
+
+Alternatively, you may specify the p_content_id parameter when calling
+APEX_MAIL.ADD_ATTACHMENT which creates an inline attachment that can be referenced as
+follows:
+
+<img src="cid:hello_content_id" alt="Hello" />
+
+     Note that this may greatly increase the size of the resultant emails and that clients may not
+     always automatically display inline images.
+
+     For these reasons, avoid using images. If you must include images, be sure to include the
+     ALT attribute to provide a textual description in the event the image is not accessible nor
+     displayed.
+
+Syntax
+
+APEX_MAIL.SEND (                                       IN VARCHAR2,
+      p_to                                             IN VARCHAR2,
+      p_from                                           IN [ VARCHAR2 | CLOB ],
+      p_body                                           IN [ VARCHAR2 | CLOB ] DEFAULT NULL,
+      p_body_html                                      IN VARCHAR2 DEFAULT NULL,
+      p_subj                                           IN VARCHAR2 DEFAULT NULL,
+      p_cc                                             IN VARCHAR2 DEFAULT NULL,
+      p_bcc                                            IN VARCHAR2 DEFAULT NULL )
+      p_replyto
+
+RETURN NUMBER;
+
+Parameters
+
+Parameter                                              Description
+p_to
+                                                       Valid email address to which the email is sent (required).
+                                                       For multiple email addresses, use a comma-separated list
+
+API Reference                                                                                July 24, 2026
+G26651-03                                                                                    Page 10 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                 Chapter 44
+                                                            SEND Function Signature 1
+
+Parameter                                              Description
+p_from
+                                                       Email address from which the email is sent (required). This
+p_body                                                 email address must be a valid address. Otherwise, the
+                                                       message is not sent.
+p_body_html
+p_subj                                                 If an instance administrator has already defined a "Default
+p_cc                                                   Email From Address" on the instance level, this address is
+p_bcc                                                  always used as the "from" address.
+p_replyto
+                                                       Body of the email in plain text, not HTML (required). If a
+                                                       value is passed to p_body_html, then this is the only text
+                                                       the recipient sees. If a value is not passed to
+                                                       p_body_html, then this text only displays for email clients
+                                                       that do not support HTML or have HTML disabled. A
+                                                       carriage return or line feed (CRLF) must be included every
+                                                       1000 characters.
+
+                                                       Body of the email in HTML format. This must be a full
+                                                       HTML document including the <html> and <body> tags. A
+                                                       single line cannot exceed 1000 characters without a
+                                                       carriage return or line feed (CRLF)
+
+                                                       Subject of the email
+
+                                                       Valid email addresses to which the email is copied. For
+                                                       multiple email addresses, use a comma-separated list
+
+                                                       Valid email addresses to which the email is blind copied.
+                                                       For multiple email addresses, use a comma-separated list
+
+                                                       Specify a valid email address to instruct recipient's email
+                                                       client to send human-generated replies to this address
+                                                       rather than the address specified in p_from.
+
+Examples
+
+The following example demonstrates how to use APEX_MAIL.SEND to send a plain text email
+message from an application and return the unique message ID.
+
+-- Example One: Plain Text only message
+
+DECLARE
+
+   l_body      CLOB;
+
+   l_id NUMBER;
+
+BEGIN
+
+   l_body := 'Thank you for your interest in the APEX_MAIL
+
+package.'||utl_tcp.crlf||utl_tcp.crlf;
+
+   l_body := l_body ||' Sincerely,'||utl_tcp.crlf;
+
+   l_body := l_body ||' The EveryCorp Dev Team'||utl_tcp.crlf;
+
+   l_id := apex_mail.send(
+
+         p_to    => 'some_user@example.com', -- change to your email
+
+address
+
+         p_from => 'some_sender@example.com', -- change to a real senders
+
+email address
+
+         p_body => l_body,
+
+         p_subj => 'APEX_MAIL Package - Plain Text message');
+
+END;
+
+/
+
+API Reference                                                   July 24, 2026
+G26651-03                                                       Page 11 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                               Chapter 44
+                                                                          SEND Function Signature 2
+
+The following example demonstrates how to use APEX_MAIL.SEND to send an HTML email
+message from an application. Remember, you must include a carriage return or line feed
+(CRLF) every 1000 characters. The example that follows uses utl_tcp.crlf.
+
+-- Example Two: Plain Text / HTML message
+
+DECLARE
+
+   l_body        CLOB;
+
+   l_body_html CLOB;
+
+   l_id NUMBER;
+
+BEGIN
+
+   l_body := 'To view the content of this message, please use an HTML
+
+enabled mail client.'||utl_tcp.crlf;
+
+   l_body_html := '<html>
+         <head>
+               <style type="text/css">
+                      body{font-family: Arial, Helvetica, sans-serif;
+                            font-size:10pt;
+                            margin:30px;
+                            background-color:#ffffff;}
+
+                 span.sig{font-style:italic;
+
+                                                       font-weight:bold;
+
+                                                       color:#811919;}
+
+               </style>
+
+         </head>
+
+         <body>'||utl_tcp.crlf;
+
+   l_body_html := l_body_html ||'<p>Thank you for your interest in the
+
+<strong>APEX_MAIL</strong> package.</p>'||utl_tcp.crlf;
+
+   l_body_html := l_body_html ||' Sincerely,<br />'||utl_tcp.crlf;
+
+   l_body_html := l_body_html ||' <span class="sig">The EveryCorp Dev Team</
+
+span><br />'||utl_tcp.crlf;
+
+   l_body_html := l_body_html ||'</body></html>';
+
+   l_id          := apex_mail.send(
+
+         p_to                                          => 'some_user@example.com', -- change to your email
+
+address
+
+         p_from                                        => 'some_sender@example.com', -- change to a real senders
+
+email address
+
+         p_body                                        => l_body,
+
+         p_body_html => l_body_html,
+
+         p_subj                                        => 'APEX_MAIL Package - HTML formatted message');
+
+END;
+
+/
+
+44.9 SEND Function Signature 2
+
+                       This function returns a mail ID after adding the mail to the mail queue of APEX. The mail ID
+                       can be used in a call to add_attachment to add attachments to an existing mail.
+
+                       The mail is based on an email template where the placeholder values specified as JSON string
+                       are substituted.
+
+API Reference                                                                                             July 24, 2026
+G26651-03                                                                                                 Page 12 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                            Chapter 44
+                                                       SEND Function Signature 2
+
+Syntax
+
+APEX_MAIL.SEND (                                       IN VARCHAR2,
+      p_template_static_id                             IN CLOB,
+      p_placeholders                                   IN VARCHAR2,
+      p_to                                             IN VARCHAR2 DEFAULT NULL,
+      p_cc                                             IN VARCHAR2 DEFAULT NULL,
+      p_bcc                                            IN VARCHAR2 DEFAULT NULL,
+      p_from                                           IN VARCHAR2 DEFAULT NULL,
+      p_replyto                                        IN NUMBER DEFAULT apex_application.g_flow_id,
+      p_application_id                                 IN VARCHAR2 DEFAULT NULL );
+      p_language_override
+      RETURN NUMBER;
+
+Parameters
+
+Parameter                                              Description
+p_template_static_id
+p_placeholders                                         Static identifier string, used to identify the shared
+p_to                                                   component email template.
+
+p_cc                                                   JSON string representing the placeholder names
+                                                       along with the values, to be substituted.
+p_bcc
+                                                       Valid email address to which the email is sent
+p_from                                                 (required). For multiple email addresses, use a
+                                                       comma-separated list.
+
+                                                       Valid email addresses to which the email is copied.
+                                                       For multiple email addresses, use a comma-
+                                                       separated list.
+
+                                                       Valid email addresses to which the email is blind
+                                                       copied. For multiple email addresses, use a comma-
+                                                       separated list.
+
+                                                       This must be a valid email address from which the
+                                                       email is sent.
+
+                                                       If p_from is not provided:
+
+                                                       � the "Application Email From Address" is used (if
+                                                             provided under Application Definition)
+
+                                                       � otherwise, p_replyto is used (if provided)
+                                                       � else, p_to is used
+                                                       If p_to or p_replyto contain multiple email
+                                                       addresses, p_from is required.
+
+                                                       If an instance administrator has already defined a
+                                                       "Default Email From Address" on the instance level,
+                                                       this address is always used as the "from" address,
+                                                       regardless of whether "p_from" is provided.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 13 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                             Chapter 44
+                                                                                      SEND Procedure Signature 1
+
+Parameter                                              Description
+p_replyto
+                                                       Specify a valid email address to instruct recipient's
+p_application_id                                       email client to send human-generated replies to this
+p_language_override                                    address rather than the address specified in p_from.
+                                                       You can use this parameter as follows:
+
+                                                       � If you omit the p_replyto parameter, the Reply-
+                                                             To mail header is set to the value specified in the
+                                                            p_from parameter.
+
+                                                       � If you include the p_replyto parameter, but
+                                                             provide a NULL value, the Reply-To mail header
+                                                             is set to NULL. This results in the suppression of
+                                                             automatic email replies.
+
+                                                       � If you include p_replyto parameter, but provide
+                                                             a non-null value (for example, a valid email
+                                                             address), you send these messages, but the
+                                                             automatic replies go to the value specified (for
+                                                             example, the email address).
+
+                                                       Application ID where the email template is defined.
+                                                       Defaults to the current application (if called from
+                                                       within an application).
+
+                                                       Language of a translated template to use. Use a
+                                                       language code like "en", "fr" or "de-at" here. An
+                                                       application translation for this language must exist,
+                                                       otherwise the argument is ignored.
+
+       Note
+
+       When calling the SEND function from outside the context of an APEX application (such
+       as from a Database Scheduler job), you must specify the p_application_id
+       parameter.
+
+Examples
+
+DECLARE
+
+l_mail_id number;
+
+BEGIN
+
+l_mail_id := apex_mail.send (
+
+         p_template_static_id => 'ORDER',
+
+         p_placeholders                                => '{ "ORDER_NUMBER": 5321, "ORDER_DATE": "01-
+
+Feb-2018", "ORDER_TOTAL": "$12,000" }',
+
+         p_to                                          => 'some_user@example.com' );
+
+      apex_mail.add_attachment (
+            p_mail_id => l_mail_id,
+            p_attachment => ... );
+
+END;
+
+44.10 SEND Procedure Signature 1
+
+                       This procedure sends an outbound email message from an application. Although you can use
+                       this procedure to pass in either a VARCHAR2 or a CLOB to p_body and p_body_html, the data
+
+API Reference                                                                         July 24, 2026
+G26651-03                                                                             Page 14 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                              Chapter 44
+                                                       SEND Procedure Signature 1
+
+types must be the same. In other words, you cannot pass a CLOB to P_BODY and a VARCHAR2 to
+p_body_html.
+
+Usage Notes
+
+When using APEX_MAIL.SEND, remember the following:
+
+� No single line may exceed 1000 characters. The SMTP/MIME specification dictates that
+     no single line shall exceed 1000 characters. To comply with this restriction, you must add a
+     carriage return or line feed characters to break up your p_body or p_body_html parameters
+     into chunks of 1000 characters or less. Failing to do so results in erroneous email
+     messages, including partial messages or messages with extraneous exclamation points.
+
+� Plain text and HTML email content. Passing a value to p_body, but not p_body_html
+     results in a plain text message. Passing a value to p_body and p_body_html yields a multi-
+     part message that includes both plain text and HTML content. The settings and capabilities
+     of the recipient's email client determine what displays. Although most modern email clients
+     can read an HTML formatted email, remember that some users disable this functionality to
+     address security issues.
+
+� Avoid images. When referencing images in p_body_html using the <img /> tag,
+     remember that the images must be accessible to the recipient's email client in order for
+     them to see the image.
+
+     For example, suppose you reference an image on your network called hello.gif as
+     follows:
+
+     <img src="http://example.com/hello.gif" alt="Hello" />
+
+In this example, the image is not attached to the email, but is referenced by the email. For
+the recipient to see it, they must be able to access the image using a web browser. If the
+image is inside a firewall and the recipient is outside of the firewall, the image is not
+displayed.
+
+Alternatively, you may specify the p_content_id parameter when calling
+APEX_MAIL.ADD_ATTACHMENT which creates an inline attachment that can be referenced as
+follows:
+
+<img src="cid:hello_content_id" alt="Hello" />
+
+     Note that this may greatly increase the size of the resultant emails and that clients may not
+     always automatically display inline images.
+
+     For these reasons, avoid using images. If you must include images, be sure to include the
+     ALT attribute to provide a textual description in the event the image is not accessible nor
+     displayed.
+
+Syntax
+
+APEX_MAIL.SEND (                                       IN VARCHAR2,
+      p_to                                             IN VARCHAR2,
+      p_from                                           IN [ VARCHAR2 | CLOB ],
+      p_body                                           IN [ VARCHAR2 | CLOB ] DEFAULT NULL,
+      p_body_html                                      IN VARCHAR2 DEFAULT NULL,
+      p_subj                                           IN VARCHAR2 DEFAULT NULL,
+      p_cc
+
+API Reference                                                                                July 24, 2026
+G26651-03                                                                                    Page 15 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                           Chapter 44
+                                                                                    SEND Procedure Signature 1
+
+      p_bcc                                            IN VARCHAR2 DEFAULT NULL,
+      p_replyto                                        IN VARCHAR2 DEFAULT NULL );
+
+Parameters
+
+Parameter                                              Description
+p_to
+p_from                                                 Valid email address to which the email is sent (required). For
+                                                       multiple email addresses, use a comma-separated list.
+p_body
+                                                       Email address from which the email is sent (required). This
+p_body_html                                            email address must be a valid address. Otherwise, the
+                                                       message is not sent.
+p_subj
+p_cc                                                   If an instance administrator has already defined a "Default
+p_bcc                                                  Email From Address" on the instance level, this address is
+p_replyto                                              always used as the "from" address.
+
+                                                       Body of the email in plain text, not HTML (required). If a
+                                                       value is passed to p_body_html, then this is the only text
+                                                       the recipient sees. If a value is not passed to p_body_html,
+                                                       then this text only displays for email clients that do not
+                                                       support HTML or have HTML disabled. A carriage return or
+                                                       line feed (CRLF) must be included every 1000 characters.
+
+                                                       Body of the email in HTML format. This must be a full HTML
+                                                       document including the <html> and <body> tags. A single
+                                                       line cannot exceed 1000 characters without a carriage return
+                                                       or line feed (CRLF)
+
+                                                       Subject of the email.
+
+                                                       Valid email addresses to which the email is copied. For
+                                                       multiple email addresses, use a comma-separated list.
+
+                                                       Valid email addresses to which the email is blind copied. For
+                                                       multiple email addresses, use a comma-separated list.
+
+                                                       Specify a valid email address to instruct recipient's email
+                                                       client to send human-generated replies to this address rather
+                                                       than the address specified in p_from.
+
+Examples
+
+The following example demonstrates how to use APEX_MAIL.SEND to send a plain text email
+message from an application.
+
+-- Example One: Plain Text only message
+
+DECLARE
+
+l_body           CLOB;
+
+BEGIN
+
+l_body := 'Thank you for your interest in the APEX_MAIL
+
+package.'||utl_tcp.crlf||utl_tcp.crlf;
+
+l_body := l_body ||' Sincerely,'||utl_tcp.crlf;
+
+l_body := l_body ||' The EveryCorp Dev Team'||utl_tcp.crlf;
+
+apex_mail.send(
+
+         p_to    => 'some_user@example.com', -- change to your email
+
+address
+
+         p_from => 'some_sender@example.com', -- change to a real senders
+
+email address
+
+         p_body => l_body,
+
+         p_subj => 'APEX_MAIL Package - Plain Text message');
+
+API Reference                                                                       July 24, 2026
+G26651-03                                                                           Page 16 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                 Chapter 44
+                                                                          SEND Procedure Signature 2
+
+END;
+/
+
+The following example demonstrates how to use APEX_MAIL.SEND to send an HTML email
+message from an application. Remember, you must include a carriage return or line feed
+(CRLF) every 1000 characters. The example that follows uses utl_tcp.crlf.
+
+-- Example Two: Plain Text / HTML message
+
+DECLARE
+
+   l_body  CLOB;
+
+   l_body_html CLOB;
+
+BEGIN
+
+   l_body := 'To view the content of this message, please use an HTML
+
+enabled mail client.'||utl_tcp.crlf;
+
+   l_body_html := '<html>
+         <head>
+               <style type="text/css">
+                      body{font-family: Arial, Helvetica, sans-serif;
+                            font-size:10pt;
+                            margin:30px;
+                            background-color:#ffffff;}
+
+           span.sig{font-style:italic;
+
+                                                       font-weight:bold;
+
+                                                       color:#811919;}
+
+           </style>
+
+         </head>
+
+         <body>'||utl_tcp.crlf;
+
+   l_body_html := l_body_html ||'<p>Thank you for your interest in the
+
+<strong>APEX_MAIL</strong> package.</p>'||utl_tcp.crlf;
+
+   l_body_html := l_body_html ||' Sincerely,<br />'||utl_tcp.crlf;
+
+   l_body_html := l_body_html ||' <span class="sig">The EveryCorp Dev Team</
+
+span><br />'||utl_tcp.crlf;
+
+   l_body_html := l_body_html ||'</body></html>';
+
+   apex_mail.send(
+
+   p_to => 'some_user@example.com', -- change to your email address
+
+   p_from => 'some_sender@example.com', -- change to a real senders email
+
+address
+
+   p_body  => l_body,
+
+   p_body_html => l_body_html,
+
+   p_subj  => 'APEX_MAIL Package - HTML formatted message');
+
+END;
+
+/
+
+44.11 SEND Procedure Signature 2
+
+                       This procedure adds a mail to the mail queue of Oracle APEX. The mail is based on an email
+                       template where the placeholder values specified as JSON string are substituted.
+
+                       Syntax
+
+APEX_MAIL.SEND (
+      p_template_static_id IN VARCHAR2,
+
+API Reference                                                             July 24, 2026
+G26651-03                                                                 Page 17 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                              Chapter 44
+                                                       SEND Procedure Signature 2
+
+      p_placeholders                                   IN CLOB,
+      p_to                                             IN VARCHAR2,
+      p_cc                                             IN VARCHAR2 DEFAULT NULL,
+      p_bcc                                            IN VARCHAR2 DEFAULT NULL,
+      p_from                                           IN VARCHAR2 DEFAULT NULL,
+      p_replyto                                        IN VARCHAR2 DEFAULT NULL,
+      p_application_id                                 IN NUMBER DEFAULT apex_application.g_flow_id );
+
+Parameters
+
+Parameter                                              Description
+p_template_static_id
+p_placeholders                                         Static identifier string, used to identify the shared component email
+p_to                                                   template.
+p_cc
+p_bcc                                                  JSON string representing the placeholder names along with the values,
+p_from                                                 to be substituted.
+
+p_replyto                                              (Required) Valid email address to which the email is sent. For multiple
+                                                       email addresses, use a comma-separated list.
+p_application_id
+                                                       Valid email addresses to which the email is copied. For multiple email
+                                                       addresses, use a comma-separated list.
+
+                                                       Valid email addresses to which the email is blind copied. For multiple
+                                                       email addresses, use a comma-separated list.
+
+                                                       This must be a valid email address from which the email is sent.
+
+                                                       If p_from is not provided:
+
+                                                       � the "Application Email From Address" is used (if provided under
+                                                             Application Definition)
+
+                                                       � otherwise, p_replyto is used (if provided)
+                                                       � else, p_to is used
+                                                       If p_to or p_replyto contain multiple email addresses, p_from is
+                                                       required.
+
+                                                       If an instance administrator has already defined a "Default Email From
+                                                       Address" on the instance level, this address is always used as the
+                                                       "from" address, regardless of whether p_from is provided.
+
+                                                       Specify a valid email address to instruct recipient's email client to send
+                                                       human-generated replies to this address rather than the address
+                                                       specified in p_from. You can use this parameter as follows:
+
+                                                       � If you omit the p_replyto parameter, the Reply-To mail header is
+                                                            set to the value specified in the p_from parameter
+
+                                                       � If you include the p_replyto parameter, but provide a NULL
+                                                             value, the Reply-To mail header is set to NULL. This disables
+                                                             automatic email replies.
+
+                                                       � If you include p_replyto parameter, but provide a non-null value
+                                                             (for example, a valid email address), you send these messages,
+                                                             but the automatic replies go to the value specified (for example,
+                                                             the email address)
+
+                                                       Application ID where the email template is defined. Defaults to the
+                                                       current application (if called from within an application).
+
+Note
+
+When calling the SEND procedure from outside the context of an APEX application
+(such as from a Database Scheduler job), you must specify the p_application_id
+parameter.
+
+API Reference                                          July 24, 2026
+G26651-03                                              Page 18 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+                                                                                                             Chapter 44
+                                                                                      SEND Procedure Signature 2
+
+Examples
+
+begin
+
+apex_mail.send (
+
+       p_template_static_id => 'ORDER',
+
+       p_placeholders                                  => '{ "ORDER_NUMBER": 5321, "ORDER_DATE": "01-
+
+Feb-2018", "ORDER_TOTAL": "$12,000" }',
+
+       p_to                                            => 'some_user@example.com' );
+
+end;
+
+API Reference                                                                         July 24, 2026
+G26651-03                                                                             Page 19 of 19
+Copyright � 2003, 2026, Oracle and/or its affiliates.
+45
