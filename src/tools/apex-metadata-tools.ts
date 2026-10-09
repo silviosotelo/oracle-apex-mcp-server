@@ -126,9 +126,10 @@ Queries APEX_APPLICATIONS view. Adapts to detected APEX version automatically.`,
         let buildOptions: Record<string, unknown>[] = [];
 
         if (params.include_shared_components) {
+          // LOV_QUERY no existe en APEX_APPLICATION_LOVS de APEX 26.1 (ORA-00904).
+          // Se omite la vista previa de la consulta; ver references/26.1 para la lista de columnas.
           lovs = await oracle.queryRows(
-            `SELECT LIST_OF_VALUES_NAME, LOV_TYPE,
-                    CASE WHEN LOV_QUERY IS NOT NULL THEN SUBSTR(LOV_QUERY, 1, 200) END AS LOV_QUERY_PREVIEW
+            `SELECT LIST_OF_VALUES_NAME, LOV_TYPE
              FROM APEX_APPLICATION_LOVS
              WHERE APPLICATION_ID = :aid ORDER BY LIST_OF_VALUES_NAME`,
             { aid: params.app_id }

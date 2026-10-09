@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+- `oracle_describe_table`: la consulta de constraints agrupaba por `SEARCH_CONDITION` (LONG) y fallaba con ORA-00997. Ahora usa `SEARCH_CONDITION_VC`.
+- `apex_describe_application` con `include_shared_components`: `LOV_QUERY` no existe en `APEX_APPLICATION_LOVS` de APEX 26.1 (ORA-00904). Se quita la vista previa de la consulta.
+
 ### Added
 - **APEX 26.1 reference docs** in `docs/26.1/`: PL/SQL API (64 packages, `plsql/`), JavaScript API (47 pages, `js/`), and APEXlang (1143 components grouped by parent, `apexlang/`, plus the official `apexlang.ebnf` grammar).
 

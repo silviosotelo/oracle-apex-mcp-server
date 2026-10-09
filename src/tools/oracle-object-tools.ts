@@ -113,13 +113,13 @@ Supports LIKE filtering on table name.`,
         let conRows: Record<string, unknown>[] = [];
         if (params.include_constraints) {
           conRows = await oracle.queryRows(
-            `SELECT con.CONSTRAINT_NAME, con.CONSTRAINT_TYPE, con.STATUS, con.SEARCH_CONDITION,
+            `SELECT con.CONSTRAINT_NAME, con.CONSTRAINT_TYPE, con.STATUS, con.SEARCH_CONDITION_VC AS SEARCH_CONDITION,
                     con.R_OWNER, con.R_CONSTRAINT_NAME,
                     LISTAGG(col.COLUMN_NAME, ', ') WITHIN GROUP (ORDER BY col.POSITION) AS COLUMNS
              FROM ALL_CONSTRAINTS con
              LEFT JOIN ALL_CONS_COLUMNS col ON col.OWNER = con.OWNER AND col.CONSTRAINT_NAME = con.CONSTRAINT_NAME
              WHERE con.TABLE_NAME = :tname ${ownerBind ? "AND con.OWNER = :owner" : "AND con.OWNER = USER"}
-             GROUP BY con.CONSTRAINT_NAME, con.CONSTRAINT_TYPE, con.STATUS, con.SEARCH_CONDITION, con.R_OWNER, con.R_CONSTRAINT_NAME
+             GROUP BY con.CONSTRAINT_NAME, con.CONSTRAINT_TYPE, con.STATUS, con.SEARCH_CONDITION_VC, con.R_OWNER, con.R_CONSTRAINT_NAME
              ORDER BY DECODE(con.CONSTRAINT_TYPE, 'P', 1, 'U', 2, 'R', 3, 'C', 4, 5), con.CONSTRAINT_NAME`,
             baseBinds
           );
